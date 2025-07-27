@@ -10,4 +10,5 @@ pillow
 pdf2image
 matplotlib 
 seaborn
+requests
 

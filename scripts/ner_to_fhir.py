@@ -1,11 +1,18 @@
 import uuid
 from dateutil.parser import parse
+from normalizer_api import search_cui
+
+def normalize_entity(text, label):
+    if label == "DIAGNOSIS":
+        return search_cui(text, source="ICD10CM") or search_cui(text, source="SNOMEDCT_US")
+    elif label == "MEDICATION":
+        return search_cui(text, source="RXNORM")
+    return None
 
 def map_ner_to_fhir(entities):
     fhir_resources = []
     seen_text_label = set()
 
-    # Store ids for cross-reference
     patient_id = None
     practitioner_id = None
 
@@ -17,7 +24,7 @@ def map_ner_to_fhir(entities):
             continue
         seen_text_label.add((text, label))
 
-        resource_id = str(uuid.uuid4())[:8]  # short unique id
+        resource_id = str(uuid.uuid4())[:8]
 
         if label == "PERSON":
             parts = text.split()
@@ -60,21 +67,39 @@ def map_ner_to_fhir(entities):
             })
 
         elif label == "DIAGNOSIS":
+            norm = normalize_entity(text, label)
             condition = {
                 "resourceType": "Condition",
                 "id": resource_id,
-                "code": {"text": text}
+                "code": {
+                    "text": text
+                }
             }
+            if norm:
+                condition["code"]["coding"] = [{
+                    "system": f"http://hl7.org/fhir/sid/{norm['source']}",
+                    "code": norm["code"],
+                    "display": norm["name"]
+                }]
             if patient_id:
                 condition["subject"] = {"reference": f"Patient/{patient_id}"}
             fhir_resources.append(condition)
 
         elif label == "MEDICATION":
+            norm = normalize_entity(text, label)
             med_req = {
                 "resourceType": "MedicationRequest",
                 "id": resource_id,
-                "medicationCodeableConcept": {"text": text}
+                "medicationCodeableConcept": {
+                    "text": text
+                }
             }
+            if norm:
+                med_req["medicationCodeableConcept"]["coding"] = [{
+                    "system": f"http://hl7.org/fhir/sid/{norm['source']}",
+                    "code": norm["code"],
+                    "display": norm["name"]
+                }]
             if patient_id:
                 med_req["subject"] = {"reference": f"Patient/{patient_id}"}
             fhir_resources.append(med_req)
@@ -165,11 +190,8 @@ def map_ner_to_fhir(entities):
                 family_history["patient"] = {"reference": f"Patient/{patient_id}"}
             fhir_resources.append(family_history)
 
-    # Wrap everything in a FHIR Bundle
-    bundle = {
+    return {
         "resourceType": "Bundle",
         "type": "collection",
         "entry": [{"resource": r} for r in fhir_resources]
     }
-
-    return bundle
