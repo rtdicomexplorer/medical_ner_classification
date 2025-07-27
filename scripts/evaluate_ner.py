@@ -19,9 +19,34 @@ from seqeval.metrics import precision_score, recall_score, f1_score, classificat
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 from postprocess import postprocess_entities  # import your function here
 from config import LABEL_LIST
-
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import confusion_matrix
 MODEL_PATH = "./models/clinicalbert-ner"
+def plot_confusion_matrix(y_true, y_pred, labels=None, ignore_label="O"):
+    # Flatten sequences
+    y_true_flat = [label for seq in y_true for label in seq]
+    y_pred_flat = [label for seq in y_pred for label in seq]
 
+    # Optional: Filter out "O" labels
+    if ignore_label:
+        pairs = [(t, p) for t, p in zip(y_true_flat, y_pred_flat) if t != ignore_label]
+        y_true_flat, y_pred_flat = zip(*pairs)
+
+    # Get sorted label set
+    unique_labels = sorted(set(y_true_flat + y_pred_flat))
+    if labels:
+        unique_labels = [l for l in labels if l in unique_labels]
+
+    cm = confusion_matrix(y_true_flat, y_pred_flat, labels=unique_labels)
+    
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=unique_labels, yticklabels=unique_labels)
+    plt.xlabel("Predicted")
+    plt.ylabel("True")
+    plt.title("NER Confusion Matrix (without 'O')")
+    plt.tight_layout()
+    plt.show()
 def load_pipeline():
     tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
     model = AutoModelForTokenClassification.from_pretrained(MODEL_PATH)
@@ -83,6 +108,7 @@ def evaluate_ner(dataset_path, confidence_threshold=0.6):
     print(f"Precision: {precision_score(all_true, all_pred):.3f}")
     print(f"Recall:    {recall_score(all_true, all_pred):.3f}")
     print(f"F1-score:  {f1_score(all_true, all_pred):.3f}")
+    plot_confusion_matrix(all_true, all_pred, labels=LABEL_LIST, ignore_label="O")
 
 if __name__ == "__main__":
     evaluate_ner("data/test_ner_data.json")

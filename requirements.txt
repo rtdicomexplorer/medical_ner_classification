@@ -8,4 +8,6 @@ python-docx
 pytesseract 
 pillow 
 pdf2image
+matplotlib 
+seaborn
 
