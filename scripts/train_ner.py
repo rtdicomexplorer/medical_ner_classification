@@ -1,21 +1,21 @@
 #train_ner.py
 import json
 import os
-from datasets import load_dataset, Dataset
+from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForTokenClassification, TrainingArguments, Trainer
 import numpy as np
 from sklearn.metrics import precision_recall_fscore_support
+from config import LABEL_LIST, LABEL2ID, ID2LABEL, MODEL_NAME
+
 
 # Config (could be moved to config.py)
 MODEL_NAME = "emilyalsentzer/Bio_ClinicalBERT"
 DATA_PATH = "./data/synthetic_ner_data.json"
 OUTPUT_DIR = "./models/clinicalbert-ner"
-LABEL_LIST = ["O", "B-PERSON", "I-PERSON", "B-DATE", "I-DATE",
-              "B-DIAGNOSIS", "I-DIAGNOSIS", "B-SYMPTOM", "I-SYMPTOM",
-              "B-MEDICATION", "I-MEDICATION", "B-TREATMENT", "I-TREATMENT"]
-
-label_to_id = {l: i for i, l in enumerate(LABEL_LIST)}
-id_to_label = {i: l for l, i in label_to_id.items()}
+DATA_FILES = {
+    "train": "./data/train.json",
+    "test": "./data/val.json"
+}
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 
@@ -50,8 +50,8 @@ def compute_metrics(p):
     predictions, labels = p
     predictions = np.argmax(predictions, axis=2)
 
-    true_labels = [[id_to_label[l] for l in label if l != -100] for label in labels]
-    true_preds = [[id_to_label[p] for (p, l) in zip(pred, lab) if l != -100] for pred, lab in zip(predictions, labels)]
+    true_labels = [[ID2LABEL[l] for l in label if l != -100] for label in labels]
+    true_preds = [[LABEL2ID[p] for (p, l) in zip(pred, lab) if l != -100] for pred, lab in zip(predictions, labels)]
 
     all_preds = []
     all_labels = []
@@ -67,27 +67,15 @@ def compute_metrics(p):
     }
 
 def main():
-    # Load data from json
-    with open(DATA_PATH, "r") as f:
-        data = json.load(f)
+    # # Load data from json
+    # with open(DATA_PATH, "r") as f:
+    #     data = json.load(f)  # Load dataset with DatasetDict
+    datasets = load_dataset("json", data_files=DATA_FILES)
 
-    # The data should be a list of dicts {"tokens": [...], "ner_tags": [...]}
-    dataset = Dataset.from_list(data)
-
-    # Convert string labels to IDs
-    def encode_labels(example):
-        example["ner_tags"] = [label_to_id[label] for label in example["ner_tags"]]
-        return example
-
-    dataset = dataset.map(encode_labels)
-
-    # Split train/test (90/10)
-    dataset = dataset.train_test_split(test_size=0.1)
-
-    tokenized_datasets = dataset.map(tokenize_and_align_labels, batched=True)
-
+    # Align labels & tokenize
+    tokenized_datasets = datasets.map(tokenize_and_align_labels, batched=True)
     model = AutoModelForTokenClassification.from_pretrained(MODEL_NAME, num_labels=len(LABEL_LIST))
-
+    
     training_args = TrainingArguments(
         output_dir=OUTPUT_DIR,
         evaluation_strategy="epoch",
@@ -97,7 +85,7 @@ def main():
         num_train_epochs=3,
         weight_decay=0.01,
         save_strategy="epoch",
-        logging_dir='./logs',
+        logging_dir="./logs",
         logging_steps=10,
         load_best_model_at_end=True,
         metric_for_best_model="f1",
@@ -105,7 +93,7 @@ def main():
         seed=42,
         dataloader_drop_last=True,
     )
-
+    
     trainer = Trainer(
         model=model,
         args=training_args,
@@ -114,9 +102,9 @@ def main():
         tokenizer=tokenizer,
         compute_metrics=compute_metrics,
     )
-
     trainer.train()
     trainer.save_model(OUTPUT_DIR)
+   
 
 if __name__ == "__main__":
     main()

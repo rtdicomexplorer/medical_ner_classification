@@ -1,8 +1,10 @@
+#generate_data.py
 import random
 import json
 import os
 import datetime
 from config import LABEL2ID
+from sklearn.model_selection import train_test_split
 
 # German and international style names for PERSON and DOCTOR
 names = [
@@ -96,9 +98,10 @@ def generate_report():
         family_history: "FAMILY_HISTORY",
     }
     return text, entities
-
+def __simple_tokenize(text):
+    return text.replace('.', ' .').replace(',', ' ,').replace(':', ' :').split()
 def tokenize_and_label(text, entities):
-    tokens = text.split()
+    tokens = __simple_tokenize(text)
     labels = ["O"] * len(tokens)
 
     for entity_text, ent_type in entities.items():
@@ -109,18 +112,27 @@ def tokenize_and_label(text, entities):
                 for j in range(1, len(ent_tokens)):
                     labels[i+j] = f"I-{ent_type}"
                 break
-    return tokens, labels
+    label_ids = [LABEL2ID.get(l, 0) for l in labels]  # default to "O"
+    return tokens, label_ids
 
 def generate_dataset(n_samples=1000):
     data = []
     for _ in range(n_samples):
         text, entities = generate_report()
         tokens, labels = tokenize_and_label(text, entities)
-        data.append({"tokens": tokens, "ner_tags": [LABEL2ID[l] for l in labels]})
+        data.append({"tokens": tokens, "ner_tags": labels})
+
+    train, val = train_test_split(data, test_size=0.1, random_state=42)
 
     os.makedirs("./data", exist_ok=True)
-    with open("./data/synthetic_ner_data.json", "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    with open("./data/train.json", "w", encoding="utf-8") as f:
+        json.dump(train, f, indent=2, ensure_ascii=False)
+    with open("./data/val.json", "w", encoding="utf-8") as f:
+        json.dump(val, f, indent=2, ensure_ascii=False)
+
+    print("✅ Synthetic dataset generated:")
+    print(f"→ ./data/train.json ({len(train)} samples)")
+    print(f"→ ./data/val.json ({len(val)} samples)")
 
 if __name__ == "__main__":
     generate_dataset(n_samples=1000)
