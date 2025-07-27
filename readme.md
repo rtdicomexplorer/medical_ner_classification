@@ -168,3 +168,64 @@ I'd like to train a model that can recovery medical information, name date diagn
 
 
 -git remote add origin REMOTE-URL
+
+
+
+## High-Level Diagram Outline
+🧾 Input: Clinical Text (e.g., patient history, discharge summary, etc.)
+⬇️
+1. Preprocessing
+
+Clean text
+
+Sentence/token split (optional)
+
+Handle encoding, OCR artifacts, etc.
+
+⬇️
+2. NER Model Inference
+
+Model: fine-tuned ClinicalBERT
+
+Output: list of labeled entities (with confidence, spans)
+
+⬇️
+3. Postprocessing
+
+Filter low-confidence entities
+
+Resolve overlaps/conflicts
+
+Merge fragmented spans
+
+⬇️
+4. Normalization (UMLS API)
+
+Map entities to:
+
+ICD-10 / SNOMED CT (Diagnosis)
+
+RxNorm (Medications)
+
+Adds standard codes and names
+
+⬇️
+5. FHIR Mapping
+
+Convert entities to:
+
+Patient, Condition, MedicationRequest, etc.
+
+Use normalization output when available
+
+⬇️
+6. Output: FHIR Bundle (JSON)
+
+A full structured representation of the medical information
+
+⬇️
+7. (Optional) Evaluation
+
+Compare model output against labeled data
+
+Use seqeval, classification_report, etc.
