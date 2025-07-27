@@ -69,3 +69,7 @@ I'd like to train a model that can recovery medical information, name date diagn
 
 #### links
 - https://github.com/doccano/doccano
+
+
+
+-git remote add origin REMOTE-URL
