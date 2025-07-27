@@ -3,6 +3,7 @@ from ner_to_fhir import map_ner_to_fhir
 import json
 from config import LABEL_LIST
 from text_extractor import extract_text
+from postprocess import postprocess_entities
 MODEL_PATH = "./models/clinicalbert-ner"
 
 
@@ -46,7 +47,8 @@ def main(file_path):
     for ent in entities:
         print(f"{ent['word']} [{ent['entity']}] ({ent['start']}:{ent['end']}) - confidence: {ent['score']:.3f}")
 
-    fhir_output = map_ner_to_fhir(entities)
+    clean_entities = postprocess_entities(entities, confidence_threshold=0.6)
+    fhir_output = map_ner_to_fhir(clean_entities)
 
     output_json = "fhir_output.json"
     with open(output_json, "w", encoding="utf-8") as f:
