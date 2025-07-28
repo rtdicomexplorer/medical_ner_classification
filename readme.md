@@ -90,6 +90,10 @@ The pipeline processes clinical documents (PDFs, DOCX, images, TXT), extracts te
 ---
 
 ## Usage
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+
 
 ### Training:
 

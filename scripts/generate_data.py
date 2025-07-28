@@ -1,24 +1,38 @@
-#generate_data.py
+# generate_data.py
 import random
 import json
 import os
+import re
 import datetime
 from config import LABEL2ID
 from sklearn.model_selection import train_test_split
 
-# German and international style names for PERSON and DOCTOR
-names = [
-    "Max Müller", "Anna Schmidt", "Lukas Weber", "Sophie Fischer",
-    "John Smith", "Mary Jones", "Robert Lee", "Emily Davis"
+diagnosis_icd10_map = {
+    "Hypertonie": "I10",
+    "Diabetes Mellitus": "E11.9",
+    "Asthma": "J45",
+    "Pneumonie": "J18.9"
+}
+vitalsigns = [
+    "Blutdruck 120/80 mmHg", "Puls 72/min", "Temperatur 37,2 °C",
+    "Sauerstoffsättigung 98 %"
 ]
-first_names = ["Max", "Anna", "Lukas", "Marie", "Felix", "Laura"]
-last_names = ["Müller", "Schmidt", "Schneider", "Fischer", "Weber", "Becker"]
-doctors = [
-    "Dr. Müller", "Dr. Schneider", "Dr. Becker", "Dr. Weber",
-    "Dr. Adams", "Dr. Lee", "Dr. Patel", "Dr. Chen"
+lifestyles = [
+    "Nichtraucher", "Raucher (5 Zigaretten/Tag)", "gelegentlicher Alkoholgenuss",
+    "regelmäßige Bewegung"
+]
+risk_factors = [
+    "familiäre Vorbelastung Diabetes", "Adipositas BMI 32",
+    "Hyperlipidämie", "Schlafapnoe"
 ]
 
-diagnoses = ["Hypertonie", "Diabetes Mellitus", "Asthma", "Pneumonie"]
+# Names and other data
+names = ["Max Müller", "Anna Schmidt", "Lukas Weber", "Sophie Fischer",
+         "John Smith", "Mary Jones", "Robert Lee", "Emily Davis"]
+doctors = ["Dr. Müller", "Dr. Schneider", "Dr. Becker", "Dr. Weber",
+           "Dr. Adams", "Dr. Lee", "Dr. Patel", "Dr. Chen"]
+
+diagnoses = list(diagnosis_icd10_map.keys())
 symptoms = ["Brustschmerzen", "Atemnot", "Fieber", "Müdigkeit"]
 medications = ["Metformin", "Lisinopril", "Albuterol", "Amoxicillin"]
 treatments = ["Sauerstofftherapie", "Operation", "Chemotherapie", "Physiotherapie"]
@@ -27,59 +41,140 @@ allergies = ["Penicillin", "Pollen", "Nüsse"]
 immunizations = ["Masern-Impfung", "Grippeimpfung"]
 devices = ["Herzschrittmacher", "Insulinpumpe"]
 family_histories = ["Mutter mit Diabetes", "Vater mit Bluthochdruck"]
-
 procedures = ["Angioplastie", "MRT-Scan", "Biopsie", "Ultraschall"]
-organizations = [
-    "St. Marien Krankenhaus", "Allgemeine Gesundheitsklinik", 
-    "Städtisches Medizinzentrum", "Universitätsklinikum"
-]
 departments = ["Kardiologie", "Notaufnahme", "Onkologie", "Radiologie"]
 
-months = [
-    "Januar", "Februar", "März", "April", "Mai", "Juni", "Juli",
-    "August", "September", "Oktober", "November", "Dezember"
-]
+hospital_names = ["St. Marien Krankenhaus", "Allgemeine Gesundheitsklinik",
+                  "Städtisches Medizinzentrum", "Universitätsklinikum München"]
+hospital_addresses = ["Hauptstraße 12, 80331 München", "Berliner Allee 45, 40212 Düsseldorf",
+                      "Lindenstraße 8, 10115 Berlin", "Goetheplatz 9, 50674 Köln"]
+hospital_phones = ["089 123456", "0211 987654", "030 234567", "0221 456789"]
 
-dates = ["10. März 2023", "15. Januar 2022", "28. Februar 2024"]
+
+def random_gender():
+    return random.choice(["männlich", "weiblich", "divers"])
+
+
+def random_birthdate():
+    start = datetime.date(1920, 1, 1)
+    end = datetime.date(2025, 5, 31)
+    rand_day = start + datetime.timedelta(days=random.randint(0, (end - start).days))
+    return rand_day.strftime("%d.%m.%Y")
+
+
+def random_family_status():
+    return random.choice(["ledig", "verheiratet", "geschieden", "verwitwet"])
+
+
 def random_date():
     start = datetime.date(2022, 1, 1)
     end = datetime.date(2024, 12, 31)
-    delta = end - start
-    rand_day = start + datetime.timedelta(days=random.randint(0, delta.days))
-    return rand_day.strftime("%d. %B %Y")  # German date format like '10. März 2023'
+    rand_day = start + datetime.timedelta(days=random.randint(0, (end - start).days))
+    return rand_day.strftime("%d. %B %Y")
+
 
 def generate_report():
     name = random.choice(names)
-    first = random.choice(first_names)
-    last = random.choice(last_names)
     doctor = random.choice(doctors)
     diagnosis = random.choice(diagnoses)
+    icd10_code = diagnosis_icd10_map[diagnosis]
     symptom = random.choice(symptoms)
     medication = random.choice(medications)
     treatment = random.choice(treatments)
     procedure = random.choice(procedures)
-    organization = random.choice(organizations)
     department = random.choice(departments)
     lab_result = random.choice(lab_results)
-    allergy = random.choice(allergies)
-    immunization = random.choice(immunizations)
-    device = random.choice(devices)
-    family_history = random.choice(family_histories)
-    date = random.choice(dates)
+    date = random_date()
 
-    text = (
-        f"Am {date} stellte sich Patient {name} mit {symptom} vor. "
-        f"Die Diagnose lautete {diagnosis}. "
-        f"Der Patient wurde mit {medication} behandelt und erhielt {treatment}. "
-        f"Das Verfahren war {procedure}. "
-        f"Untersuchung durchgeführt von {doctor} im {department} der {organization}."
-        f" Laborwerte: {lab_result}. "
-        f" Allergien: {allergy}. "
-        f" Impfungen: {immunization}. "
-        f" Medizinisches Gerät: {device}. "
-        f" Familienanamnese: {family_history}."
-    )
+    vital = random.choice(vitalsigns) if random.choice([True, False]) else None
+    lifestyle = random.choice(lifestyles) if random.choice([True, False]) else None
+    riskfactor = random.choice(risk_factors) if random.choice([True, False]) else None
 
+
+    # Hospital
+    i = random.randint(0, len(hospital_names) - 1)
+    hospital_name, hospital_address, hospital_phone = hospital_names[i], hospital_addresses[i], hospital_phones[i]
+
+    # Follow-up
+    followup_times = ["in 2 Wochen", "in 4 Wochen", "in einem Monat", "in 10 Tagen", "in drei Wochen"]
+    followup_phrases = ["empfohlen", "dringend empfohlen", "zur weiteren Abklärung empfohlen"]
+    followup_sentence = f"Eine erneute Kontrolluntersuchung wird {random.choice(followup_times)} {random.choice(followup_phrases)}."
+
+    # Optional fields
+    allergy = random.choice(allergies) if random.choice([True, False]) else None
+    immunization = random.choice(immunizations) if random.choice([True, False]) else None
+    device = random.choice(devices) if random.choice([True, False]) else None
+    family_history = random.choice(family_histories) if random.choice([True, False]) else None
+    gender = random_gender()
+    birthdate = random_birthdate()
+    family_status = random_family_status()
+
+    general_templates = [
+        f"Am {date} stellte sich Patient {name} ({gender}), geboren am {birthdate}, Familienstand: {family_status} mit {symptom} vor. Diagnose: {diagnosis}. "
+        f"Behandlung: {medication} und {treatment}. Verfahren: {procedure}. "
+        f"Untersuchung durch {doctor} in der Abteilung {department}. "
+        f"Krankenhaus: {hospital_name}, {hospital_address}, Tel: {hospital_phone}. "
+        f"Labor: {lab_result}. {followup_sentence}",
+
+        f"{name} kam am {date} ins {hospital_name}, {hospital_address}. Beschwerden: {symptom}. "
+        f"Untersuchung durch {doctor}. Diagnose: {diagnosis} (ICD-10: {icd10_code}). "
+        f"Verabreichtes Medikament: {medication}. Eingriff: {procedure}. "
+        f"Laborbefund: {lab_result}. Tel: {hospital_phone}.",
+
+        f"Bei der Untersuchung am {date} im {hospital_name} wurde bei {name} {diagnosis} festgestellt. "
+        f"Symptome: {symptom}. Behandelt mit {medication} und {treatment}. "
+        f"Durchgeführt von {doctor} in der {department}. Labor: {lab_result}. "
+        f"Adresse: {hospital_address}, Kontakt: {hospital_phone}.",
+    ]
+
+    structured_templates = [
+        f"--- RADIOLOGY REPORT ---\nPatient: {name}\nDatum: {date}\nVerfahren: {procedure}\n"
+        f"Indikation: {symptom}\nBefund: Zeichen einer {diagnosis}\nEmpfehlung: {treatment}\n"
+        f"Radiologe: {doctor}\nAbteilung: {department}\n{hospital_name}, {hospital_address}\nTelefon: {hospital_phone}",
+
+        f"--- FOLLOW-UP VISIT ---\nDatum: {date}\nPatient: {name}\nGrund: Nachuntersuchung wegen {symptom}\n"
+        f"Vorherige Diagnose: {diagnosis} (ICD-10: {icd10_code}).\nAktueller Zustand stabil\n"
+        f"Medikation: {medication}\nTherapie: {treatment}\nBehandelnder Arzt: {doctor}\n"
+        f"Abteilung: {department}\nKlinik: {hospital_name}\nAdresse: {hospital_address}\nTelefon: {hospital_phone}",
+
+        f"--- Entlassungsbrief---\nPatient: {name}\nAufnahme: {date}\nKlinik: {hospital_name}\nAbteilung: {department}\n"
+        f"Hauptdiagnose: {diagnosis}\nBeschwerden bei Aufnahme: {symptom}\nBehandlung: {medication} und {treatment}\n"
+        f"Eingriff: {procedure}\nVerantwortlicher Arzt: {doctor}\nEntlassung in stabilem Zustand\n"
+        f"Kontrolluntersuchung empfohlen\nKontakt: {hospital_phone}",
+
+        f"--- FOLLOW-UP RECOMMENDATION ---\nPatient: {name} ({gender}), geboren am {birthdate}, Familienstand: {family_status}.\n"
+        f"Datum der letzten Untersuchung: {date}.\nBeschwerden: {symptom}. Diagnose: {diagnosis}.\n"
+        f"Behandlung: {treatment} mit {medication}. Durchgeführt von {doctor}.\n"
+        f"Empfehlung: {followup_sentence}\nBitte melden Sie sich bei der Abteilung {department} im {hospital_name}.\n"
+        f"Adresse: {hospital_address}. Tel: {hospital_phone}."
+    ]
+
+    def add_optionals(tmpl_list):
+        new_list = []
+        for t in tmpl_list:
+            if allergy:
+                t += f"\nAllergien: {allergy}."
+            if immunization:
+                t += f"\nImpfungen: {immunization}."
+            if device:
+                t += f"\nMedizinisches Gerät: {device}."
+            if family_history:
+                t += f"\nFamilienanamnese: {family_history}."
+
+            if vital:
+                t += f"\nVitalzeichen: {vital}."
+            if lifestyle:
+                t += f"\nLebensstil: {lifestyle}."
+            if riskfactor:
+                t += f"\nRisikofaktor: {riskfactor}."
+
+            new_list.append(t)
+        return new_list
+
+    templates = add_optionals(general_templates + structured_templates)
+    text = random.choice(templates)
+
+    # Entity dictionary
     entities = {
         name: "PERSON",
         doctor: "DOCTOR",
@@ -89,21 +184,41 @@ def generate_report():
         medication: "MEDICATION",
         treatment: "TREATMENT",
         procedure: "PROCEDURE",
-        organization: "ORG",
         department: "DEPARTMENT",
-        lab_result: "LAB_RESULT",
-        allergy: "ALLERGY",
-        immunization: "IMMUNIZATION",
-        device: "DEVICE",
-        family_history: "FAMILY_HISTORY",
+        hospital_name: "ORG",
+        hospital_address: "ADDRESS",
+        hospital_phone: "PHONE",
+        gender: "GENDER",
+        birthdate: "BIRTHDATE",
+        family_status: "FAMILY_STATUS",
+        icd10_code: "ICD10_CODE"
     }
+    if allergy: entities[allergy] = "ALLERGY"
+    if immunization: entities[immunization] = "IMMUNIZATION"
+    if device: entities[device] = "DEVICE"
+    if family_history: entities[family_history] = "FAMILY_HISTORY"
+    if vital:
+        entities[vital] = "VITALSIGNS"
+    if lifestyle:
+        entities[lifestyle] = "LIFESTYLE"
+    if riskfactor:
+        entities[riskfactor] = "RISKFACTOR"
+
+
+    match = re.search(r"(Eine erneute Kontrolluntersuchung wird .*? empfohlen)", text)
+    if match:
+        entities[match.group(1)] = "FOLLOWUP_RECOMMENDATION"
+
     return text, entities
+
+
 def __simple_tokenize(text):
     return text.replace('.', ' .').replace(',', ' ,').replace(':', ' :').split()
+
+
 def tokenize_and_label(text, entities):
     tokens = __simple_tokenize(text)
     labels = ["O"] * len(tokens)
-
     for entity_text, ent_type in entities.items():
         ent_tokens = entity_text.split()
         for i in range(len(tokens) - len(ent_tokens) + 1):
@@ -112,18 +227,27 @@ def tokenize_and_label(text, entities):
                 for j in range(1, len(ent_tokens)):
                     labels[i+j] = f"I-{ent_type}"
                 break
-    label_ids = [LABEL2ID.get(l, 0) for l in labels]  # default to "O"
+    label_ids = [LABEL2ID.get(l, 0) for l in labels]
     return tokens, label_ids
 
-def generate_dataset(n_samples=1000):
+
+def save_reports_as_txt(text, filename):
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(text)
+
+
+def generate_dataset(n_samples=1000, save_report=False):
     data = []
-    for _ in range(n_samples):
+    for i in range(n_samples):
         text, entities = generate_report()
+        if save_report:
+            filename = f"./txt_reports/report_{i+1}.txt"
+            os.makedirs(os.path.dirname(filename), exist_ok=True)
+            save_reports_as_txt(text, filename)
         tokens, labels = tokenize_and_label(text, entities)
         data.append({"tokens": tokens, "ner_tags": labels})
 
     train, val = train_test_split(data, test_size=0.1, random_state=42)
-
     os.makedirs("./data", exist_ok=True)
     with open("./data/train.json", "w", encoding="utf-8") as f:
         json.dump(train, f, indent=2, ensure_ascii=False)
@@ -133,7 +257,9 @@ def generate_dataset(n_samples=1000):
     print("✅ Synthetic dataset generated:")
     print(f"→ ./data/train.json ({len(train)} samples)")
     print(f"→ ./data/val.json ({len(val)} samples)")
+    if save_report:
+        print(f"→ ./txt_reports/reports ({i+1} samples)")
+
 
 if __name__ == "__main__":
     generate_dataset(n_samples=1000)
-    print("✅ Enhanced synthetic dataset generated and saved to ./data/synthetic_ner_data.json")

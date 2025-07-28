@@ -1,3 +1,6 @@
 venv
 /venv/
 *venv
+data
+txt_reports
+__pycache__
