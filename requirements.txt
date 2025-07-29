@@ -13,3 +13,6 @@ seaborn
 requests
 simple-icd-10
 transformers[torch]
+seqeval 
+evaluate
+

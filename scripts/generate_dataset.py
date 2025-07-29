@@ -16,7 +16,7 @@ diagnosis_icd10_map = {
 }
 
 names = ["Herr. Max Müller", "Anna Schmidt", "L. Weber", "Sophie Fischer", "Otto Kromberger"]
-doctors = ["Dr. Müller", "Dr. Schneider", "Dr. Becker", "Dr. Weber", "Dr. Suhle Nikolas"]
+doctors = ["Dr. Müller-Eberd ", "Dr.  Schneider", "Dr Becker", "Dr Weber", "PD Dr. Suhle Nikolas", "dr. Michail Igor", "Pro. Maximilian Max", "professor Leo Metger" ]
 symptoms = ["Brustschmerzen", "Atemnot", "Fieber", "Müdigkeit", "Kopfschmerzen", "Sehstörung"]
 medications = ["Metformin", "Lisinopril", "Albuterol", "Amoxicillin"]
 treatments = ["Sauerstofftherapie", "Operation", "Chemotherapie", "Physiotherapie"]
@@ -146,4 +146,4 @@ def generate_dataset(n_samples=1000, save_path="./data", save_reports=False):
 
 # Run as script
 if __name__ == "__main__":
-    generate_dataset(n_samples=1000, save_reports=True)
+    generate_dataset(n_samples=2000, save_reports=True)
