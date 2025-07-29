@@ -4,3 +4,4 @@ venv
 data
 txt_reports
 __pycache__
+models

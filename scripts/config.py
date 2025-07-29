@@ -1,5 +1,6 @@
 # config.py
 
+
 LABEL_LIST = [
     "O",
     "B-PERSON", "I-PERSON",
@@ -30,28 +31,9 @@ LABEL_LIST = [
     "B-VITALSIGNS", "I-VITALSIGNS",
     "B-LIFESTYLE", "I-LIFESTYLE",
     "B-RISKFACTOR", "I-RISKFACTOR",
-
-
+    "B-ICD10_CODE", "I-ICD10_CODE",
+    "B-ICD10_DESC", "I-ICD10_DESC",
 ]
 
 LABEL2ID = {label: idx for idx, label in enumerate(LABEL_LIST)}
 ID2LABEL = {idx: label for label, idx in LABEL2ID.items()}
-
-MODEL_NAME = "emilyalsentzer/Bio_ClinicalBERT"
-
-TRAINING_ARGS = {
-    "output_dir": "./models/clinical_ner_model",
-    "num_train_epochs": 3,
-    "per_device_train_batch_size": 8,
-    "per_device_eval_batch_size": 8,
-    "warmup_steps": 100,
-    "weight_decay": 0.01,
-    "logging_dir": "./logs",
-    "logging_steps": 10,
-    "evaluation_strategy": "epoch",
-    "save_strategy": "epoch",
-    "load_best_model_at_end": True,
-    "fp16": False,  # Set True if using GPU with mixed precision
-}
-
-MAX_LENGTH = 128

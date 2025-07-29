@@ -6,6 +6,8 @@ import re
 import datetime
 from config import LABEL2ID
 from sklearn.model_selection import train_test_split
+import simple_icd_10 as icd
+from idc_api import fetch_icd_description,get_token
 
 diagnosis_icd10_map = {
     "Hypertonie": "I10",
@@ -13,14 +15,17 @@ diagnosis_icd10_map = {
     "Asthma": "J45",
     "Pneumonie": "J18.9"
 }
+
 vitalsigns = [
     "Blutdruck 120/80 mmHg", "Puls 72/min", "Temperatur 37,2 °C",
     "Sauerstoffsättigung 98 %"
 ]
+
 lifestyles = [
     "Nichtraucher", "Raucher (5 Zigaretten/Tag)", "gelegentlicher Alkoholgenuss",
     "regelmäßige Bewegung"
 ]
+
 risk_factors = [
     "familiäre Vorbelastung Diabetes", "Adipositas BMI 32",
     "Hyperlipidämie", "Schlafapnoe"
@@ -32,7 +37,7 @@ names = ["Max Müller", "Anna Schmidt", "Lukas Weber", "Sophie Fischer",
 doctors = ["Dr. Müller", "Dr. Schneider", "Dr. Becker", "Dr. Weber",
            "Dr. Adams", "Dr. Lee", "Dr. Patel", "Dr. Chen"]
 
-diagnoses = list(diagnosis_icd10_map.keys())
+
 symptoms = ["Brustschmerzen", "Atemnot", "Fieber", "Müdigkeit"]
 medications = ["Metformin", "Lisinopril", "Albuterol", "Amoxicillin"]
 treatments = ["Sauerstofftherapie", "Operation", "Chemotherapie", "Physiotherapie"]
@@ -51,49 +56,64 @@ hospital_addresses = ["Hauptstraße 12, 80331 München", "Berliner Allee 45, 402
 hospital_phones = ["089 123456", "0211 987654", "030 234567", "0221 456789"]
 
 
-def random_gender():
+def __random_gender():
     return random.choice(["männlich", "weiblich", "divers"])
 
 
-def random_birthdate():
+def __random_birthdate():
     start = datetime.date(1920, 1, 1)
     end = datetime.date(2025, 5, 31)
     rand_day = start + datetime.timedelta(days=random.randint(0, (end - start).days))
     return rand_day.strftime("%d.%m.%Y")
 
 
-def random_family_status():
+def __random_family_status():
     return random.choice(["ledig", "verheiratet", "geschieden", "verwitwet"])
 
 
-def random_date():
+def __random_date():
     start = datetime.date(2022, 1, 1)
     end = datetime.date(2024, 12, 31)
     rand_day = start + datetime.timedelta(days=random.randint(0, (end - start).days))
     return rand_day.strftime("%d. %B %Y")
 
 
-def generate_report():
+def generate_report(token =     None):
     name = random.choice(names)
     doctor = random.choice(doctors)
-    diagnosis = random.choice(diagnoses)
+    diagnosis = random.choice(list(diagnosis_icd10_map.keys()))
     icd10_code = diagnosis_icd10_map[diagnosis]
+
+    icd_description = "Beschreibung unbekannt"
+    if token : 
+        icd_description = fetch_icd_description(icd10_code, token)
+        if not icd_description:
+            icd_description = icd.get_description(icd10_code)
+
+    else : 
+        icd_description = icd.get_description(icd10_code)
+    
+
     symptom = random.choice(symptoms)
     medication = random.choice(medications)
     treatment = random.choice(treatments)
     procedure = random.choice(procedures)
     department = random.choice(departments)
     lab_result = random.choice(lab_results)
-    date = random_date()
+    date = __random_date()
+    # Hospital
+    idx  = random.randint(0, len(hospital_names) - 1)
+    hospital_name, hospital_address, hospital_phone = hospital_names[idx ], hospital_addresses[idx ], hospital_phones[idx ]
+    gender = __random_gender()
+    birthdate = __random_birthdate()
+    family_status = __random_family_status()
 
     vital = random.choice(vitalsigns) if random.choice([True, False]) else None
     lifestyle = random.choice(lifestyles) if random.choice([True, False]) else None
     riskfactor = random.choice(risk_factors) if random.choice([True, False]) else None
 
 
-    # Hospital
-    i = random.randint(0, len(hospital_names) - 1)
-    hospital_name, hospital_address, hospital_phone = hospital_names[i], hospital_addresses[i], hospital_phones[i]
+
 
     # Follow-up
     followup_times = ["in 2 Wochen", "in 4 Wochen", "in einem Monat", "in 10 Tagen", "in drei Wochen"]
@@ -105,9 +125,7 @@ def generate_report():
     immunization = random.choice(immunizations) if random.choice([True, False]) else None
     device = random.choice(devices) if random.choice([True, False]) else None
     family_history = random.choice(family_histories) if random.choice([True, False]) else None
-    gender = random_gender()
-    birthdate = random_birthdate()
-    family_status = random_family_status()
+
 
     general_templates = [
         f"Am {date} stellte sich Patient {name} ({gender}), geboren am {birthdate}, Familienstand: {family_status} mit {symptom} vor. Diagnose: {diagnosis}. "
@@ -117,7 +135,7 @@ def generate_report():
         f"Labor: {lab_result}. {followup_sentence}",
 
         f"{name} kam am {date} ins {hospital_name}, {hospital_address}. Beschwerden: {symptom}. "
-        f"Untersuchung durch {doctor}. Diagnose: {diagnosis} (ICD-10: {icd10_code}). "
+        f"Untersuchung durch {doctor}. Diagnose: {diagnosis} (ICD‑10: {icd10_code} – {icd_description}). "
         f"Verabreichtes Medikament: {medication}. Eingriff: {procedure}. "
         f"Laborbefund: {lab_result}. Tel: {hospital_phone}.",
 
@@ -133,7 +151,7 @@ def generate_report():
         f"Radiologe: {doctor}\nAbteilung: {department}\n{hospital_name}, {hospital_address}\nTelefon: {hospital_phone}",
 
         f"--- FOLLOW-UP VISIT ---\nDatum: {date}\nPatient: {name}\nGrund: Nachuntersuchung wegen {symptom}\n"
-        f"Vorherige Diagnose: {diagnosis} (ICD-10: {icd10_code}).\nAktueller Zustand stabil\n"
+        f"Vorherige Diagnose: {diagnosis} (ICD‑10: {icd10_code} – {icd_description})..\nAktueller Zustand stabil\n"
         f"Medikation: {medication}\nTherapie: {treatment}\nBehandelnder Arzt: {doctor}\n"
         f"Abteilung: {department}\nKlinik: {hospital_name}\nAdresse: {hospital_address}\nTelefon: {hospital_phone}",
 
@@ -191,7 +209,8 @@ def generate_report():
         gender: "GENDER",
         birthdate: "BIRTHDATE",
         family_status: "FAMILY_STATUS",
-        icd10_code: "ICD10_CODE"
+        icd10_code: "ICD10_CODE",
+        icd_description: "ICD10_DESC",
     }
     if allergy: entities[allergy] = "ALLERGY"
     if immunization: entities[immunization] = "IMMUNIZATION"
@@ -237,9 +256,13 @@ def save_reports_as_txt(text, filename):
 
 
 def generate_dataset(n_samples=1000, save_report=False):
+
+    ClientId = "db7c330e-8d75-450c-976c-e891ea61cf6a_8ba7953b-b758-4b5c-9f11-82eeff251802"
+    ClientSecret = "3jf/LfXf6qsEE9la9/q8Hm3Jt4GAaVh2Vth06qQeSaY="
+    #token = get_token(client_id= ClientId, client_secret= ClientSecret)
     data = []
     for i in range(n_samples):
-        text, entities = generate_report()
+        text, entities = generate_report(token = None)
         if save_report:
             filename = f"./txt_reports/report_{i+1}.txt"
             os.makedirs(os.path.dirname(filename), exist_ok=True)

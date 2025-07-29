@@ -1,11 +1,10 @@
 #train_ner.py
-import json
-import os
+import torch
 from datasets import load_dataset
-from transformers import AutoTokenizer, AutoModelForTokenClassification, TrainingArguments, Trainer
+from transformers import AutoTokenizer, AutoModelForTokenClassification, TrainingArguments, Trainer, DataCollatorForTokenClassification
 import numpy as np
-from sklearn.metrics import precision_recall_fscore_support
-from config import LABEL_LIST, LABEL2ID, ID2LABEL, MODEL_NAME
+from sklearn.metrics import precision_recall_fscore_support,classification_report
+from config import LABEL_LIST, ID2LABEL
 
 
 # Config (could be moved to config.py)
@@ -17,7 +16,9 @@ DATA_FILES = {
     "test": "./data/val.json"
 }
 
+ 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+data_collator = DataCollatorForTokenClassification(tokenizer)
 
 def tokenize_and_align_labels(examples):
     tokenized_inputs = tokenizer(examples["tokens"], truncation=True, is_split_into_words=True)
@@ -51,15 +52,15 @@ def compute_metrics(p):
     predictions = np.argmax(predictions, axis=2)
 
     true_labels = [[ID2LABEL[l] for l in label if l != -100] for label in labels]
-    true_preds = [[LABEL2ID[p] for (p, l) in zip(pred, lab) if l != -100] for pred, lab in zip(predictions, labels)]
+    true_preds  = [[ID2LABEL[p] for (p, l) in zip(pred, lab) if l != -100] for pred, lab in zip(predictions, labels)]
 
-    all_preds = []
-    all_labels = []
-    for preds, labs in zip(true_preds, true_labels):
-        all_preds.extend(preds)
-        all_labels.extend(labs)
+    all_preds = [p for seq in true_preds for p in seq]
+    all_labels = [l for seq in true_labels for l in seq]
 
     precision, recall, f1, _ = precision_recall_fscore_support(all_labels, all_preds, average="weighted")
+        # Print per-label report for debugging or analysis
+    print("\n🔍 Classification Report (per label):")
+    print(classification_report(all_labels, all_preds, digits=3))
     return {
         "precision": precision,
         "recall": recall,
@@ -67,21 +68,28 @@ def compute_metrics(p):
     }
 
 def main():
-    # # Load data from json
-    # with open(DATA_PATH, "r") as f:
-    #     data = json.load(f)  # Load dataset with DatasetDict
     datasets = load_dataset("json", data_files=DATA_FILES)
 
+
+    batch_size = 4
+    learning_rate = 3e-5
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if device == "cuda":
+        batch_size = 8
+        learning_rate = 1e-5
+
+    print(f"💻 Using device: {device}")
     # Align labels & tokenize
     tokenized_datasets = datasets.map(tokenize_and_align_labels, batched=True)
     model = AutoModelForTokenClassification.from_pretrained(MODEL_NAME, num_labels=len(LABEL_LIST))
-    
+    model.to(device)
     training_args = TrainingArguments(
         output_dir=OUTPUT_DIR,
-        evaluation_strategy="epoch",
-        learning_rate=2e-5,
-        per_device_train_batch_size=8,
-        per_device_eval_batch_size=8,
+        do_eval=True,
+        eval_strategy ="epoch",
+        learning_rate=learning_rate,
+        per_device_train_batch_size=batch_size,
+        per_device_eval_batch_size=batch_size,
         num_train_epochs=3,
         weight_decay=0.01,
         save_strategy="epoch",
@@ -93,13 +101,15 @@ def main():
         seed=42,
         dataloader_drop_last=True,
     )
-    
+
+   
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=tokenized_datasets["train"],
         eval_dataset=tokenized_datasets["test"],
         tokenizer=tokenizer,
+        data_collator=data_collator,
         compute_metrics=compute_metrics,
     )
     trainer.train()

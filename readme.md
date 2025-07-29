@@ -233,3 +233,5 @@ A full structured representation of the medical information
 Compare model output against labeled data
 
 Use seqeval, classification_report, etc.
+
+#### previous works : https://www.mdpi.com/2076-3417/15/6/3379

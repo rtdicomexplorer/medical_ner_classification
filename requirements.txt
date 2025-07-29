@@ -11,4 +11,5 @@ pdf2image
 matplotlib 
 seaborn
 requests
-
+simple-icd-10
+transformers[torch]
