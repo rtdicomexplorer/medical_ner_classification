@@ -4,10 +4,7 @@ def postprocess_entities(entities, confidence_threshold=0.6):
     - Removes entities below confidence threshold
     - Merges overlapping or adjacent entities with the same label
     """
-    # Step 1: Filter by confidence
     filtered = [e for e in entities if e['score'] >= confidence_threshold]
-
-    # Step 2: Sort by start index
     filtered.sort(key=lambda x: x['start'])
 
     merged = []
@@ -18,13 +15,15 @@ def postprocess_entities(entities, confidence_threshold=0.6):
 
         last = merged[-1]
 
-        # Check if same label and overlapping or adjacent
+        # Same label & overlapping/adjacent
         if ent['entity'] == last['entity'] and ent['start'] <= last['end'] + 1:
+            # Join words with space if needed
+            joined_word = last['word'].rstrip() + (" " if not last['word'].endswith(" ") and not ent['word'].startswith(" ") else "") + ent['word'].lstrip()
             merged[-1] = {
                 'entity': last['entity'],
                 'start': min(last['start'], ent['start']),
                 'end': max(last['end'], ent['end']),
-                'word': (last['word'].strip() + " " + ent['word'].strip()).strip(),
+                'word': joined_word,
                 'score': (last['score'] + ent['score']) / 2,
             }
         else:
