@@ -6,6 +6,15 @@ import pytesseract
 from PIL import Image
 from pdf2image import convert_from_path
 
+def extract_text_from_txt(txt_path):
+    text = ""
+    try:
+        with open(txt_path, 'r', encoding='utf-8') as file:
+            text = file.read()
+    except Exception as e:
+            print(f"Error reading txt {txt_path}: {e}")
+    return text.strip()
+
 def extract_text_from_pdf(pdf_path):
     text = ""
     try:
@@ -61,9 +70,12 @@ def extract_text(file_path):
 
     elif ext == ".docx":
         return extract_text_from_docx(file_path)
+    elif ext == '.txt':
+        return extract_text_from_txt(file_path)
 
     elif ext in [".png", ".jpg", ".jpeg", ".tiff", ".bmp"]:
         return extract_text_from_image(file_path)
+
 
     else:
         print(f"Unsupported file format: {ext}")

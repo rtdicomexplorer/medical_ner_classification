@@ -1,8 +1,20 @@
 import uuid
 from dateutil.parser import parse
-from normalizer_api import search_cui
+from normalizer import search_cui
+
+
+def normalize_entity_mock(text, label):
+    mock_db = {
+        ("Asthma", "DIAGNOSIS"): {"code": "J45", "source": "ICD10CM", "name": "Asthma"},
+        ("Paracetamol", "MEDICATION"): {"code": "161", "source": "RXNORM", "name": "Paracetamol"},
+    }
+    return mock_db.get((text, label), None)
+
 
 def normalize_entity(text, label):
+    '''Waiting for access key'''
+
+    return normalize_entity_mock(text, label)
     if label == "DIAGNOSIS":
         return search_cui(text, source="ICD10CM") or search_cui(text, source="SNOMEDCT_US")
     elif label == "MEDICATION":

@@ -1,47 +1,51 @@
+#infer_ner.py
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 from ner_to_fhir import map_ner_to_fhir
 import json
+import os
 from config import LABEL_LIST
 from text_extractor import extract_text
 from postprocess import postprocess_entities
+
 MODEL_PATH = "./models/clinicalbert-ner"
 
+def __infer_text_chunked(nlp_pipeline, text, max_chunk_length=450):
+    """
+    Runs NER pipeline on text split into smaller chunks.
+    Ensures chunks stay under 512 token limit.
+    """
+    import textwrap
 
-def __load_model():
-    try:
-        tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
-        model = AutoModelForTokenClassification.from_pretrained(MODEL_PATH)
-        nlp = pipeline("ner", model=model, tokenizer=tokenizer, aggregation_strategy="simple")
-        return nlp
-    except Exception as e:
-        print(f"Error loading model: {e}")
-        raise e
+    chunks = textwrap.wrap(text, width=max_chunk_length)
+    all_entities = []
 
-def __infer_text(nlp, text):
-    try:
-        results = nlp(text)
-        entities = [
-            {
-                "entity": ent["entity_group"],
-                "word": ent["word"],
-                "score": ent["score"],
-                "start": ent["start"],
-                "end": ent["end"]
-            }
-            for ent in results
-        ]
-        return entities
-    except Exception as e:
-        print(f"Error during inference: {e}")
-        return []
+    for chunk in chunks:
+        try:
+            results = nlp_pipeline(chunk)
+            for ent in results:
+                all_entities.append({
+                    "entity": ent["entity_group"],
+                    "word": ent["word"],
+                    "score": ent["score"],
+                    "start": ent["start"],
+                    "end": ent["end"]
+                })
+        except Exception as e:
+            print(f"Error processing chunk: {e}")
+            continue
+
+    return all_entities
 
 def main(file_path):
     print(f"Extracting text from {file_path} ...")
     text = extract_text(file_path)
     print(f"Text extracted (first 500 chars):\n{text[:500]}")
 
-    nlp = __load_model()
-    entities = __infer_text(nlp, text)
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+    model = AutoModelForTokenClassification.from_pretrained(MODEL_PATH)
+    nlp = pipeline("ner", model=model, tokenizer=tokenizer, aggregation_strategy="simple")
+
+    entities = __infer_text_chunked(nlp, text)
 
     print("\nRecognized Entities:")
     for ent in entities:
@@ -57,43 +61,14 @@ def main(file_path):
     print(f"\nFHIR resources saved to {output_json}")
 
 
-# if __name__ == "__main__":
-#     nlp = __load_model()
-
-#     sample_text = (
-#         "Am 10. März 2023 stellte sich Patient Max Müller mit Asthma vor. "
-#         "Der Arzt war Dr. Becker im Kardiologie der St. Marien Krankenhaus. "
-#         "Das Verfahren war Angioplastie. Der Patient wurde mit Albuterol behandelt."
-#     )
-
-#     entities = __infer_text(nlp, sample_text)
-#     for ent in entities:
-#         print(f"{ent['word']} [{ent['entity']}] ({ent['start']}:{ent['end']}) - confidence: {ent['score']:.3f}")
-# #expected entities:
-# # [
-# #   {'word': 'Max Müller', 'entity': 'PERSON', 'start': 31, 'end': 42},
-# #   {'word': 'Asthma', 'entity': 'DIAGNOSIS', 'start': 48, 'end': 54},
-# #   {'word': 'Dr. Becker', 'entity': 'DOCTOR', ...},
-# #   {'word': 'Albuterol', 'entity': 'MEDICATION', ...},
-# #   ...
-# # ]
-
-# #Map those entities to FHIR resources
-
-#     fhir_output = map_ner_to_fhir(entities)
-
-#     # Step 3: Save as JSON
-#     with open("fhir_output.json", "w", encoding="utf-8") as f:
-#         json.dump(fhir_output, f, indent=2, ensure_ascii=False)
-
-#     print("FHIR resources saved to fhir_output.json")
-
-
 
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) != 2:
-        print("Usage: python infer_ner.py <path_to_file>")
-        exit(1)
-    file_path = sys.argv[1]
-    main(file_path)
+    # import sys
+    # if len(sys.argv) != 2:
+    #     print("Usage: python infer_ner.py <path_to_file>")
+    #     exit(1)
+
+    # file_path = sys.argv[1]
+    file_path = "./documents/artz_brief.txt"
+    if os.path.exists(file_path):
+        main(file_path)
