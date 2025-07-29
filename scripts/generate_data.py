@@ -32,22 +32,22 @@ risk_factors = [
 ]
 
 # Names and other data
-names = ["Max Müller", "Anna Schmidt", "Lukas Weber", "Sophie Fischer",
+names = ["Herr. Max Müller", "Patientin: Anna Schmidt", "L. Weber", "Frau Sophie Fischer","Otto Kromberger",
          "John Smith", "Mary Jones", "Robert Lee", "Emily Davis"]
-doctors = ["Dr. Müller", "Dr. Schneider", "Dr. Becker", "Dr. Weber",
+doctors = ["Dr. Müller", "Dr. Schneider", "Dr. Becker", "Dr. Weber","Dr. Suhle Nikolas", "Dr. Lehmann", "Dr. Fischer", "Dr. Weber"
            "Dr. Adams", "Dr. Lee", "Dr. Patel", "Dr. Chen"]
 
 
-symptoms = ["Brustschmerzen", "Atemnot", "Fieber", "Müdigkeit"]
-medications = ["Metformin", "Lisinopril", "Albuterol", "Amoxicillin"]
+symptoms = ["Brustschmerzen", "Atemnot", "Fieber", "Müdigkeit","dumpfe Kopfschmerzen", "Sehstörung", "Sprachstörung", "Kribbeln im linken Arm"],
+medications = ["Metformin", "Lisinopril", "Albuterol", "Amoxicillin","Ramipril 5mg", "Metformin", "Schlafmedikamente"]
 treatments = ["Sauerstofftherapie", "Operation", "Chemotherapie", "Physiotherapie"]
-lab_results = ["Hb 13.5 g/dL", "Blutzucker 110 mg/dL", "Cholesterin 200 mg/dL"]
+lab_results = ["Hb 13.5 g/dL", "Blutzucker 110 mg/dL", "Cholesterin 200 mg/dL","Glukose: 110 mg/dL"]
 allergies = ["Penicillin", "Pollen", "Nüsse"]
 immunizations = ["Masern-Impfung", "Grippeimpfung"]
-devices = ["Herzschrittmacher", "Insulinpumpe"]
+devices = ["Herzschrittmacher", "Insulinpumpe","Schlafmaske", "Blutdruckgerät"]
 family_histories = ["Mutter mit Diabetes", "Vater mit Bluthochdruck"]
-procedures = ["Angioplastie", "MRT-Scan", "Biopsie", "Ultraschall"]
-departments = ["Kardiologie", "Notaufnahme", "Onkologie", "Radiologie"]
+procedures = ["Angioplastie", "MRT-Scan", "Biopsie", "Ultraschall","CT Kopf", "Lyse-Therapie"]
+departments = ["Kardiologie", "Notaufnahme", "Onkologie", "Radiologie","Neurologie", "Innere Medizin"]
 
 hospital_names = ["St. Marien Krankenhaus", "Allgemeine Gesundheitsklinik",
                   "Städtisches Medizinzentrum", "Universitätsklinikum München"]
@@ -78,7 +78,7 @@ def __random_date():
     return rand_day.strftime("%d. %B %Y")
 
 
-def generate_report(token =     None):
+def generate_report(token =  None):
     name = random.choice(names)
     doctor = random.choice(doctors)
     diagnosis = random.choice(list(diagnosis_icd10_map.keys()))
@@ -94,12 +94,7 @@ def generate_report(token =     None):
         icd_description = icd.get_description(icd10_code)
     
 
-    symptom = random.choice(symptoms)
-    medication = random.choice(medications)
-    treatment = random.choice(treatments)
-    procedure = random.choice(procedures)
-    department = random.choice(departments)
-    lab_result = random.choice(lab_results)
+
     date = __random_date()
     # Hospital
     idx  = random.randint(0, len(hospital_names) - 1)
@@ -189,8 +184,32 @@ def generate_report(token =     None):
             new_list.append(t)
         return new_list
 
+    # templates = add_optionals(general_templates + structured_templates)
+    # text = random.choice(templates)
+
+
+    # Generate synthetic sentence using paraphrasing + noise
+    augmented_sentence = generate_augmented_sentence(entities)
+
+    # Optional: blend with one of the structured templates
     templates = add_optionals(general_templates + structured_templates)
-    text = random.choice(templates)
+    fallback_sentence = random.choice(templates)
+
+    # Mix structured and augmented text 50/50
+    if random.random() < 0.5:
+        text = fallback_sentence
+    else:
+        text = augmented_sentence
+
+
+    symptom = random.choice(symptoms)
+    medication = random.choice(medications)
+    treatment = random.choice(treatments)
+    procedure = random.choice(procedures)
+    department = random.choice(departments)
+    lab_result = random.choice(lab_results)
+
+
 
     # Entity dictionary
     entities = {
@@ -198,11 +217,11 @@ def generate_report(token =     None):
         doctor: "DOCTOR",
         date: "DATE",
         diagnosis: "DIAGNOSIS",
-        symptom: "SYMPTOM",
-        medication: "MEDICATION",
-        treatment: "TREATMENT",
-        procedure: "PROCEDURE",
-        department: "DEPARTMENT",
+        random.choice(symptoms): "SYMPTOM",
+        random.choice(medications): "MEDICATION",
+        random.choice(treatments): "TREATMENT",
+        random.choice(procedures): "PROCEDURE",
+        random.choice(departments): "DEPARTMENT",
         hospital_name: "ORG",
         hospital_address: "ADDRESS",
         hospital_phone: "PHONE",
@@ -232,8 +251,50 @@ def generate_report(token =     None):
 
 
 def __simple_tokenize(text):
-    return text.replace('.', ' .').replace(',', ' ,').replace(':', ' :').split()
+    return re.findall(r"\w+|[^\w\s]", text, re.UNICODE)
 
+def inject_noise(text, typo_prob=0.05, punctuation_prob=0.05):
+    def random_typo(word):
+        if len(word) > 3 and random.random() < typo_prob:
+            i = random.randint(1, len(word) - 2)
+            return word[:i] + word[i+1] + word[i] + word[i+2:]
+        return word
+
+    def corrupt_punctuation(t):
+        if random.random() < punctuation_prob:
+            return t.replace(".", "") if "." in t else t + "."
+        return t
+
+    words = text.split()
+    noisy_words = [random_typo(word) for word in words]
+    noisy_text = " ".join(noisy_words)
+    noisy_text = corrupt_punctuation(noisy_text)
+    return noisy_text
+def paraphrase_entity(entity_type, value):
+    variations = {
+        "DIAGNOSIS": [f"es wurde {value} diagnostiziert", f"Diagnose: {value}", f"leidet an {value}"],
+        "MEDICATION": [f"bekommt {value}", f"Therapie mit {value}", f"{value} wurde verabreicht"],
+        "SYMPTOM": [f"klagt über {value}", f"hat {value}", f"{value} wurde berichtet"],
+        "DOCTOR": [f"behandelt durch {value}", f"untersucht von {value}", f"{value} führte die Untersuchung durch"],
+        "PERSON": [f"Patient: {value}", f"Name: {value}", f"{value} stellte sich vor"],
+        "ORG": [f"im Krankenhaus {value}", f"Einrichtung: {value}"],
+        # Add more as needed...
+    }
+    if entity_type in variations:
+        return random.choice(variations[entity_type])
+    return value
+
+def generate_augmented_sentence(entities, inject_noise_flag=True):
+    pieces = []
+
+    for value, ent_type in entities.items():
+        phrase = paraphrase_entity(ent_type, value)
+        if inject_noise_flag:
+            phrase = inject_noise(phrase)
+        pieces.append(phrase)
+
+    random.shuffle(pieces)
+    return ". ".join(pieces) + "."
 
 def tokenize_and_label(text, entities):
     tokens = __simple_tokenize(text)
@@ -248,6 +309,27 @@ def tokenize_and_label(text, entities):
                 break
     label_ids = [LABEL2ID.get(l, 0) for l in labels]
     return tokens, label_ids
+
+
+
+
+def __simple_tokenize(text):
+    return re.findall(r"\w+|[^\w\s]", text, re.UNICODE)
+
+def tokenize_and_label_improved(text, entities):
+    tokens = __simple_tokenize(text)
+    labels = ["O"] * len(tokens)
+
+    for entity_text, entity_type in entities.items():
+        entity_tokens = __simple_tokenize(entity_text)
+        for i in range(len(tokens) - len(entity_tokens) + 1):
+            if tokens[i:i+len(entity_tokens)] == entity_tokens:
+                labels[i] = f"B-{entity_type}"
+                for j in range(1, len(entity_tokens)):
+                    labels[i+j] = f"I-{entity_type}"
+                break
+
+    return tokens, [LABEL2ID.get(label, 0) for label in labels]
 
 
 def save_reports_as_txt(text, filename):

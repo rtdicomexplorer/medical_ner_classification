@@ -1,14 +1,5 @@
 # evaluate_ner.py
 
-# How to Run
-#Save a small set of annotated test data in data/test_ner_data.json, format:
-# [
-#   {
-#     "tokens": ["Patient", "Max", "Müller", "hatte", "Asthma", "."],
-#     "ner_tags": ["O", "B-PERSON", "I-PERSON", "O", "B-DIAGNOSIS", "O"]
-#   },
-#   ...
-# ]
 
 
 # run:  python evaluate_ner.py

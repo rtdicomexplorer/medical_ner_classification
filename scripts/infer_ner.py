@@ -6,35 +6,59 @@ import os
 from config import LABEL_LIST
 from text_extractor import extract_text
 from postprocess import postprocess_entities
+from collections import defaultdict
 
 MODEL_PATH = "./models/clinicalbert-ner"
+from transformers import TokenClassificationPipeline
+def deduplicate_entities(entities):
+    seen = set()
+    deduped = []
+    for ent in entities:
+        key = (ent["start"], ent["end"], ent["entity"])
+        if key not in seen:
+            deduped.append(ent)
+            seen.add(key)
+    return deduped
 
-def __infer_text_chunked(nlp_pipeline, text, max_chunk_length=450):
-    """
-    Runs NER pipeline on text split into smaller chunks.
-    Ensures chunks stay under 512 token limit.
-    """
-    import textwrap
+def __infer_text_chunked(nlp_pipeline: TokenClassificationPipeline, text: str, tokenizer, max_length: int = 512, stride: int = 128):
+    inputs = tokenizer(
+        text,
+        return_overflowing_tokens=True,
+        max_length=max_length,
+        stride=stride,
+        truncation=True,
+        return_offsets_mapping=True,
+        return_tensors="pt"
+    )
 
-    chunks = textwrap.wrap(text, width=max_chunk_length)
     all_entities = []
 
-    for chunk in chunks:
+    for i in range(len(inputs['input_ids'])):
+        offset_mapping = inputs['offset_mapping'][i]
+        chunk_start = offset_mapping[0][0]  # start of chunk in original text
+
+        tokens = inputs['input_ids'][i]
+        decoded_text = tokenizer.decode(tokens, skip_special_tokens=True)
+
         try:
-            results = nlp_pipeline(chunk)
+            results = nlp_pipeline(decoded_text)
             for ent in results:
-                all_entities.append({
-                    "entity": ent["entity_group"],
-                    "word": ent["word"],
-                    "score": ent["score"],
-                    "start": ent["start"],
-                    "end": ent["end"]
-                })
+             adjusted_start = ent['start'] + chunk_start
+            adjusted_end = ent['end'] + chunk_start
+            all_entities.append({
+            "entity": ent["entity_group"],
+            "word": ent["word"],
+            "score": ent["score"],
+            "start": adjusted_start,
+            "end": adjusted_end
+            })
         except Exception as e:
-            print(f"Error processing chunk: {e}")
+            print(f"❌ Error processing chunk {i}: {e}")
             continue
 
-    return all_entities
+    entities = deduplicate_entities(all_entities)
+    return entities
+
 
 def main(file_path):
     print(f"Extracting text from {file_path} ...")
@@ -45,13 +69,17 @@ def main(file_path):
     model = AutoModelForTokenClassification.from_pretrained(MODEL_PATH)
     nlp = pipeline("ner", model=model, tokenizer=tokenizer, aggregation_strategy="simple")
 
-    entities = __infer_text_chunked(nlp, text)
+    
+
+    entities = __infer_text_chunked(nlp, text, tokenizer, max_length=512, stride=128)
+
+    print(entities)
 
     print("\nRecognized Entities:")
     for ent in entities:
         print(f"{ent['word']} [{ent['entity']}] ({ent['start']}:{ent['end']}) - confidence: {ent['score']:.3f}")
 
-    clean_entities = postprocess_entities(entities, confidence_threshold=0.6)
+    clean_entities = postprocess_entities(entities, confidence_threshold=0.3)
     fhir_output = map_ner_to_fhir(clean_entities)
 
     output_json = "fhir_output.json"

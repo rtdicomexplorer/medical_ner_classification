@@ -4,13 +4,20 @@ from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForTokenClassification, TrainingArguments, Trainer, DataCollatorForTokenClassification
 import numpy as np
 from sklearn.metrics import precision_recall_fscore_support,classification_report
-from config import LABEL_LIST, ID2LABEL
-
+from config import LABEL_LIST, ID2LABEL,LABEL2ID
+import random
 
 # Config (could be moved to config.py)
-MODEL_NAME = "emilyalsentzer/Bio_ClinicalBERT"
+
+# "bert-base-german-cased"             # Reliable baseline
+# "xlm-roberta-base"                   # Multilingual, works well
+# "deepset/gbert-base"                 # Better for downstream German tasks
+# "Charité/Medbert-Deutsch"           # Specifically trained on German medical data
+
+
+MODEL_NAME = 'deepset/gbert-base'#"emilyalsentzer/Bio_ClinicalBERT"
 DATA_PATH = "./data/synthetic_ner_data.json"
-OUTPUT_DIR = "./models/clinicalbert-ner"
+OUTPUT_DIR = "./models/gbert-base"
 DATA_FILES = {
     "train": "./data/train.json",
     "test": "./data/val.json"
@@ -20,11 +27,18 @@ DATA_FILES = {
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 data_collator = DataCollatorForTokenClassification(tokenizer)
 
-def tokenize_and_align_labels(examples):
-    tokenized_inputs = tokenizer(examples["tokens"], truncation=True, is_split_into_words=True)
 
-    labels = []
-    for i, label in enumerate(examples["ner_tags"]):
+def tokenize_and_align_labels(examples):
+    tokenized_inputs = tokenizer(
+        examples["tokens"], 
+        truncation=True, 
+        is_split_into_words=True,
+        max_length=128,
+        padding="max_length",
+    )
+
+    all_labels = []
+    for i, labels in enumerate(examples["ner_tags"]):
         word_ids = tokenized_inputs.word_ids(batch_index=i)
         previous_word_idx = None
         label_ids = []
@@ -32,19 +46,17 @@ def tokenize_and_align_labels(examples):
             if word_idx is None:
                 label_ids.append(-100)
             elif word_idx != previous_word_idx:
-                label_ids.append(label[word_idx])
+                label_ids.append(labels[word_idx])
             else:
-                # For word pieces inside a word
-                # use I- prefix if label is B-
-                if label[word_idx] % 2 == 1:  # odd labels are I- labels
-                    label_ids.append(label[word_idx])
-                else:
-                    # convert B- to I- for subsequent tokens
-                    label_ids.append(label[word_idx] + 1)
+                # convert B- to I- for subword tokens
+                label_str = ID2LABEL[labels[word_idx]]
+                if label_str.startswith("B-"):
+                    label_str = label_str.replace("B-", "I-")
+                label_ids.append(LABEL2ID.get(label_str, LABEL2ID["O"]))
             previous_word_idx = word_idx
-        labels.append(label_ids)
+        all_labels.append(label_ids)
 
-    tokenized_inputs["labels"] = labels
+    tokenized_inputs["labels"] = all_labels
     return tokenized_inputs
 
 def compute_metrics(p):
@@ -67,6 +79,13 @@ def compute_metrics(p):
         "f1": f1,
     }
 
+def set_seed(seed=42):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
 def main():
     datasets = load_dataset("json", data_files=DATA_FILES)
 
@@ -74,15 +93,18 @@ def main():
     batch_size = 4
     learning_rate = 3e-5
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    if device == "cuda":
-        batch_size = 8
-        learning_rate = 1e-5
+    batch_size = 8 if device == "cuda" else 4
+    learning_rate = 1e-5 if device == "cuda" else 3e-5
 
     print(f"💻 Using device: {device}")
     # Align labels & tokenize
     tokenized_datasets = datasets.map(tokenize_and_align_labels, batched=True)
     model = AutoModelForTokenClassification.from_pretrained(MODEL_NAME, num_labels=len(LABEL_LIST))
+
     model.to(device)
+    model.config.id2label = ID2LABEL
+    model.config.label2id = LABEL2ID
+
     training_args = TrainingArguments(
         output_dir=OUTPUT_DIR,
         do_eval=True,
@@ -99,10 +121,10 @@ def main():
         metric_for_best_model="f1",
         save_total_limit=2,
         seed=42,
-        dataloader_drop_last=True,
+        dataloader_drop_last=False,
     )
 
-   
+  
     trainer = Trainer(
         model=model,
         args=training_args,
@@ -114,7 +136,29 @@ def main():
     )
     trainer.train()
     trainer.save_model(OUTPUT_DIR)
+    # === Evaluation on test dataset ===
+    print("\n🔎 Running evaluation on test set:")
+    metrics = trainer.evaluate(eval_dataset=tokenized_datasets["test"])
+    print(f"Evaluation results: {metrics}")
+
+    # === Generate predictions on test set ===
+    print("\n📝 Generating predictions on test set:")
+    test_predictions, test_labels, _ = trainer.predict(tokenized_datasets["test"])
+    preds = np.argmax(test_predictions, axis=2)
+
+    # Convert preds and labels back to tag strings
+    true_labels = [[ID2LABEL[l] for l in label if l != -100] for label in test_labels]
+    true_preds = [[ID2LABEL[p] for (p, l) in zip(pred, lab) if l != -100] for pred, lab in zip(preds, test_labels)]
+
+    # Example: print first 3 samples with tokens, true tags, predicted tags
+    for i in range(3):
+        print(f"\nSample {i + 1}:")
+        tokens = tokenized_datasets["test"][i]["tokens"]
+        print("Tokens:     ", tokens)
+        print("True tags:  ", true_labels[i])
+        print("Pred tags:  ", true_preds[i])
    
 
 if __name__ == "__main__":
+    set_seed(42)
     main()
