@@ -28,7 +28,7 @@ tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 data_collator = DataCollatorForTokenClassification(tokenizer)
 
 
-def tokenize_and_align_labels(examples):
+def __tokenize_and_align_labels(examples):
     tokenized_inputs = tokenizer(
         examples["tokens"], 
         truncation=True, 
@@ -59,7 +59,7 @@ def tokenize_and_align_labels(examples):
     tokenized_inputs["labels"] = all_labels
     return tokenized_inputs
 
-def compute_metrics(p):
+def __compute_metrics(p):
     predictions, labels = p
     predictions = np.argmax(predictions, axis=2)
 
@@ -79,7 +79,7 @@ def compute_metrics(p):
         "f1": f1,
     }
 
-def set_seed(seed=42):
+def __set_seed(seed=42):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -98,7 +98,7 @@ def main():
 
     print(f"💻 Using device: {device}")
     # Align labels & tokenize
-    tokenized_datasets = datasets.map(tokenize_and_align_labels, batched=True)
+    tokenized_datasets = datasets.map(__tokenize_and_align_labels, batched=True)
     model = AutoModelForTokenClassification.from_pretrained(MODEL_NAME, num_labels=len(LABEL_LIST))
 
     model.to(device)
@@ -132,7 +132,7 @@ def main():
         eval_dataset=tokenized_datasets["test"],
         tokenizer=tokenizer,
         data_collator=data_collator,
-        compute_metrics=compute_metrics,
+        compute_metrics=__compute_metrics,
     )
     trainer.train()
     trainer.save_model(OUTPUT_DIR)
@@ -160,5 +160,5 @@ def main():
    
 
 if __name__ == "__main__":
-    set_seed(42)
+    __set_seed(42)
     main()
