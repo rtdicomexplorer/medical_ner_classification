@@ -4,7 +4,7 @@ from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForTokenClassification, TrainingArguments, Trainer, DataCollatorForTokenClassification
 import numpy as np
 from sklearn.metrics import precision_recall_fscore_support,classification_report
-from config import LABEL_LIST, ID2LABEL
+from config import LABEL_LIST, ID2LABEL, LABEL2ID
 
 
 # Config (could be moved to config.py)
@@ -83,6 +83,8 @@ def main():
     tokenized_datasets = datasets.map(tokenize_and_align_labels, batched=True)
     model = AutoModelForTokenClassification.from_pretrained(MODEL_NAME, num_labels=len(LABEL_LIST))
     model.to(device)
+    model.config.id2label = ID2LABEL
+    model.config.label2id = LABEL2ID
     training_args = TrainingArguments(
         output_dir=OUTPUT_DIR,
         do_eval=True,

@@ -7,7 +7,7 @@ from config import LABEL_LIST
 from text_extractor import extract_text
 from postprocess import postprocess_entities
 
-MODEL_PATH = "./models/clinicalbert-ner"
+MODEL_PATH = "./models/gbert-base"
 
 def __infer_text_chunked(nlp_pipeline, text, max_chunk_length=450):
     """
@@ -45,13 +45,25 @@ def main(file_path):
     model = AutoModelForTokenClassification.from_pretrained(MODEL_PATH)
     nlp = pipeline("ner", model=model, tokenizer=tokenizer, aggregation_strategy="simple")
 
-    entities = __infer_text_chunked(nlp, text)
-
+    raw_entities = nlp(text)
+    entities = []
     print("\nRecognized Entities:")
-    for ent in entities:
-        print(f"{ent['word']} [{ent['entity']}] ({ent['start']}:{ent['end']}) - confidence: {ent['score']:.3f}")
+    for ent in raw_entities:
+        print(ent)
+        entities.append({
+                    "entity": ent["entity_group"],
+                    "word": ent["word"],
+                    "score": ent["score"],
+                    "start": ent["start"],
+                    "end": ent["end"]
+                })
+    #entities = __infer_text_chunked(nlp, text)
 
-    clean_entities = postprocess_entities(entities, confidence_threshold=0.6)
+    # print("\nRecognized Entities:")
+    # for ent in entities:
+    #     print(f"{ent['word']} [{ent['entity']}] ({ent['start']}:{ent['end']}) - confidence: {ent['score']:.3f}")
+
+    clean_entities = postprocess_entities(entities)
     fhir_output = map_ner_to_fhir(clean_entities)
 
     output_json = "fhir_output.json"
