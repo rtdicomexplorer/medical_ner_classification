@@ -759,5 +759,5 @@ if __name__ == "__main__":
     if len(sys.argv) == 2:
         print("Usage: python generate_dataset.py <n_samples>")
         n_samples = int(sys.argv[1])
-    generate_dataset(n_samples=n_samples, save_reports=False)
+    generate_dataset(n_samples=n_samples, save_report=False)
 
