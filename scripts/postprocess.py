@@ -1,32 +1,37 @@
-def postprocess_entities(entities, confidence_threshold=0.6):
-    """
-    Filters and merges NER entities:
-    - Removes entities below confidence threshold
-    - Merges overlapping or adjacent entities with the same label
-    """
-    filtered = [e for e in entities if e['score'] >= confidence_threshold]
-    filtered.sort(key=lambda x: x['start'])
-
+def postprocess_entities(entities, confidence_threshold=0.1):
     merged = []
-    for ent in filtered:
-        if not merged:
-            merged.append(ent)
+    buffer = None
+
+    for ent in entities:
+        # Skip low-confidence predictions
+        if ent['score'] < confidence_threshold:
             continue
 
-        last = merged[-1]
+        # Normalize keys
+        entity = {
+            'entity_group': ent['entity_group'],
+            'word': ent['word'],
+            'score': float(ent['score']),
+            'start': ent['start'],
+            'end': ent['end'],
+        }
 
-        # Same label & overlapping/adjacent
-        if ent['entity'] == last['entity'] and ent['start'] <= last['end'] + 1:
-            # Join words with space if needed
-            joined_word = last['word'].rstrip() + (" " if not last['word'].endswith(" ") and not ent['word'].startswith(" ") else "") + ent['word'].lstrip()
-            merged[-1] = {
-                'entity': last['entity'],
-                'start': min(last['start'], ent['start']),
-                'end': max(last['end'], ent['end']),
-                'word': joined_word,
-                'score': (last['score'] + ent['score']) / 2,
-            }
+        # Start or merge
+        if buffer is None:
+            buffer = entity
+        elif (
+            entity['entity_group'] == buffer['entity_group']
+            and entity['start'] == buffer['end']
+        ):
+            # Merge with buffer
+            buffer['word'] += entity['word'].lstrip('##')  # strip subword prefix
+            buffer['end'] = entity['end']
+            buffer['score'] = max(buffer['score'], entity['score'])  # or average
         else:
-            merged.append(ent)
+            merged.append(buffer)
+            buffer = entity
+
+    if buffer:
+        merged.append(buffer)
 
     return merged

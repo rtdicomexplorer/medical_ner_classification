@@ -1,6 +1,6 @@
 import json
 import numpy as np
-from datasets import load_dataset
+from datasets import Dataset, DatasetDict
 import evaluate
 from transformers import AutoTokenizer, AutoModelForTokenClassification, TrainingArguments, Trainer
 from config import LABEL2ID  # Must include LABEL_LIST and LABEL2ID
@@ -10,7 +10,7 @@ ID2LABEL = {v: k for k, v in LABEL2ID.items()}
 LABEL_LIST = list(LABEL2ID.keys())
 
 # Load model and tokenizer from your previously trained checkpoint
-model_path = "./models/gbert-base"
+model_path = "./models/ner-model-finetuned"
 model = AutoModelForTokenClassification.from_pretrained(
     model_path,
     num_labels=len(LABEL_LIST),
@@ -19,19 +19,16 @@ model = AutoModelForTokenClassification.from_pretrained(
 )
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 
-# Load dataset
-dataset = load_dataset("json", data_files={
-    "train": "./data/train.json",
-    "validation": "./data/val.json"
+
+with open("formatted_augmented_train.json", "r", encoding="utf-8") as f:
+    data = json.load(f)
+raw_dataset = Dataset.from_list(data).train_test_split(test_size=0.2)
+dataset = DatasetDict({
+    "train": raw_dataset["train"],
+    "validation": raw_dataset["test"]
 })
 
-# Rename `ner_tags` to `labels` to match Trainer expectations
-def rename(example):
-    example["labels"] = example["ner_tags"]
-    return example
-
-dataset = dataset.map(rename)
-
+dataset = dataset.map(lambda x: {"labels": x["ner_tags"]})
 # Tokenization + alignment
 def tokenize_and_align_labels(examples):
     tokenized_inputs = tokenizer(
