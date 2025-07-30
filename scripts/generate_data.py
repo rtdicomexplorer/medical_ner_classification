@@ -716,7 +716,7 @@ def __analyze_labels(dataset):
     print("\n📊 Label distribution:")
     for label_id, count in counts.most_common():
         print(f"{inv[label_id]:<30} {count}")
-def generate_dataset(n_samples=1000, save_report=False):
+def generate_dataset(n_samples=1000, save_reports=False):
 
     ClientId = "db7c330e-8d75-450c-976c-e891ea61cf6a_8ba7953b-b758-4b5c-9f11-82eeff251802"
     ClientSecret = "3jf/LfXf6qsEE9la9/q8Hm3Jt4GAaVh2Vth06qQeSaY="
@@ -725,7 +725,7 @@ def generate_dataset(n_samples=1000, save_report=False):
     for i in range(n_samples):
         text, entities, tokens, labels = generate_report(token=None)
 
-        if save_report:
+        if save_reports:
             filename = f"./txt_reports/report_{i+1}.txt"
             os.makedirs(os.path.dirname(filename), exist_ok=True)
             __save_reports_as_txt(text, filename)
@@ -748,7 +748,7 @@ def generate_dataset(n_samples=1000, save_report=False):
     print("✅ Synthetic dataset generated:")
     print(f"→ ./data/train.json ({len(train)} samples)")
     print(f"→ ./data/val.json ({len(val)} samples)")
-    if save_report:
+    if save_reports:
         print(f"→ ./txt_reports/ ({n_samples} samples)")
 
 
@@ -759,5 +759,5 @@ if __name__ == "__main__":
     if len(sys.argv) == 2:
         print("Usage: python generate_dataset.py <n_samples>")
         n_samples = int(sys.argv[1])
-    generate_dataset(n_samples=n_samples, save_report=False)
+    generate_dataset(n_samples=n_samples, save_reports=False)
 
