@@ -1,0 +1,208 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "otto-kromberger",
+        "name": [
+          {
+            "given": ["Otto"],
+            "family": "Kromberger"
+          }
+        ],
+        "birthDate": "1950-07-01"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "dr-suhle",
+        "name": [
+          {
+            "prefix": ["Dr."],
+            "given": ["Suhle"],
+            "family": "Nikolas"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "height",
+        "subject": { "reference": "Patient/otto-kromberger" },
+        "code": {
+          "coding": [{ "system": "http://loinc.org", "code": "8302-2", "display": "Body height" }]
+        },
+        "valueQuantity": { "value": 172, "unit": "cm" }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "weight",
+        "subject": { "reference": "Patient/otto-kromberger" },
+        "code": {
+          "coding": [{ "system": "http://loinc.org", "code": "29463-7", "display": "Body weight" }]
+        },
+        "valueQuantity": { "value": 110, "unit": "kg" }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "stroke",
+        "subject": { "reference": "Patient/otto-kromberger" },
+        "code": {
+          "coding": [{ "system": "http://hl7.org/fhir/sid/icd-10", "code": "I63", "display": "Cerebral infarction" }],
+          "text": "Schlaganfall"
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "thrombolysis",
+        "subject": { "reference": "Patient/otto-kromberger" },
+        "code": {
+          "coding": [{ "system": "http://snomed.info/sct", "code": "432100008", "display": "Thrombolytic therapy" }],
+          "text": "Lyse-Therapie"
+        },
+        "performer": [
+          {
+            "actor": { "reference": "Practitioner/dr-suhle" }
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationStatement",
+        "id": "ramipril",
+        "subject": { "reference": "Patient/otto-kromberger" },
+        "medicationCodeableConcept": {
+          "coding": [{ "system": "http://www.whocc.no/atc", "code": "C09AA05", "display": "Ramipril" }],
+          "text": "Ramipril 5mg"
+        },
+        "dosage": [{ "text": "einmal morgens" }]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "kribbeln-left-arm",
+        "subject": { "reference": "Patient/otto-kromberger" },
+        "code": { "text": "Kribbeln im linken Arm" },
+        "valueString": "Berichtet"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "sehstoerung",
+        "subject": { "reference": "Patient/otto-kromberger" },
+        "code": { "text": "Sehstörung" },
+        "valueString": "Berichtet"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "sprachstoerung",
+        "subject": { "reference": "Patient/otto-kromberger" },
+        "code": { "text": "Sprachstörung (Wortfindungsstörung, lallende Sprache)" },
+        "valueString": "Berichtet"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "schluckstoerung",
+        "subject": { "reference": "Patient/otto-kromberger" },
+        "code": { "text": "Schluckstörung" },
+        "valueString": "Berichtet"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "schlafstoerung",
+        "subject": { "reference": "Patient/otto-kromberger" },
+        "code": { "text": "Schlafstörung" },
+        "valueString": "Seit 5 Jahren, medikamentös behandelt"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "hypertension",
+        "subject": { "reference": "Patient/otto-kromberger" },
+        "code": {
+          "coding": [
+            { "system": "http://hl7.org/fhir/sid/icd-10", "code": "I10", "display": "Essential (primary) hypertension" }
+          ],
+          "text": "Bluthochdruck seit 20 Jahren"
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "ex-smoker",
+        "subject": { "reference": "Patient/otto-kromberger" },
+        "code": { "text": "Raucherstatus" },
+        "valueString": "Ex-Raucher (10 Zigaretten täglich für 10 Jahre, aufgehört)"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "alcohol",
+        "subject": { "reference": "Patient/otto-kromberger" },
+        "code": { "text": "Alkoholkonsum" },
+        "valueString": "Verneint"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "drogenmissbrauch",
+        "subject": { "reference": "Patient/otto-kromberger" },
+        "code": { "text": "Drogenmissbrauch" },
+        "valueString": "Verneint"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "FamilyMemberHistory",
+        "id": "mother-diabetes",
+        "patient": { "reference": "Patient/otto-kromberger" },
+        "relationship": { "text": "Mutter" },
+        "condition": [
+          {
+            "code": {
+              "coding": [{ "system": "http://snomed.info/sct", "code": "73211009", "display": "Diabetes mellitus" }]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "FamilyMemberHistory",
+        "id": "father-stroke",
+        "patient": { "reference": "Patient/otto-kromberger" },
+        "relationship": { "text": "Vater" },
+        "condition": [
+          {
+            "code": {
+              "coding": [{ "system": "http://snomed.info/sct", "code": "230690007", "display": "Cerebral infarction" }]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
