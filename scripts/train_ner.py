@@ -151,12 +151,15 @@ def main():
     true_preds = [[ID2LABEL[p] for (p, l) in zip(pred, lab) if l != -100] for pred, lab in zip(preds, test_labels)]
 
     # Example: print first 3 samples with tokens, true tags, predicted tags
-    for i in range(3):
+    n_samples = min(3, len(tokenized_datasets["test"]))
+    for i in range(n_samples):
         print(f"\nSample {i + 1}:")
-        tokens = tokenized_datasets["test"][i]["tokens"]
-        print("Tokens:     ", tokens)
-        print("True tags:  ", true_labels[i])
-        print("Pred tags:  ", true_preds[i])
+        print("\nTrue tags:  ", true_labels[i])
+        print("\nPred tags:  ", true_preds[i])
+        # word_ids = tokenizer.word_ids(batch_index=i)
+        # print(f"\nTokens: {tokenized_datasets['test'][i]['tokens']}")
+        # print(f"Word IDs: {word_ids}")
+        # print(f"Labels: {tokenized_datasets['test'][i]['labels']}")
    
 
 if __name__ == "__main__":
