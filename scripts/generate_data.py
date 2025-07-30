@@ -32,19 +32,19 @@ risk_factors = [
 ]
 
 # Names and other data
-names = ["Max Müller", "Anna Schmidt", "Lukas Weber", "Sophie Fischer",
+names = ["Max Müller", "Frau Anna Schmidt", "Herr Lukas Weber", "Sophie Fischer",
          "John Smith", "Mary Jones", "Robert Lee", "Emily Davis"]
-doctors = ["Dr. Müller", "Dr. Schneider", "Dr. Becker", "Dr. Weber",
-           "Dr. Adams", "Dr. Lee", "Dr. Patel", "Dr. Chen"]
+doctors = ["Dr. Müller", "dr. Schneider", "Dr. Becker", "Dr. Weber", "dr metzger", "Prof Dr. Bambo", "PD Dr. Amica rose",
+           "dr. Adams", "Dr Lee", "Dr. Patel", "dr. Chen"]
 
 
-symptoms = ["Brustschmerzen", "Atemnot", "Fieber", "Müdigkeit"]
-medications = ["Metformin", "Lisinopril", "Albuterol", "Amoxicillin"]
+symptoms = ["Brustschmerzen", "Atemnot", "Fieber", "Müdigkeit","dumpfe Kopfschmerzen", "Sehstörung", "Sprachstörung", "Kribbeln im linken Arm"]
+medications = ["Metformin", "Lisinopril", "Albuterol", "Amoxicillin","Ramipril 5mg", "Metformin", "Schlafmedikamente"]
 treatments = ["Sauerstofftherapie", "Operation", "Chemotherapie", "Physiotherapie"]
-lab_results = ["Hb 13.5 g/dL", "Blutzucker 110 mg/dL", "Cholesterin 200 mg/dL"]
+lab_results = ["Hb 13.5 g/dL", "Blutzucker 110 mg/dL", "Cholesterin 200 mg/dL","Glukose: 110 mg/dL"]
 allergies = ["Penicillin", "Pollen", "Nüsse"]
 immunizations = ["Masern-Impfung", "Grippeimpfung"]
-devices = ["Herzschrittmacher", "Insulinpumpe"]
+devices = ["Herzschrittmacher", "Insulinpumpe","Schlafmaske", "Blutdruckgerät"]
 family_histories = ["Mutter mit Diabetes", "Vater mit Bluthochdruck"]
 procedures = ["Angioplastie", "MRT-Scan", "Biopsie", "Ultraschall"]
 departments = ["Kardiologie", "Notaufnahme", "Onkologie", "Radiologie"]
@@ -285,4 +285,15 @@ def generate_dataset(n_samples=1000, save_report=False):
 
 
 if __name__ == "__main__":
-    generate_dataset(n_samples=1000)
+    import sys
+    if len(sys.argv) != 2:
+        print("Usage: python generate_data.py <samples>")
+        exit(1)
+    n_samples = int(sys.argv[1])
+    generate_dataset(n_samples=n_samples)
+
+# if __name__ == "__main__":
+
+
+
+#     generate_dataset(n_samples=1000)

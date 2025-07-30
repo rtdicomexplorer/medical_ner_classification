@@ -8,9 +8,9 @@ from config import LABEL_LIST, ID2LABEL
 
 
 # Config (could be moved to config.py)
-MODEL_NAME = "emilyalsentzer/Bio_ClinicalBERT"
+MODEL_NAME = "deepset/gbert-base"
 DATA_PATH = "./data/synthetic_ner_data.json"
-OUTPUT_DIR = "./models/clinicalbert-ner"
+OUTPUT_DIR = "./models/gbert-base"
 DATA_FILES = {
     "train": "./data/train.json",
     "test": "./data/val.json"
