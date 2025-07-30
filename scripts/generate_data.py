@@ -752,6 +752,12 @@ def generate_dataset(n_samples=1000, save_report=False):
         print(f"→ ./txt_reports/ ({n_samples} samples)")
 
 
-
+# Run as script
 if __name__ == "__main__":
-    generate_dataset(n_samples=10,save_report=True)
+    import sys
+    n_samples = 10000
+    if len(sys.argv) == 2:
+        print("Usage: python generate_dataset.py <n_samples>")
+        n_samples = int(sys.argv[1])
+    generate_dataset(n_samples=n_samples, save_reports=False)
+
