@@ -33,6 +33,8 @@ LABEL_LIST = [
     "B-RISKFACTOR", "I-RISKFACTOR",
     "B-ICD10_CODE", "I-ICD10_CODE",
     "B-ICD10_DESC", "I-ICD10_DESC",
+    "B-OCCUPATION", "I-OCCUPATION",
+    "B-FAMILYMEMBER", "I-FAMILYMEMBER"
 ]
 
 LABEL2ID = {label: idx for idx, label in enumerate(LABEL_LIST)}

@@ -65,6 +65,18 @@ impressions = [
 prev_diagnoses = [
     "frühere Appendizitis", "bekannte Arthrose", "chronische Bronchitis"
 ]
+occupations = [
+  "Gärtner", "Bäcker", "Metzger", "Professor", "Student", "Arbeitslose",
+  "Händler", "Kaufmann", "Kauffrau", "Studentin", "Verkäuferin",
+  "Lehrer", "Ärztin", "Ingenieur", "Friseur", "Journalist", "Sekretärin"
+]
+
+family_members = [
+  "Bruder", "Schwester", "Mutter", "Vater", "Großvater", "Großmutter",
+  "Onkel", "Kind", "Kinder", "Sohn", "Tochter", "Cousine", "Neffe", "Nichte"
+]
+
+
 def __random_gender():
     return random.choice(["männlich", "weiblich", "divers"])
 
@@ -85,220 +97,6 @@ def __random_date():
     end = datetime.date(2024, 12, 31)
     rand_day = start + datetime.timedelta(days=random.randint(0, (end - start).days))
     return rand_day.strftime("%d. %B %Y")
-
-
-# def generate_report(token =  None):
-#     name = random.choice(names)
-#     doctor = random.choice(doctors)
-#     diagnosis = random.choice(list(diagnosis_icd10_map.keys()))
-#     icd10_code = diagnosis_icd10_map[diagnosis]
-
-#     icd_description = "Beschreibung unbekannt"
-#     if token : 
-#         icd_description = fetch_icd_description(icd10_code, token)
-#         if not icd_description:
-#             icd_description = icd.get_description(icd10_code)
-
-#     else : 
-#         icd_description = icd.get_description(icd10_code)
-    
-
-
-#     date = __random_date()
-#     # Hospital
-#     idx  = random.randint(0, len(hospital_names) - 1)
-#     hospital_name, hospital_address, hospital_phone = hospital_names[idx ], hospital_addresses[idx ], hospital_phones[idx ]
-#     gender = __random_gender()
-#     birthdate = __random_birthdate()
-#     family_status = __random_family_status()
-
-#     vital = random.choice(vitalsigns) if random.choice([True, False]) else None
-#     lifestyle = random.choice(lifestyles) if random.choice([True, False]) else None
-#     riskfactor = random.choice(risk_factors) if random.choice([True, False]) else None
-
-#     followup_reason = random.choice(followup_reasons) if random.random() < 0.5 else None
-#     impression = random.choice(impressions) if random.random() < 0.5 else None
-#     prev_diagnosis = random.choice(prev_diagnoses) if random.random() < 0.5 else None
-
-#     # Add to entities if present
-#     if followup_reason:
-#         entities[followup_reason] = "FOLLOWUP_REASON"
-#     if impression:
-#         entities[impression] = "IMPRESSION"
-#     if prev_diagnosis:
-#         entities[prev_diagnosis] = "PREV_DIAGNOSIS"
-
-
-
-#     # Follow-up
-#     followup_times = ["in 2 Wochen", "in 4 Wochen", "in einem Monat", "in 10 Tagen", "in drei Wochen"]
-#     followup_phrases = ["empfohlen", "dringend empfohlen", "zur weiteren Abklärung empfohlen"]
-#     followup_sentence = f"Eine erneute Kontrolluntersuchung wird {random.choice(followup_times)} {random.choice(followup_phrases)}."
-
-#     symptom = random.choice(symptoms)
-#     medication = random.choice(medications)
-#     treatment = random.choice(treatments)
-#     procedure = random.choice(procedures)
-#     department = random.choice(departments)
-#     lab_result = random.choice(lab_results)
-#     allergy = random.choice(allergies) if random.choice([True, False]) else None
-#     immunization = random.choice(immunizations) if random.choice([True, False]) else None
-#     device = random.choice(devices) if random.choice([True, False]) else None
-#     family_history = random.choice(family_histories) if random.choice([True, False]) else None
-
-#     # Entity dictionary
-#     entities = {
-#         name: "PERSON",
-#         doctor: "DOCTOR",
-#         date: "DATE",
-#         diagnosis: "DIAGNOSIS",
-#         symptom: "SYMPTOM",
-#         medication: "MEDICATION",
-#         treatment: "TREATMENT",
-#         procedure: "PROCEDURE",
-#         department: "DEPARTMENT",
-#         hospital_name: "ORG",
-#         hospital_address: "ADDRESS",
-#         hospital_phone: "PHONE",
-#         gender: "GENDER",
-#         birthdate: "BIRTHDATE",
-#         family_status: "FAMILY_STATUS",
-#         icd10_code: "ICD10_CODE",
-#         icd_description: "ICD10_DESC",
-#     }
-
-
-#   # Generate augmented sentence with spans
-#     text, spans = generate_augmented_sentence_with_spans(entities, inject_noise_flag=True)
-#     tokens, labels = __char_spans_to_bio_labels(text, spans, LABEL2ID)
-
-
-#     general_templates = [
-#          f"Am {date} stellte sich Patient {name} ({gender}), geboren am {birthdate}, Familienstand: {family_status} mit {symptom} vor. "
-#         f"Diagnose: {diagnosis}. "
-#         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}. "
-#         f"Impression: {impression or 'nicht dokumentiert'}. "
-#         f"Behandlung: {medication} und {treatment}. Verfahren: {procedure}. "
-#         f"Untersuchung durch {doctor} in der Abteilung {department}. "
-#         f"Krankenhaus: {hospital_name}, {hospital_address}, Tel: {hospital_phone}. "
-#         f"Labor: {lab_result}. "
-#         f"Folgegrund: {followup_reason or 'keine Angabe'}. "
-#         f"{followup_sentence}",
-        
-#         f"{name} kam am {date} ins {hospital_name}, {hospital_address}. Beschwerden: {symptom}. "
-#         f"Untersuchung durch {doctor}. Diagnose: {diagnosis} (ICD‑10: {icd10_code} – {icd_description}). "
-#         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}. "
-#         f"Impression: {impression or 'nicht dokumentiert'}. "
-#         f"Verabreichtes Medikament: {medication}. Eingriff: {procedure}. "
-#         f"Laborbefund: {lab_result}. Tel: {hospital_phone}. "
-#         f"Folgegrund: {followup_reason or 'keine Angabe'}. {followup_sentence}",
-        
-#         f"Bei der Untersuchung am {date} im {hospital_name} wurde bei {name} {diagnosis} festgestellt. "
-#         f"Symptome: {symptom}. Behandelt mit {medication} und {treatment}. "
-#         f"Durchgeführt von {doctor} in der {department}. Labor: {lab_result}. "
-#         f"Adresse: {hospital_address}, Kontakt: {hospital_phone}. "
-#         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}. "
-#         f"Impression: {impression or 'nicht dokumentiert'}. "
-#         f"Folgegrund: {followup_reason or 'keine Angabe'}. {followup_sentence}",
-#     ]
-
-#     structured_templates = [
-#        f"--- RADIOLOGY REPORT ---\nPatient: {name}\nDatum: {date}\nVerfahren: {procedure}\n"
-#         f"Indikation: {symptom}\nBefund: Zeichen einer {diagnosis}\nEmpfehlung: {treatment}\n"
-#         f"Radiologe: {doctor}\nAbteilung: {department}\n{hospital_name}, {hospital_address}\nTelefon: {hospital_phone}\n"
-#         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}\nImpression: {impression or 'nicht dokumentiert'}\n"
-#         f"Folgegrund: {followup_reason or 'keine Angabe'}\n{followup_sentence}",
-
-#         f"--- FOLLOW-UP VISIT ---\nDatum: {date}\nPatient: {name}\nGrund: Nachuntersuchung wegen {symptom}\n"
-#         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}\nImpression: {impression or 'nicht dokumentiert'}\n"
-#         f"Diagnose: {diagnosis} (ICD‑10: {icd10_code} – {icd_description})..\nAktueller Zustand stabil\n"
-#         f"Medikation: {medication}\nTherapie: {treatment}\nBehandelnder Arzt: {doctor}\n"
-#         f"Abteilung: {department}\nKlinik: {hospital_name}\nAdresse: {hospital_address}\nTelefon: {hospital_phone}\n"
-#         f"Folgegrund: {followup_reason or 'keine Angabe'}\n{followup_sentence}",
-
-#         f"--- Entlassungsbrief---\nPatient: {name}\nAufnahme: {date}\nKlinik: {hospital_name}\nAbteilung: {department}\n"
-#         f"Hauptdiagnose: {diagnosis}\nBeschwerden bei Aufnahme: {symptom}\nBehandlung: {medication} und {treatment}\n"
-#         f"Eingriff: {procedure}\nVerantwortlicher Arzt: {doctor}\nEntlassung in stabilem Zustand\n"
-#         f"Kontrolluntersuchung empfohlen\nVorherige Diagnose: {prev_diagnosis or 'keine bekannt'}\n"
-#         f"Impression: {impression or 'nicht dokumentiert'}\nFolgegrund: {followup_reason or 'keine Angabe'}\n"
-#         f"Kontakt: {hospital_phone}\n{followup_sentence}",
-
-#         f"--- FOLLOW-UP RECOMMENDATION ---\nPatient: {name} ({gender}), geboren am {birthdate}, Familienstand: {family_status}.\n"
-#         f"Datum der letzten Untersuchung: {date}.\nBeschwerden: {symptom}. Diagnose: {diagnosis}.\n"
-#         f"Behandlung: {treatment} mit {medication}. Durchgeführt von {doctor}.\n"
-#         f"Empfehlung: {followup_sentence}\nBitte melden Sie sich bei der Abteilung {department} im {hospital_name}.\n"
-#         f"Adresse: {hospital_address}. Tel: {hospital_phone}.\n"
-#         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}\nImpression: {impression or 'nicht dokumentiert'}\n"
-#         f"Folgegrund: {followup_reason or 'keine Angabe'}"
-#     ]
-
-#     def add_optionals(tmpl_list):
-#         new_list = []
-#         for t in tmpl_list:
-#             if allergy:
-#                 t += f"\nAllergien: {allergy}."
-#             if immunization:
-#                 t += f"\nImpfungen: {immunization}."
-#             if device:
-#                 t += f"\nMedizinisches Gerät: {device}."
-#             if family_history:
-#                 t += f"\nFamilienanamnese: {family_history}."
-
-#             if vital:
-#                 t += f"\nVitalzeichen: {vital}."
-#             if lifestyle:
-#                 t += f"\nLebensstil: {lifestyle}."
-#             if riskfactor:
-#                 t += f"\nRisikofaktor: {riskfactor}."
-
-#             new_list.append(t)
-#         return new_list
-
-#     # templates = add_optionals(general_templates + structured_templates)
-#     # text = random.choice(templates)
-
-
-
-   
-#     # Optional: blend with one of the structured templates
-#     templates = add_optionals(general_templates + structured_templates)
-#     fallback_sentence = random.choice(templates)
-
-#     # Mix structured and augmented text 50/50
-#     if random.random() < 0.5:
-#         text = fallback_sentence
-#     else:
-#         text = augmented_sentence
-
-
-
-
-
-
-#     if allergy: entities[allergy] = "ALLERGY"
-#     if immunization: entities[immunization] = "IMMUNIZATION"
-#     if device: entities[device] = "DEVICE"
-#     if family_history: entities[family_history] = "FAMILY_HISTORY"
-#     if vital:
-#         entities[vital] = "VITALSIGNS"
-#     if lifestyle:
-#         entities[lifestyle] = "LIFESTYLE"
-#     if riskfactor:
-#         entities[riskfactor] = "RISKFACTOR"
-#     if followup_reason:
-#         entities[followup_reason] = "FOLLOWUP_REASON"
-#     if impression:
-#         entities[impression] = "IMPRESSION"
-#     if prev_diagnosis:
-#         entities[prev_diagnosis] = "PREV_DIAGNOSIS"
-
-
-#     match = re.search(r"(Eine erneute Kontrolluntersuchung wird .*? empfohlen)", text)
-#     if match:
-#         entities[match.group(1)] = "FOLLOWUP_RECOMMENDATION"
-
-#     return text, entities
-
 
 def generate_report(token=None):
     # Select core patient data
@@ -323,6 +121,9 @@ def generate_report(token=None):
     department = random.choice(departments)
     lab_result = random.choice(lab_results)
 
+    occupation = random.choice(occupations)
+    family_member = random.choice(family_members)
+
     followup_times = ["in 2 Wochen", "in 4 Wochen", "in einem Monat", "in 10 Tagen", "in drei Wochen"]
     followup_phrases = ["empfohlen", "dringend empfohlen", "zur weiteren Abklärung empfohlen"]
     followup_sentence = f"Eine erneute Kontrolluntersuchung wird {random.choice(followup_times)} {random.choice(followup_phrases)}."
@@ -335,10 +136,14 @@ def generate_report(token=None):
     lifestyle = random.choice(lifestyles) if random.choice([True, False]) else None
     riskfactor = random.choice(risk_factors) if random.choice([True, False]) else None
 
+
+
     # Build entity dictionary
     entities = {
         name: "PERSON",
         doctor: "DOCTOR",
+        occupation: "OCCUPATION",
+        family_member: "FAMILYMEMBER",
         date: "DATE",
         diagnosis: "DIAGNOSIS",
         symptom: "SYMPTOM",
@@ -365,27 +170,13 @@ def generate_report(token=None):
     if riskfactor: entities[riskfactor] = "RISKFACTOR"
     if followup_sentence: entities[followup_sentence] = "FOLLOWUP_RECOMMENDATION"
 
-    # Define your templates
-    general_templates = [
-        f"Am {date} stellte sich Patient {name} ({gender}), geboren am {birthdate}, Familienstand: {family_status} mit {symptom} vor. Diagnose: {diagnosis}. "
-        f"Behandlung: {medication} und {treatment}. Verfahren: {procedure}. "
-        f"Untersuchung durch {doctor} in der Abteilung {department}. "
-        f"Krankenhaus: {hospital_name}, {hospital_address}, Tel: {hospital_phone}. "
-        f"Labor: {lab_result}. {followup_sentence}"
-    ]
-
-    structured_templates = [
-        f"--- FOLLOW-UP ---\nDatum: {date}\nPatient: {name}\nGrund: Nachuntersuchung wegen {symptom}\n"
-        f"Diagnose: {diagnosis} (ICD-10: {icd10_code} – {icd_description})\n"
-        f"Medikation: {medication}\nBehandlung: {treatment}\n"
-        f"Abteilung: {department}, Arzt: {doctor}\n"
-        f"Ort: {hospital_name}, {hospital_address}, Tel: {hospital_phone}.\n{followup_sentence}"
-    ]
+   
     followup_reason = random.choice(followup_reasons) if random.random() < 0.5 else None
     impression = random.choice(impressions) if random.random() < 0.5 else None
     prev_diagnosis = random.choice(prev_diagnoses) if random.random() < 0.5 else None
     general_templates = [
-         f"Am {date} stellte sich Patient {name} ({gender}), geboren am {birthdate}, Familienstand: {family_status} mit {symptom} vor. "
+        f"Am {date} stellte sich Patient {name} ({gender}), geboren am {birthdate}, Familienstand: {family_status} mit {symptom} vor, beschäftigt als {occupation} "
+        f"Der {occupation} wurde mit starken Beschwerden von seiner {family_member} in die Klinik begleitet."
         f"Diagnose: {diagnosis}. "
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}. "
         f"Impression: {impression or 'nicht dokumentiert'}. "
@@ -396,7 +187,7 @@ def generate_report(token=None):
         f"Folgegrund: {followup_reason or 'keine Angabe'}. "
         f"{followup_sentence}",
         
-        f"{name} kam am {date} ins {hospital_name}, {hospital_address}. Beschwerden: {symptom}. "
+        f"{name} kam am {date} ins {hospital_name}, {hospital_address} mit {family_member} Beschwerden: {symptom}. "
         f"Untersuchung durch {doctor}. Diagnose: {diagnosis} (ICD‑10: {icd10_code} – {icd_description}). "
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}. "
         f"Impression: {impression or 'nicht dokumentiert'}. "
@@ -411,30 +202,41 @@ def generate_report(token=None):
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}. "
         f"Impression: {impression or 'nicht dokumentiert'}. "
         f"Folgegrund: {followup_reason or 'keine Angabe'}. {followup_sentence}",
+        f"Die {family_member} des Patienten brachte ihn zur Untersuchung, da sie über anhaltende Beschwerden berichtete.",
+
+        f"Der Patient arbeitet als {occupation} und lebt mit seiner {family_member} in einem gemeinsamen Haushalt."
+        f"Aufgrund seiner Tätigkeit als {occupation} ist der Patient häufig körperlich belastet, was möglicherweise zur aktuellen Symptomatik beiträgt."
+        f"Der Patient gibt an, seine Arbeit als {occupation} derzeit nicht ausüben zu können."
+        f"In der Familie bestehen Vorerkrankungen: Die {family_member} des Patienten litt ebenfalls an {diagnosis}."
+        f"Der Patient wurde von seiner {family_member} wegen zunehmender {symptom} in die Klinik gebracht."
+
     ]
 
     structured_templates = [
-       f"--- RADIOLOGY REPORT ---\nPatient: {name}\nDatum: {date}\nVerfahren: {procedure}\n"
+
+       f"--- RADIOLOGY REPORT ---\n\n\nPatient: {name} ({gender}),  geboren am {birthdate}\nDatum: {date}\nVerfahren: {procedure}\n  Beruf:{occupation}\n"
+        f"Begleitet von {family_member}"
         f"Indikation: {symptom}\nBefund: Zeichen einer {diagnosis}\nEmpfehlung: {treatment}\n"
         f"Radiologe: {doctor}\nAbteilung: {department}\n{hospital_name}, {hospital_address}\nTelefon: {hospital_phone}\n"
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}\nImpression: {impression or 'nicht dokumentiert'}\n"
         f"Folgegrund: {followup_reason or 'keine Angabe'}\n{followup_sentence}",
 
-        f"--- FOLLOW-UP VISIT ---\nDatum: {date}\nPatient: {name}\nGrund: Nachuntersuchung wegen {symptom}\n"
+        f"--- FOLLOW-UP VISIT ---\n\n\nDatum: {date}\nPatient: {name} ({gender}), geboren am {birthdate} Arbeitet als {occupation}\n Grund: Nachuntersuchung wegen {symptom}\n "
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}\nImpression: {impression or 'nicht dokumentiert'}\n"
         f"Diagnose: {diagnosis} (ICD‑10: {icd10_code} – {icd_description})..\nAktueller Zustand stabil\n"
         f"Medikation: {medication}\nTherapie: {treatment}\nBehandelnder Arzt: {doctor}\n"
         f"Abteilung: {department}\nKlinik: {hospital_name}\nAdresse: {hospital_address}\nTelefon: {hospital_phone}\n"
         f"Folgegrund: {followup_reason or 'keine Angabe'}\n{followup_sentence}",
 
-        f"--- Entlassungsbrief---\nPatient: {name}\nAufnahme: {date}\nKlinik: {hospital_name}\nAbteilung: {department}\n"
+        f"--- Entlassungsbrief---\nPatient: {name} geboren am {birthdate}\nAufnahme: {date}\nKlinik: {hospital_name}\nAbteilung: {department}\n"
         f"Hauptdiagnose: {diagnosis}\nBeschwerden bei Aufnahme: {symptom}\nBehandlung: {medication} und {treatment}\n"
         f"Eingriff: {procedure}\nVerantwortlicher Arzt: {doctor}\nEntlassung in stabilem Zustand\n"
         f"Kontrolluntersuchung empfohlen\nVorherige Diagnose: {prev_diagnosis or 'keine bekannt'}\n"
         f"Impression: {impression or 'nicht dokumentiert'}\nFolgegrund: {followup_reason or 'keine Angabe'}\n"
         f"Kontakt: {hospital_phone}\n{followup_sentence}",
 
-        f"--- FOLLOW-UP RECOMMENDATION ---\nPatient: {name} ({gender}), geboren am {birthdate}, Familienstand: {family_status}.\n"
+        f"--- FOLLOW-UP RECOMMENDATION ---\nPatient: {name} ({gender}), geboren am {birthdate}, Familienstand: {family_status}. Im moment arbeitet er/sie als {occupation} \n"
+        f"Er/sie muss begleitet werden mit {family_member} "
         f"Datum der letzten Untersuchung: {date}.\nBeschwerden: {symptom}. Diagnose: {diagnosis}.\n"
         f"Behandlung: {treatment} mit {medication}. Durchgeführt von {doctor}.\n"
         f"Empfehlung: {followup_sentence}\nBitte melden Sie sich bei der Abteilung {department} im {hospital_name}.\n"
@@ -445,6 +247,7 @@ def generate_report(token=None):
 
 
     real_template =[
+            f"--- Artzbrief\n\n\n\n"
             f"Patientenname : {name}\n\n"
 
             f"Geburtsdatum : {birthdate}\n\n"
@@ -461,26 +264,24 @@ def generate_report(token=None):
 
             f"Vegetative Anamnese ist bis auf eine Schlafstörung, die seit 5 jähren bestehe und mit Schlafmedikamente eingestellt sei, unauffällig.\n"
 
-            f"Medikamente Anamnese : Er nehme die obergenannte Schlafmedikamente bei bedarf ein und er nehme auch Ramipril 5mg einmal morgens ein.\n"
+            f"Medikamente Anamnese : Er nehme die obergenannte Schlafmedikamente bei bedarf ein und er nehme auch {lab_result} einmal morgens ein.\n"
 
             f"Noxen : Er habe täglich für 10 Jahren zehn Zigaretten geraucht , bevor er sich das Rauchen abgewöhnt habe. Alkohol trinke er nicht. Die Frage nach einem Drogenmissbrauch wurde verneint.\n"
 
-            f"Soziale Anamnese : Er ist Gärtner von Beruf und ist verheiratet. Herr {name} lebe mit seiner Ehefrau und vier Kinder zusammen.\n"
+            f"Soziale Anamnese : Er ist {occupation} von Beruf und ist verheiratet. Herr {name} lebe mit seiner {family_member} und vier Kinder zusammen.\n"
 
-            f"Familiäre Anamnese : Die Mutter des Patienten leide an Zuckerkrankheit und der Vater habe einen Schlaganfall hinter sich.\n"
+            f"Familiäre Anamnese : Die Mutter des Patienten leide an Zuckerkrankheit und der {family_member} habe einen Schlaganfall hinter sich.\n"
 
             f"Die Anamnese, Laborwerte und eine CT Kopf weisen auf einen Schlaganfall hin. Lyse-therapie wurde nach der CT begonnen.\n"
 
 
     ]
 
-
-
-
     # Generate text from template or augmented sentence
     if random.random() < 0.5:
         # Paraphrased version
         text, spans = __generate_augmented_sentence_with_spans(entities)
+        # spans2 = build_spans(text, entities)
         tokens, labels = __char_spans_to_bio_labels(text, spans, LABEL2ID)
     else:
         # Use structured template
@@ -523,6 +324,18 @@ def __inject_noise(text, typo_prob=0.05, punctuation_prob=0.05):
     noisy_text = " ".join(noisy_words)
     noisy_text = corrupt_punctuation(noisy_text)
     return noisy_text
+
+def build_spans(text, entities):
+    spans = {}
+    for entity_text, entity_type in entities.items():
+        start_idx = text.find(entity_text)
+        if start_idx == -1:
+            # Entity text not found, skip or handle error
+            continue
+        end_idx = start_idx + len(entity_text)
+        spans[entity_text] = (start_idx, end_idx, entity_type)
+    return spans
+
 
 def __char_spans_to_bio_labels(text, spans, label_map):
     """
@@ -708,14 +521,6 @@ def __save_reports_as_txt(text, filename):
     with open(filename, "w", encoding="utf-8") as f:
         f.write(text)
 
-def __analyze_labels(dataset):
-    from collections import Counter
-    all_labels = [LABEL2ID[label] for item in dataset for label in item["ner_tags"] if label != 0]
-    inv = {v: k for k, v in LABEL2ID.items()}
-    counts = Counter(all_labels)
-    print("\n📊 Label distribution:")
-    for label_id, count in counts.most_common():
-        print(f"{inv[label_id]:<30} {count}")
 def generate_dataset(n_samples=1000, save_reports=False):
 
     ClientId = "db7c330e-8d75-450c-976c-e891ea61cf6a_8ba7953b-b758-4b5c-9f11-82eeff251802"
@@ -759,5 +564,5 @@ if __name__ == "__main__":
     if len(sys.argv) == 2:
         print("Usage: python generate_dataset.py <n_samples>")
         n_samples = int(sys.argv[1])
-    generate_dataset(n_samples=n_samples, save_reports=False)
+    generate_dataset(n_samples=n_samples, save_reports=True)
 
