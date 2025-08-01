@@ -707,8 +707,11 @@ def generate_dataset(n_samples=1000, save_reports=False):
 if __name__ == "__main__":
     import sys
     n_samples = 1000
-    if len(sys.argv) == 2:
-        print("Usage: python generate_dataset.py <n_samples>")
+    save_reports = False
+    if len(sys.argv) > 1:
         n_samples = int(sys.argv[1])
-    generate_dataset(n_samples=n_samples, save_reports=True)
+    if len(sys.argv) > 2:
+        save_reports = sys.argv[2].lower() == 'true'
+    print(f"Starting generation of {n_samples} data. Saving reports is {save_reports}!")
+    generate_dataset(n_samples=n_samples, save_reports=save_reports)
 
