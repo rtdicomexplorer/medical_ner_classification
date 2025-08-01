@@ -43,7 +43,7 @@ ENTITY_LIST = [
     "PERSON",
     "GENDER", 
     "BIRTHDATE",
-    "FAMILYMEMBER"
+    "FAMILYMEMBER",
     "FAMILY_STATUS", 
     "DATE",
     "SYMPTOM",

@@ -122,6 +122,7 @@ def main():
         save_total_limit=2,
         seed=42,
         dataloader_drop_last=False,
+        label_smoothing_factor = 0.1
     )
 
   

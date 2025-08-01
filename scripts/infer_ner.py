@@ -17,7 +17,7 @@ def main(file_path):
     # text = "Patient Otto Kromberger leidet an Kopfschmerzen."
     tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
     model = AutoModelForTokenClassification.from_pretrained(MODEL_PATH)
-    nlp = pipeline("ner", model=model, tokenizer=tokenizer, aggregation_strategy="simple")
+    nlp = pipeline("ner", model=model, tokenizer=tokenizer, aggregation_strategy="none")# or simple
 
     entities = nlp(text)
     for ent in entities:

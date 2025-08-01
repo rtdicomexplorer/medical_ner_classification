@@ -293,7 +293,7 @@ def generate_report(token=None):
 
 
     # Generate text from template or augmented sentence
-    if random.random() < 0.9999:
+    if random.random() < 0.5:
         # Paraphrased version
         text, spans = __generate_augmented_sentence_with_spans(entities)
         # spans2 = build_spans(text, entities)
@@ -567,6 +567,16 @@ def __paraphrase_entity(entity_type, value):
         return random.choice(variations[entity_type])
     return value
 import re
+def __get_random_filler():
+    fillers = [
+        "Der Patient befindet sich in einem stabilen Allgemeinzustand.",
+        "Weitere Angaben folgen im Verlauf.",
+        "Keine Auffälligkeiten im aktuellen Befund.",
+        "Es wurde ein Gespräch zur weiteren Aufklärung geführt.",
+        "Die Patientin äußerte keine zusätzlichen Beschwerden.",
+        "Untersuchungsergebnisse stehen noch aus.",
+    ]
+    return random.choice(fillers)
 
 def __generate_augmented_sentence_with_spans(entities, inject_noise_flag=True):
     """
@@ -587,9 +597,7 @@ def __generate_augmented_sentence_with_spans(entities, inject_noise_flag=True):
     current_pos = 0
 
     def safe_inject_noise(text):
-        if inject_noise_flag:
-            return __inject_noise(text)
-        return text
+        return __inject_noise(text) if inject_noise_flag else text
 
     # Helper to add phrase and track span
     def add_phrase(phrase, ent_type):
@@ -602,22 +610,29 @@ def __generate_augmented_sentence_with_spans(entities, inject_noise_flag=True):
         # add space after phrase except last
         pieces.append(" ")
         current_pos += 1
+        if random.random() < 0.3:
+            filler = __get_random_filler()
+            pieces.append(filler)
+            pieces.append(" ")
+            current_pos += len(filler) + 1
 
     # Compose sentence piecewise in order
     for ent_type in ENTITY_LIST:
+
+        ent_items = list(entities.items())
+        random.shuffle(ent_items)
         for value, etype in entities.items():
             if etype == ent_type:
                 phrase = __paraphrase_entity(ent_type, value)
-                phrase = safe_inject_noise(phrase)# the length could be change
-                phrase = __paraphrase_entity(ent_type, value)
                 add_phrase(phrase, ent_type)
+            
 
-    # Join pieces, strip trailing space
     text = "".join(pieces).strip()
 
     # Fix trailing punctuation (optional)
     if not text.endswith("."):
         text += "."
+    text = safe_inject_noise(text)# the length could be change 
 
     return text, spans
 
@@ -682,8 +697,11 @@ def generate_dataset(n_samples=1000, save_reports=False):
             "ner_tags": labels
         })
 
-
+    from collections import Counter
     clean_data = refresh_and_clean_ner_labels(data= data, id2label= ID2LABEL, threshold= 0.95)
+    all_labels = [label for sample in clean_data for label in sample["ner_tags"]]
+    print(Counter(all_labels))
+
 
 
     # Split train/val
