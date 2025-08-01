@@ -17,17 +17,17 @@ LABEL_LIST = [
     "B-ALLERGY", "I-ALLERGY",
     "B-IMMUNIZATION", "I-IMMUNIZATION",
     "B-DEVICE", "I-DEVICE",
-    "B-FAMILY_HISTORY", "I-FAMILY_HISTORY",
+    "B-FAMHIST", "I-FAMHIST",
     "B-ADDRESS", "I-ADDRESS",
     "B-PHONE", "I-PHONE",
     "B-IMPRESSION", "I-IMPRESSION",
     "B-FINDING", "I-FINDING",
-    "B-FOLLOWUP_REASON", "I-FOLLOWUP_REASON",
+    "B-FlWUREASON", "I-FlWUREASON",
     "B-PREV_DIAGNOSIS", "I-PREV_DIAGNOSIS",
     "B-GENDER", "I-GENDER",
     "B-BIRTHDATE", "I-BIRTHDATE",
     "B-FAMILY_STATUS", "I-FAMILY_STATUS",
-    "B-FOLLOWUP_RECOMMENDATION", "I-FOLLOWUP_RECOMMENDATION",
+    "B-FlWUREC", "I-FlWUREC",
     "B-VITALSIGNS", "I-VITALSIGNS",
     "B-LIFESTYLE", "I-LIFESTYLE",
     "B-RISKFACTOR", "I-RISKFACTOR",
@@ -36,6 +36,44 @@ LABEL_LIST = [
     "B-OCCUPATION", "I-OCCUPATION",
     "B-FAMILYMEMBER", "I-FAMILYMEMBER"
 ]
+
+
+#[the order follows a logic to create dynthetic data]
+ENTITY_LIST = [
+    "PERSON",
+    "GENDER", 
+    "BIRTHDATE",
+    "FAMILYMEMBER"
+    "FAMILY_STATUS", 
+    "DATE",
+    "SYMPTOM",
+    "VITALSIGNS", 
+    "ALLERGY", 
+    "IMMUNIZATION",
+    "IMPRESSION", 
+    "LAB_RESULT",
+    "FINDING", 
+    "PREV_DIAGNOSIS",
+    "LIFESTYLE",
+    "OCCUPATION",
+    "FAMHIST",
+    "DIAGNOSIS",
+    "RISKFACTOR",
+    "MEDICATION",
+    "ICD10_CODE",
+    "ICD10_DESC",
+    "PROCEDURE", 
+    "TREATMENT",     
+    "DEVICE", 
+    "FlWUREASON",
+    "FlWUREC", 
+    "DOCTOR", 
+    "DEPARTMENT",
+    "ORG", 
+    "ADDRESS",
+    "PHONE", 
+]
+
 
 LABEL2ID = {label: idx for idx, label in enumerate(LABEL_LIST)}
 ID2LABEL = {idx: label for label, idx in LABEL2ID.items()}

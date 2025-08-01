@@ -4,7 +4,8 @@ import json
 import os
 import re
 import datetime
-from config import LABEL2ID
+from config import LABEL2ID, ID2LABEL, ENTITY_LIST
+from utils import refresh_and_clean_ner_labels
 from sklearn.model_selection import train_test_split
 import simple_icd_10 as icd
 from idc_api import fetch_icd_description,get_token
@@ -34,7 +35,7 @@ risk_factors = [
 # Names and other data
 names = ["Herr. Max Müller", "Patientin: Anna Schmidt", "L. Weber", "Frau Sophie Fischer","Otto Kromberger",
          "John Smith", "Mary Jones", "Robert Lee", "Emily Davis"]
-doctors = ["Dr. Müller", "Dr. Schneider", "Dr. Becker", "Dr. Weber","Dr. Suhle Nikolas", "Dr. Lehmann", "Dr. Fischer", "Dr. Weber"
+doctors = ["Dr. Müller", "Dr. Schneider", "Dr. Becker", "Dr. Weber","Dr. Suhle Nikolas", "Dr. Lehmann", "Dr. Fischer", "Dr. Weber",
            "Dr. Adams", "Dr. Lee", "Dr. Patel", "Dr. Chen"]
 
 
@@ -80,23 +81,39 @@ family_members = [
 def __random_gender():
     return random.choice(["männlich", "weiblich", "divers"])
 
+def calculate_age(birthdate_str):
+    birthdate = datetime.datetime.strptime(birthdate_str, "%d.%m.%Y").date()
+    today = datetime.date.today()
+    return today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
 
-def __random_birthdate():
-    start = datetime.date(1920, 1, 1)
-    end = datetime.date(2025, 5, 31)
-    rand_day = start + datetime.timedelta(days=random.randint(0, (end - start).days))
-    return rand_day.strftime("%d.%m.%Y")
+
+def __random_birthdate(min_age=18, max_age=90):
+    today = datetime.date.today()
+    birth_year = today.year - random.randint(min_age, max_age)
+    birth_month = random.randint(1, 12)
+    birth_day = random.randint(1, 28)  # für Sicherheit
+    birthdate = datetime.date(birth_year, birth_month, birth_day)
+    return birthdate.strftime("%d.%m.%Y")  # z. B. 14.03.1975
 
 
 def __random_family_status():
     return random.choice(["ledig", "verheiratet", "geschieden", "verwitwet"])
 
 
-def __random_date():
-    start = datetime.date(2022, 1, 1)
-    end = datetime.date(2024, 12, 31)
-    rand_day = start + datetime.timedelta(days=random.randint(0, (end - start).days))
-    return rand_day.strftime("%d. %B %Y")
+def __random_date(start_year=2015, end_year=2024):
+    start = datetime.date(start_year, 1, 1)
+    end = datetime.date(end_year, 12, 31)
+    delta = end - start
+    random_days = random.randint(0, delta.days)
+    date = start + datetime.timedelta(days=random_days)
+    return date.strftime("%d.%m.%Y")  # z. B. 27.06.2024
+
+
+def random_optional_field(value_list):
+    return random.choice(value_list) if random.choice([True, False]) else None
+
+def random_choice_or_default(value_list, default="keine bekannt"):
+    return random.choice(value_list) if random.random() < 0.5 else default
 
 def generate_report(token=None):
     # Select core patient data
@@ -107,11 +124,11 @@ def generate_report(token=None):
 
     icd_description = icd.get_description(icd10_code) if not token else fetch_icd_description(icd10_code, token) or icd.get_description(icd10_code)
 
-    date = __random_date()
+    date = __random_date(start_year=1980,end_year=2024)
     idx = random.randint(0, len(hospital_names) - 1)
     hospital_name, hospital_address, hospital_phone = hospital_names[idx], hospital_addresses[idx], hospital_phones[idx]
     gender = __random_gender()
-    birthdate = __random_birthdate()
+    birthdate = __random_birthdate(min_age=1, max_age=95)
     family_status = __random_family_status()
 
     symptom = random.choice(symptoms)
@@ -128,15 +145,17 @@ def generate_report(token=None):
     followup_phrases = ["empfohlen", "dringend empfohlen", "zur weiteren Abklärung empfohlen"]
     followup_sentence = f"Eine erneute Kontrolluntersuchung wird {random.choice(followup_times)} {random.choice(followup_phrases)}."
 
-    allergy = random.choice(allergies) if random.choice([True, False]) else None
-    immunization = random.choice(immunizations) if random.choice([True, False]) else None
-    device = random.choice(devices) if random.choice([True, False]) else None
-    family_history = random.choice(family_histories) if random.choice([True, False]) else None
-    vital = random.choice(vitalsigns) if random.choice([True, False]) else None
-    lifestyle = random.choice(lifestyles) if random.choice([True, False]) else None
-    riskfactor = random.choice(risk_factors) if random.choice([True, False]) else None
+    allergy = random_optional_field(allergies)
+    immunization = random_optional_field(immunizations)
+    device = random_optional_field(devices)
+    family_history = random_optional_field(family_histories)
+    vital = random_optional_field(vitalsigns)
+    lifestyle = random_optional_field(lifestyles)
+    riskfactor = random_optional_field(risk_factors)
 
-
+    impression = random_choice_or_default(impressions, "nicht dokumentiert")
+    followup_reason = random_choice_or_default(followup_reasons, "keine Angabe")
+    prev_diagnosis = random_choice_or_default(prev_diagnoses, "keine bekannt")
 
     # Build entity dictionary
     entities = {
@@ -160,21 +179,23 @@ def generate_report(token=None):
         icd10_code: "ICD10_CODE",
         icd_description: "ICD10_DESC",
     }
+    def add_entity_safe(key, label):
+        if key and key not in entities:
+            entities[key] = label
 
-    if allergy: entities[allergy] = "ALLERGY"
-    if immunization: entities[immunization] = "IMMUNIZATION"
-    if device: entities[device] = "DEVICE"
-    if family_history: entities[family_history] = "FAMILY_HISTORY"
-    if vital: entities[vital] = "VITALSIGNS"
-    if lifestyle: entities[lifestyle] = "LIFESTYLE"
-    if riskfactor: entities[riskfactor] = "RISKFACTOR"
-    if followup_sentence: entities[followup_sentence] = "FOLLOWUP_RECOMMENDATION"
 
-   
-    followup_reason = random.choice(followup_reasons) if random.random() < 0.5 else None
-    impression = random.choice(impressions) if random.random() < 0.5 else None
-    prev_diagnosis = random.choice(prev_diagnoses) if random.random() < 0.5 else None
-    general_templates = [
+    add_entity_safe(allergy, "ALLERGY")
+    add_entity_safe(immunization, "IMMUNIZATION")
+    add_entity_safe(device, "DEVICE")
+    add_entity_safe(family_history, "FAMHIS")
+    add_entity_safe(vital, "VITALSIGNS")
+    add_entity_safe(lifestyle, "LIFESTYLE")
+    add_entity_safe(riskfactor, "RISKFACTOR")
+    add_entity_safe(followup_sentence, "FlWUREC")
+    add_entity_safe(followup_reason, "FlWUREASON")
+  
+
+    templates = [
         f"Am {date} stellte sich Patient {name} ({gender}), geboren am {birthdate}, Familienstand: {family_status} mit {symptom} vor, beschäftigt als {occupation} "
         f"Der {occupation} wurde mit starken Beschwerden von seiner {family_member} in die Klinik begleitet."
         f"Diagnose: {diagnosis}. "
@@ -205,87 +226,83 @@ def generate_report(token=None):
         f"Die {family_member} des Patienten brachte ihn zur Untersuchung, da sie über anhaltende Beschwerden berichtete.",
 
         f"Der Patient arbeitet als {occupation} und lebt mit seiner {family_member} in einem gemeinsamen Haushalt."
-        f"Aufgrund seiner Tätigkeit als {occupation} ist der Patient häufig körperlich belastet, was möglicherweise zur aktuellen Symptomatik beiträgt."
+        f"Aufgrund seiner Tätigkeit als {occupation} ist der Patient häufig körperlich belastet, "
+        f"was möglicherweise zur aktuellen Symptomatik beiträgt."
         f"Der Patient gibt an, seine Arbeit als {occupation} derzeit nicht ausüben zu können."
         f"In der Familie bestehen Vorerkrankungen: Die {family_member} des Patienten litt ebenfalls an {diagnosis}."
-        f"Der Patient wurde von seiner {family_member} wegen zunehmender {symptom} in die Klinik gebracht."
-
-    ]
-
-    structured_templates = [
-
-       f"--- RADIOLOGY REPORT ---\n\n\nPatient: {name} ({gender}),  geboren am {birthdate}\nDatum: {date}\nVerfahren: {procedure}\n  Beruf:{occupation}\n"
-        f"Begleitet von {family_member}"
+        f"Der Patient wurde von seiner {family_member} wegen zunehmender {symptom} in die Klinik gebracht.",
+        
+       f"--- RADIOLOGY REPORT ---\n\n\nPatient: {name} ({gender}),  "
+       f"geboren am {birthdate}\nDatum: {date}\nVerfahren: {procedure}\n  Beruf:{occupation}\n"
+        f"Begleitet von {family_member}\n"
         f"Indikation: {symptom}\nBefund: Zeichen einer {diagnosis}\nEmpfehlung: {treatment}\n"
         f"Radiologe: {doctor}\nAbteilung: {department}\n{hospital_name}, {hospital_address}\nTelefon: {hospital_phone}\n"
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}\nImpression: {impression or 'nicht dokumentiert'}\n"
         f"Folgegrund: {followup_reason or 'keine Angabe'}\n{followup_sentence}",
 
-        f"--- FOLLOW-UP VISIT ---\n\n\nDatum: {date}\nPatient: {name} ({gender}), geboren am {birthdate} Arbeitet als {occupation}\n Grund: Nachuntersuchung wegen {symptom}\n "
+        f"--- FOLLOW-UP VISIT ---\n\n\nDatum: {date}\nPatient: {name} ({gender}), geboren am {birthdate} "
+        f"Arbeitet als {occupation}\n Grund: Nachuntersuchung wegen {symptom}\n "
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}\nImpression: {impression or 'nicht dokumentiert'}\n"
         f"Diagnose: {diagnosis} (ICD‑10: {icd10_code} – {icd_description})..\nAktueller Zustand stabil\n"
         f"Medikation: {medication}\nTherapie: {treatment}\nBehandelnder Arzt: {doctor}\n"
         f"Abteilung: {department}\nKlinik: {hospital_name}\nAdresse: {hospital_address}\nTelefon: {hospital_phone}\n"
         f"Folgegrund: {followup_reason or 'keine Angabe'}\n{followup_sentence}",
 
-        f"--- Entlassungsbrief---\nPatient: {name} geboren am {birthdate}\nAufnahme: {date}\nKlinik: {hospital_name}\nAbteilung: {department}\n"
+        f"--- Entlassungsbrief---\nPatient: {name} geboren am {birthdate}\nAufnahme: {date}\nKlinik: {hospital_name}\n"
+        f"Abteilung: {department}\n"
         f"Hauptdiagnose: {diagnosis}\nBeschwerden bei Aufnahme: {symptom}\nBehandlung: {medication} und {treatment}\n"
         f"Eingriff: {procedure}\nVerantwortlicher Arzt: {doctor}\nEntlassung in stabilem Zustand\n"
         f"Kontrolluntersuchung empfohlen\nVorherige Diagnose: {prev_diagnosis or 'keine bekannt'}\n"
         f"Impression: {impression or 'nicht dokumentiert'}\nFolgegrund: {followup_reason or 'keine Angabe'}\n"
         f"Kontakt: {hospital_phone}\n{followup_sentence}",
 
-        f"--- FOLLOW-UP RECOMMENDATION ---\nPatient: {name} ({gender}), geboren am {birthdate}, Familienstand: {family_status}. Im moment arbeitet er/sie als {occupation} \n"
+        f"--- FOLLOW-UP RECOMMENDATION ---\nPatient: {name} ({gender}), geboren am {birthdate}, Familienstand: {family_status}."
+        f"Im moment arbeitet er/sie als {occupation} \n"
         f"Er/sie muss begleitet werden mit {family_member} "
         f"Datum der letzten Untersuchung: {date}.\nBeschwerden: {symptom}. Diagnose: {diagnosis}.\n"
         f"Behandlung: {treatment} mit {medication}. Durchgeführt von {doctor}.\n"
         f"Empfehlung: {followup_sentence}\nBitte melden Sie sich bei der Abteilung {department} im {hospital_name}.\n"
         f"Adresse: {hospital_address}. Tel: {hospital_phone}.\n"
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}\nImpression: {impression or 'nicht dokumentiert'}\n"
-        f"Folgegrund: {followup_reason or 'keine Angabe'}"
-    ]
-
-
-    real_template =[
-            f"--- Artzbrief\n\n\n\n"
-            f"Patientenname : {name}\n\n"
-
-            f"Geburtsdatum : {birthdate}\n\n"
-
-            f"Gewicht: {random.choice([30, 140])} Kg\n\n"
-
-            f"Große: {random.choice([120, 200])} cm\n\n\n"
-
-            f"Hausarzt : {doctor}.\n\n\n"
-
-            f"Der Patient, {name} , stellte sich mit stark anhaltend dumpfen {symptom} vor, die er seit gestern habe. Herr {name} sei auch niedergeschlagen. Darüber hinaus berichte er über Kribbeln auf der linke Arm. Er habe auch berichtet, dass er eine Sehstörung und Sprachstörung (Wortfindungsstörung und lallende Ansprache) entwickelt habe. Eine Schluckstörung wurde auch berichtet.\n"
-
-            f"Vorerkrankungen : Er habe seit 20 Jahren Bluthochdruck.IM Jahr 2018 habe er einen Rippenbruch gehabt, den konservativ behandelt wurde.\n"
-
-            f"Vegetative Anamnese ist bis auf eine Schlafstörung, die seit 5 jähren bestehe und mit Schlafmedikamente eingestellt sei, unauffällig.\n"
-
-            f"Medikamente Anamnese : Er nehme die obergenannte Schlafmedikamente bei bedarf ein und er nehme auch {lab_result} einmal morgens ein.\n"
-
-            f"Noxen : Er habe täglich für 10 Jahren zehn Zigaretten geraucht , bevor er sich das Rauchen abgewöhnt habe. Alkohol trinke er nicht. Die Frage nach einem Drogenmissbrauch wurde verneint.\n"
-
-            f"Soziale Anamnese : Er ist {occupation} von Beruf und ist verheiratet. Herr {name} lebe mit seiner {family_member} und vier Kinder zusammen.\n"
-
-            f"Familiäre Anamnese : Die Mutter des Patienten leide an Zuckerkrankheit und der {family_member} habe einen Schlaganfall hinter sich.\n"
-
-            f"Die Anamnese, Laborwerte und eine CT Kopf weisen auf einen Schlaganfall hin. Lyse-therapie wurde nach der CT begonnen.\n"
-
+        f"Folgegrund: {followup_reason or 'keine Angabe'}",
+        f"--- Artzbrief\n\n\n\n"
+        f"Patientenname : {name}\n\n"
+        f"Geburtsdatum : {birthdate}\n\n"
+        f"Gewicht: {random.choice([30, 140])} Kg\n\n"
+        f"Große: {random.choice([120, 200])} cm\n\n\n"
+        f"Hausarzt : {doctor}.\n\n\n"
+        f"Der Patient, {name} , stellte sich mit stark anhaltend dumpfen {symptom} vor, die er seit gestern habe."
+        f"Herr {name} sei auch niedergeschlagen. Darüber hinaus berichte er über Kribbeln auf der linke Arm."
+        f"Er habe auch berichtet, dass er eine Sehstörung und Sprachstörung (Wortfindungsstörung und lallende Ansprache) entwickelt "
+        f"habe. Eine Schluckstörung wurde auch berichtet.\n"
+        f"Vorerkrankungen : Er habe seit 20 Jahren Bluthochdruck.IM Jahr 2018 habe er einen Rippenbruch gehabt, "
+        f"den konservativ behandelt wurde.\n"
+        f"Vegetative Anamnese ist bis auf eine Schlafstörung, die seit 5 jähren bestehe und mit Schlafmedikamente eingestellt sei, "
+        f"unauffällig.\n"
+        f"Medikamente Anamnese : Er nehme die obergenannte Schlafmedikamente bei bedarf ein und er nehme auch {lab_result} "
+        f"einmal morgens ein.\n"
+        f"Noxen : Er habe täglich für 10 Jahren zehn Zigaretten geraucht , bevor er sich das Rauchen abgewöhnt habe. " 
+        f"Alkohol trinke er nicht. Die Frage nach einem Drogenmissbrauch wurde verneint.\n"
+        f"Soziale Anamnese : Er ist {occupation} von Beruf und ist verheiratet. Herr {name} lebe mit seiner {family_member} "
+        f"und vier Kinder zusammen.\n"
+        f"Familiäre Anamnese : Die Mutter des Patienten leide an Zuckerkrankheit und der {family_member} habe einen Schlaganfall"
+        f"hinter sich.\n"
+        f"Die Anamnese, Laborwerte und eine CT Kopf weisen auf einen Schlaganfall hin. Lyse-therapie wurde nach der CT begonnen.\n"
 
     ]
+
 
     # Generate text from template or augmented sentence
-    if random.random() < 0.5:
+    if random.random() < 0.9999:
         # Paraphrased version
         text, spans = __generate_augmented_sentence_with_spans(entities)
         # spans2 = build_spans(text, entities)
         tokens, labels = __char_spans_to_bio_labels(text, spans, LABEL2ID)
     else:
         # Use structured template
-        template = random.choice(general_templates + structured_templates + real_template)
+        template = random.choice(templates )
+
+
         # Optional field appending
         optional_fields = []
         if allergy: optional_fields.append(f"Allergien: {allergy}.")
@@ -299,10 +316,91 @@ def generate_report(token=None):
             template += "\n" + " ".join(optional_fields)
 
         text = template
-        tokens, labels = __tokenize_and_label(text, entities)
 
+        # spans = __find_entity_spans(text, entities)
+
+        # bio_labels = __char_spans_to_bio_labels(text, spans, LABEL2ID)
+        tokens, labels = __tokenize_and_label(text, entities)# before  entities
+        labels = clean_ner_tags_generic(tokens, labels)
     return text, entities, tokens, labels
 
+def clean_ner_tags_generic(tokens, ner_tags):
+    clean_tags = ner_tags.copy()
+    n = len(tokens)
+    punctuation = {".", ",", ":", ";", "-", "(", ")", "?"}
+
+    # Erweiterte Liste medizinischer Stoppwörter
+   
+    for i in range(n):
+        token = tokens[i]
+        label_id = clean_tags[i]
+        label = ID2LABEL[label_id]
+
+        # Satzzeichen immer O
+        if token in punctuation:
+            clean_tags[i] = LABEL2ID["O"]
+            continue
+
+        # Stoppwörter immer O
+        if token.lower() in medical_stop_words:
+            clean_tags[i] = LABEL2ID["O"]
+            continue
+
+    # BIO-Konsistenz prüfen und korrigieren (wie gehabt) ...
+    for i in range(n):
+        label_id = clean_tags[i]
+        label = ID2LABEL[label_id]
+
+        if label.startswith("I-"):
+            entity_type = label.split("-", 1)[1]
+            if i == 0:
+                clean_tags[i] = LABEL2ID.get("B-" + entity_type, label_id)
+            else:
+                prev_label = ID2LABEL[clean_tags[i - 1]]
+                prev_entity_type = prev_label.split("-", 1)[1] if "-" in prev_label else None
+                if not (prev_entity_type == entity_type and prev_label.startswith(("B-", "I-"))):
+                    clean_tags[i] = LABEL2ID.get("B-" + entity_type, label_id)
+
+        if label.startswith("B-") and i > 0:
+            entity_type = label.split("-", 1)[1]
+            prev_label = ID2LABEL[clean_tags[i - 1]]
+            prev_entity_type = prev_label.split("-", 1)[1] if "-" in prev_label else None
+            if prev_label.startswith(("B-", "I-")) and prev_entity_type == entity_type:
+                clean_tags[i] = LABEL2ID.get("I-" + entity_type, label_id)
+
+    return clean_tags
+
+medical_stop_words = {
+    # Allgemeine Funktionswörter
+    "und", "oder", "aber", "weil", "dass", "wenn", "während", "obwohl", "sowie",
+    "nicht", "kein", "keine", "ohne", "mit", "von", "zu", "für", "über", "unter",
+    "zwischen", "an", "bei", "in", "auf", "aus", "nach", "vor", "seit", "gegen",
+    "wurde", "wird", "ist", "sind", "hat", "haben", "war", "waren", "sein",
+    "der", "die", "das", "ein", "eine", "einer", "eines", "einem", "dem", "den",
+    "des", "dieser", "dieses", "jener", "jenes",
+
+    # Häufige medizinische Füllwörter / Verben
+    "diagnostiziert", "festgestellt", "behandelt", "therapiert", "verabreicht",
+    "geführt", "untersucht", "festgestellt", "bericht", "berichtet", "angaben",
+    "auffällig", "normal", "nicht", "wurde", "wurden", "zeigt", "klagt",
+    "beschreibt", "leidet", "auftreten", "auftreten", "kommt", "besteht", "zeigt",
+    "beinhaltet", "bedeutet", "notwendig", "erforderlich", "empfohlen",
+
+    # Allgemeine zeitliche und organisatorische Begriffe
+    "datum", "zeitpunkt", "vorherige", "frühere", "aktuelle", "derzeitige",
+    "patient", "person", "patientin", "patienten", "bericht", "berichtet",
+    "einrichtung", "klinik", "abteilung", "station", "arzt", "ärztin", "dr",
+    "prof", "professor", "untersuchung", "verfahren", "befund", "impression",
+    "diagnose", "therapie", "medikation", "medikament", "allergie", "risikofaktor",
+    "symptom", "zeichen",
+
+    # Häufige Messwerte und Vitalparameter
+    "temperatur", "puls", "blutdruck", "atemfrequenz", "gewicht", "größe", "größe",
+    "werte", "parameter",
+
+    # Weitere allgemeine Wörter
+    "es", "er", "sie", "wir", "ich", "man", "sich"
+}
 
 def __simple_tokenize(text):
     return re.findall(r"\w+|[^\w\s]", text, re.UNICODE)
@@ -324,17 +422,6 @@ def __inject_noise(text, typo_prob=0.05, punctuation_prob=0.05):
     noisy_text = " ".join(noisy_words)
     noisy_text = corrupt_punctuation(noisy_text)
     return noisy_text
-
-def build_spans(text, entities):
-    spans = {}
-    for entity_text, entity_type in entities.items():
-        start_idx = text.find(entity_text)
-        if start_idx == -1:
-            # Entity text not found, skip or handle error
-            continue
-        end_idx = start_idx + len(entity_text)
-        spans[entity_text] = (start_idx, end_idx, entity_type)
-    return spans
 
 
 def __char_spans_to_bio_labels(text, spans, label_map):
@@ -372,7 +459,7 @@ def __char_spans_to_bio_labels(text, spans, label_map):
         inside_tokens = []
         for i, (tok_start, tok_end) in enumerate(token_positions):
             # Check if token overlaps with entity span
-            if tok_start >= start_char and tok_end <= end_char:
+            if not (tok_end <= start_char or tok_start >= end_char):
                 inside_tokens.append(i)
 
         if not inside_tokens:
@@ -390,6 +477,40 @@ def __char_spans_to_bio_labels(text, spans, label_map):
 
 def __paraphrase_entity(entity_type, value):
     variations = {
+        "PERSON": [
+            f"Patient: {value}",
+            f"Name: {value}",
+            f"{value} stellte sich vor",
+            f"Betroffene Person: {value}"
+        ],
+        "BIRTHDATE":[
+            f"geboren am: {value}",
+            f"Geburtsdatum: {value}",
+        ],
+        "FAMILY_STATUS":[
+           f"begleitet von {value}",
+           f"bei sich hat {value}" 
+        ],
+        "VITALSIGNS":[
+            f"{value}",
+        ],
+
+        "IMMUNIZATION":[
+            f"Impfungen: {value}",
+            f"geimpft gegen {value}"
+        ],
+        "OCCUPATION":[
+            f"aktueller Beruf: {value}",
+            f"is {value} von Beruf",
+            f"er ist {value}",
+            f"arbeitet als {value}",
+            f"keine Beschäftigung",
+        ],
+        "ALLERGY":[
+            f"allergisch auf: {value}",
+            f"bekannte Allergien: {value}"
+            f"Allergien: {value}"
+            ],
         "DIAGNOSIS": [
             f"es wurde {value} diagnostiziert",
             f"Diagnose: {value}",
@@ -414,12 +535,7 @@ def __paraphrase_entity(entity_type, value):
             f"{value} führte die Untersuchung durch",
             f"Arzt: {value}"
         ],
-        "PERSON": [
-            f"Patient: {value}",
-            f"Name: {value}",
-            f"{value} stellte sich vor",
-            f"Betroffene Person: {value}"
-        ],
+
         "ORG": [
             f"im Krankenhaus {value}",
             f"Einrichtung: {value}",
@@ -432,6 +548,19 @@ def __paraphrase_entity(entity_type, value):
             f"am Untersuchungsdatum {value}",
             f"Datum des Berichts: {value}"
         ],
+        "DEVICE":[
+            "es wird empfohlen {value} zu verwenden",
+            "{value} wird verwendet",
+        ],
+        "FAMHIST":[
+            f"in der Familie gab es schon fälle mit {value}",
+        ],
+
+        "RISKFACTOR":[
+            f"mögliche Risikofaktoren: {value}",
+            f"es sind {value} möglich",
+            f"es bestehen {value}"
+        ]
         # add more as needed
     }
     if entity_type in variations:
@@ -451,7 +580,7 @@ def __generate_augmented_sentence_with_spans(entities, inject_noise_flag=True):
     """
 
     # Define a logical order for entity types for better flow
-    order = ['PERSON', 'SYMPTOM', 'DIAGNOSIS', 'MEDICATION', 'TREATMENT', 'DOCTOR', 'ORG', 'DATE']
+   # order = ['PERSON', 'SYMPTOM', 'DIAGNOSIS', 'MEDICATION', 'TREATMENT', 'DOCTOR', 'ORG', 'DATE']
 
     pieces = []
     spans = []
@@ -475,11 +604,12 @@ def __generate_augmented_sentence_with_spans(entities, inject_noise_flag=True):
         current_pos += 1
 
     # Compose sentence piecewise in order
-    for ent_type in order:
+    for ent_type in ENTITY_LIST:
         for value, etype in entities.items():
             if etype == ent_type:
                 phrase = __paraphrase_entity(ent_type, value)
-                phrase = safe_inject_noise(phrase)
+                phrase = safe_inject_noise(phrase)# the length could be change
+                phrase = __paraphrase_entity(ent_type, value)
                 add_phrase(phrase, ent_type)
 
     # Join pieces, strip trailing space
@@ -500,26 +630,35 @@ def __tokenize_and_label(text, entities):
         ent_tokens = __simple_tokenize(entity_text)
         n = len(ent_tokens)
         for i in range(len(tokens) - n + 1):
-            # Case-insensitive check
             if [t.lower() for t in tokens[i:i+n]] == [t.lower() for t in ent_tokens]:
-                # Avoid overwriting existing labels if needed:
-                if labels[i] == "O":
+                if all(label == "O" for label in labels[i:i+n]):
                     labels[i] = f"B-{ent_type}"
                     for j in range(1, n):
                         labels[i+j] = f"I-{ent_type}"
-                # Remove 'break' to label all occurrences
-                # break  
 
     label_ids = [LABEL2ID.get(label, 0) for label in labels]
     return tokens, label_ids
 
+
 def __simple_tokenize(text):
-    return re.findall(r"\w+|[^\w\s]", text, re.UNICODE)
+    # Token: Wörter, Zahlen mit Punkt oder Slash, oder einzelne Satzzeichen
+    pattern = r"\d+[\./]?\d*|\w+|[^\w\s]"
+    return re.findall(pattern, text, re.UNICODE)
+
 
 
 def __save_reports_as_txt(text, filename):
     with open(filename, "w", encoding="utf-8") as f:
         f.write(text)
+
+def __validate_bio_sequence(tokens, tags):
+    for i, tag in enumerate(tags):
+        label = ID2LABEL[tag]
+        if label.startswith("I-"):
+            if i == 0 or ID2LABEL[tags[i-1]][2:] != label[2:]:
+                print(f"❌ Ungültiger I-Tag ohne vorheriges B-Tag bei Token {i}: '{tokens[i]}' → {label}")
+        if label == "O" and tokens[i] in [".", ",", ":", ";"]:
+            continue  # OK
 
 def generate_dataset(n_samples=1000, save_reports=False):
 
@@ -529,6 +668,9 @@ def generate_dataset(n_samples=1000, save_reports=False):
     data = []
     for i in range(n_samples):
         text, entities, tokens, labels = generate_report(token=None)
+
+        # we need to validate if the results, it they match with LABEL...
+        __validate_bio_sequence(tokens,labels)
 
         if save_reports:
             filename = f"./txt_reports/report_{i+1}.txt"
@@ -540,8 +682,12 @@ def generate_dataset(n_samples=1000, save_reports=False):
             "ner_tags": labels
         })
 
+
+    clean_data = refresh_and_clean_ner_labels(data= data, id2label= ID2LABEL, threshold= 0.95)
+
+
     # Split train/val
-    train, val = train_test_split(data, test_size=0.1, random_state=42)
+    train, val = train_test_split(clean_data, test_size=0.1, random_state=42)
     
     os.makedirs("./data", exist_ok=True)
 
@@ -560,7 +706,7 @@ def generate_dataset(n_samples=1000, save_reports=False):
 # Run as script
 if __name__ == "__main__":
     import sys
-    n_samples = 10000
+    n_samples = 1000
     if len(sys.argv) == 2:
         print("Usage: python generate_dataset.py <n_samples>")
         n_samples = int(sys.argv[1])
