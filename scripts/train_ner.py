@@ -20,7 +20,8 @@ DATA_PATH = "./data/synthetic_ner_data.json"
 OUTPUT_DIR = "./models/gbert-base"
 DATA_FILES = {
     "train": "./data/train.json",
-    "test": "./data/val.json"
+    "validation": "./data/val.json",
+    "test": "./data/test.json"
 }
 
  
@@ -130,12 +131,15 @@ def main():
         model=model,
         args=training_args,
         train_dataset=tokenized_datasets["train"],
-        eval_dataset=tokenized_datasets["test"],
+        eval_dataset=tokenized_datasets["validation"],
         tokenizer=tokenizer,
         data_collator=data_collator,
         compute_metrics=__compute_metrics,
     )
     trainer.train()
+    print("\nEvaluating on test dataset...")
+    test_metrics = trainer.evaluate(eval_dataset=datasets["test"])
+    print(f"Test metrics: {test_metrics}")
     trainer.save_model(OUTPUT_DIR)
     # === Evaluation on test dataset ===
     print("\n🔎 Running evaluation on test set:")
@@ -157,11 +161,7 @@ def main():
         print(f"\nSample {i + 1}:")
         print("\nTrue tags:  ", true_labels[i])
         print("\nPred tags:  ", true_preds[i])
-        # word_ids = tokenizer.word_ids(batch_index=i)
-        # print(f"\nTokens: {tokenized_datasets['test'][i]['tokens']}")
-        # print(f"Word IDs: {word_ids}")
-        # print(f"Labels: {tokenized_datasets['test'][i]['labels']}")
-   
+  
 
 if __name__ == "__main__":
     __set_seed(42)

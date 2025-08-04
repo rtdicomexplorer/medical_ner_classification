@@ -705,18 +705,21 @@ def generate_dataset(n_samples=1000, save_reports=False):
 
 
     # Split train/val
-    train, val = train_test_split(clean_data, test_size=0.1, random_state=42)
+    trains, validations = train_test_split(clean_data, test_size=0.1, random_state=42)
+    trains, tests = train_test_split(trains, test_size=0.1, random_state=42)
     
     os.makedirs("./data", exist_ok=True)
 
     with open("./data/train.json", "w", encoding="utf-8") as f:
-        json.dump(train, f, indent=2, ensure_ascii=False)
+        json.dump(trains, f, indent=2, ensure_ascii=False)
     with open("./data/val.json", "w", encoding="utf-8") as f:
-        json.dump(val, f, indent=2, ensure_ascii=False)
-
+        json.dump(validations, f, indent=2, ensure_ascii=False)
+    with open("./data/test.json", "w", encoding="utf-8") as f:
+        json.dump(tests, f, indent=2, ensure_ascii=False)
     print("✅ Synthetic dataset generated:")
-    print(f"→ ./data/train.json ({len(train)} samples)")
-    print(f"→ ./data/val.json ({len(val)} samples)")
+    print(f"→ ./data/train.json ({len(trains)} samples)")
+    print(f"→ ./data/val.json ({len(validations)} samples)")
+    print(f"→ ./data/test.json ({len(tests)} samples)")
     if save_reports:
         print(f"→ ./txt_reports/ ({n_samples} samples)")
 

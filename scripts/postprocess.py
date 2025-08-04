@@ -1,5 +1,5 @@
 
-def resolve_conflicts(entities):
+def __resolve_conflicts(entities):
     """
     If the same span has multiple labels, pick the highest priority one.
     """
@@ -25,8 +25,8 @@ def resolve_conflicts(entities):
             grouped[key] = ent
         else:
             existing = grouped[key]
-            existing_priority = LABEL_PRIORITY.get(existing["entity"], 100)
-            new_priority = LABEL_PRIORITY.get(ent["entity"], 100)
+            existing_priority = LABEL_PRIORITY.get(existing["entity_group"], 100)
+            new_priority = LABEL_PRIORITY.get(ent["entity_group"], 100)
             if new_priority < existing_priority:
                 grouped[key] = ent  # replace with higher-priority entity
 
@@ -52,22 +52,17 @@ def postprocess_entities(entities):
 
     def should_merge(e1, e2):
         gap = e2["start"] - e1["end"]
-        same_label = e1["entity"] == e2["entity"]
+        same_label = e1["entity_group"] == e2["entity_group"]
         continuation = e2["word"][0].isupper()
         return same_label and (0 <= gap <= 1 or continuation)
 
     # Step 1: Filter + Merge subwords
     for ent in entities:
-        curr_entity = ent['entity']
-        if '-' in curr_entity:
-            index = curr_entity.index('-')+1
-            curr_entity = curr_entity[index:]
-
-        if ent["score"] < get_threshold(curr_entity):
+        if ent["score"] < get_threshold():
             continue
 
         ent_clean = {
-            "entity": curr_entity,
+            "entity_group": ent["entity_group"],
             "word": ent["word"].lstrip("##"),
             "score": float(ent["score"]),
             "start": ent["start"],
@@ -96,7 +91,7 @@ def postprocess_entities(entities):
             continue
 
         same_person = (
-            buffer["entity"] == ent["entity"] == "PERSON"
+            buffer["entity_group"] == ent["entity_group"] == "PERSON"
             and 0 <= ent["start"] - buffer["end"] <= 2
         )
 
@@ -115,7 +110,7 @@ def postprocess_entities(entities):
     unique = []
     seen = set()
     for ent in final:
-        key = (ent["word"].lower(), ent["entity"], ent["start"], ent["end"])
+        key = (ent["word"].lower(), ent["entity_group"], ent["start"], ent["end"])
         if key not in seen:
             seen.add(key)
             unique.append(ent)
@@ -124,7 +119,7 @@ def postprocess_entities(entities):
     clean = []
     for ent in unique:
         word = ent["word"].strip()
-        group = ent["entity"]
+        group = ent["entity_group"]
 
         # Drop junk
         if word in [",", ".", "und", "oder"]:
@@ -146,5 +141,5 @@ def postprocess_entities(entities):
 
         clean.append(ent)
 
-    return resolve_conflicts(clean)
+    return __resolve_conflicts(clean)
     return clean

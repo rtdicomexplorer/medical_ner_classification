@@ -53,4 +53,4 @@ def run_validation(json_path, max_errors=5):
 
 
 if __name__ == "__main__":
-    run_validation("./data/train.json")
+    run_validation("./data/test.json")
