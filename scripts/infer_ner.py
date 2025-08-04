@@ -1,10 +1,11 @@
 import os
 import json
+import torch
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 from text_extractor import extract_text   # Your custom text extractor
 from postprocess import postprocess_entities  # Your custom postprocessing
 from ner_to_fhir import map_ner_to_fhir    # Your mapping from NER to FHIR
-
+from config import ID2LABEL,LABEL2ID
 MODEL_PATH = "./models/gbert-base"
 OUTPUTDIR = "output"
 
@@ -17,17 +18,26 @@ def main(file_path):
     # text = "Patient Otto Kromberger leidet an Kopfschmerzen."
     tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
     model = AutoModelForTokenClassification.from_pretrained(MODEL_PATH)
-    nlp = pipeline("ner", model=model, tokenizer=tokenizer, aggregation_strategy="simple")# or simple aggregation_straty=> Entity_group
+
+    model.config.id2label = ID2LABEL
+    model.config.label2id = LABEL2ID
+    nlp = pipeline("ner", model=model, 
+                   tokenizer=tokenizer, 
+                   aggregation_strategy="simple",
+                   device=0 if torch.cuda.is_available() else -1  # 0 = CUDA, -1 = CPU
+                   )# or simple aggregation_straty=> Entity_group
 
     entities = nlp(text)
     for ent in entities:
+        entity_type = ent.get("entity_group", ent.get("entity"))
         # print(ent)
-        print(f"Entity: '{ent['word']}'  |  Type: {ent['entity_group']}  |  Score: {ent['score']:.3f}")
+        print(f"Entity: '{ent['word']}'  |  Type: {entity_type}  |  Score: {ent['score']:.3f}")
     clean_entities = postprocess_entities(entities, confidence_threshold=0.1)
 
     print("\n--- After postprocessing ---")
     for ent in clean_entities:
-        print(f"Entity: '{ent['word']}'  |  Type: {ent['entity_group']}  |  Score: {ent['score']:.3f}  |  Span: ({ent['start']}, {ent['end']})")
+        entity_type = ent.get("entity_group", ent.get("entity"))
+        print(f"Entity: '{ent['word']}'  |  Type: {entity_type}  |  Score: {ent['score']:.3f}  |  Span: ({ent['start']}, {ent['end']})")
 
     fhir_output = map_ner_to_fhir(clean_entities)
 

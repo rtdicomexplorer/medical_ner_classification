@@ -58,11 +58,12 @@ def postprocess_entities(entities):
 
     # Step 1: Filter + Merge subwords
     for ent in entities:
-        if ent["score"] < get_threshold():
+        entity_type = ent.get("entity_group", ent.get("entity"))
+        if ent["score"] < get_threshold(entity_type):
             continue
 
         ent_clean = {
-            "entity_group": ent["entity_group"],
+            "entity_group": entity_type,
             "word": ent["word"].lstrip("##"),
             "score": float(ent["score"]),
             "start": ent["start"],

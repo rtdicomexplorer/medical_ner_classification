@@ -137,9 +137,6 @@ def main():
         compute_metrics=__compute_metrics,
     )
     trainer.train()
-    print("\nEvaluating on test dataset...")
-    test_metrics = trainer.evaluate(eval_dataset=datasets["test"])
-    print(f"Test metrics: {test_metrics}")
     trainer.save_model(OUTPUT_DIR)
     # === Evaluation on test dataset ===
     print("\n🔎 Running evaluation on test set:")
