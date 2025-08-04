@@ -38,7 +38,7 @@ doctors = ["Dr. Müller", "Dr. Schneider", "Dr. Becker", "Dr. Weber","Dr. Suhle 
            "Dr. Adams", "Dr. Lee", "Dr. Patel", "Dr. Chen"]
 
 
-symptoms = ["Brustschmerzen", "Atemnot", "Fieber", "Müdigkeit","dumpfe Kopfschmerzen", "Sehstörung", "Sprachstörung", "Kribbeln im linken Arm"],
+symptoms = ["Brustschmerzen", "Atemnot", "Fieber", "Müdigkeit","dumpfe Kopfschmerzen", "Sehstörung", "Sprachstörung", "Kribbeln im linken Arm"]
 medications = ["Metformin", "Lisinopril", "Albuterol", "Amoxicillin","Ramipril 5mg", "Metformin", "Schlafmedikamente"]
 treatments = ["Sauerstofftherapie", "Operation", "Chemotherapie", "Physiotherapie"]
 lab_results = ["Hb 13.5 g/dL", "Blutzucker 110 mg/dL", "Cholesterin 200 mg/dL","Glukose: 110 mg/dL"]
@@ -120,7 +120,12 @@ def generate_report(token =  None):
     immunization = random.choice(immunizations) if random.choice([True, False]) else None
     device = random.choice(devices) if random.choice([True, False]) else None
     family_history = random.choice(family_histories) if random.choice([True, False]) else None
-
+    symptom = random.choice(symptoms)
+    medication = random.choice(medications)
+    treatment = random.choice(treatments)
+    procedure = random.choice(procedures)
+    department = random.choice(departments)
+    lab_result = random.choice(lab_results)
 
     general_templates = [
         f"Am {date} stellte sich Patient {name} ({gender}), geboren am {birthdate}, Familienstand: {family_status} mit {symptom} vor. Diagnose: {diagnosis}. "
@@ -186,32 +191,7 @@ def generate_report(token =  None):
 
     # templates = add_optionals(general_templates + structured_templates)
     # text = random.choice(templates)
-
-
-    # Generate synthetic sentence using paraphrasing + noise
-    augmented_sentence = generate_augmented_sentence(entities)
-
-    # Optional: blend with one of the structured templates
-    templates = add_optionals(general_templates + structured_templates)
-    fallback_sentence = random.choice(templates)
-
-    # Mix structured and augmented text 50/50
-    if random.random() < 0.5:
-        text = fallback_sentence
-    else:
-        text = augmented_sentence
-
-
-    symptom = random.choice(symptoms)
-    medication = random.choice(medications)
-    treatment = random.choice(treatments)
-    procedure = random.choice(procedures)
-    department = random.choice(departments)
-    lab_result = random.choice(lab_results)
-
-
-
-    # Entity dictionary
+  # Entity dictionary
     entities = {
         name: "PERSON",
         doctor: "DOCTOR",
@@ -242,6 +222,26 @@ def generate_report(token =  None):
     if riskfactor:
         entities[riskfactor] = "RISKFACTOR"
 
+
+    # Generate synthetic sentence using paraphrasing + noise
+    augmented_sentence = generate_augmented_sentence(entities)
+
+    # Optional: blend with one of the structured templates
+    templates = add_optionals(general_templates + structured_templates)
+    fallback_sentence = random.choice(templates)
+
+    # Mix structured and augmented text 50/50
+    if random.random() < 0.5:
+        text = fallback_sentence
+    else:
+        text = augmented_sentence
+
+
+
+
+
+
+  
 
     match = re.search(r"(Eine erneute Kontrolluntersuchung wird .*? empfohlen)", text)
     if match:
@@ -353,14 +353,20 @@ def generate_dataset(n_samples=1000, save_report=False):
         data.append({"tokens": tokens, "ner_tags": labels})
 
     train, val = train_test_split(data, test_size=0.1, random_state=42)
+
+    train, test = train_test_split(train, test_size=0.1, random_state=42)
+    
     os.makedirs("./data", exist_ok=True)
     with open("./data/train.json", "w", encoding="utf-8") as f:
         json.dump(train, f, indent=2, ensure_ascii=False)
     with open("./data/val.json", "w", encoding="utf-8") as f:
         json.dump(val, f, indent=2, ensure_ascii=False)
+    with open("./data/test.json", "w", encoding="utf-8") as f:
+        json.dump(test, f, indent=2, ensure_ascii=False)    
 
     print("✅ Synthetic dataset generated:")
     print(f"→ ./data/train.json ({len(train)} samples)")
+    print(f"→ ./data/test.json ({len(test)} samples)")
     print(f"→ ./data/val.json ({len(val)} samples)")
     if save_report:
         print(f"→ ./txt_reports/reports ({i+1} samples)")

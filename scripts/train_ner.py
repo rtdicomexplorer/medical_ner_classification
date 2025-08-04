@@ -15,13 +15,15 @@ import random
 # "Charité/Medbert-Deutsch"           # Specifically trained on German medical data
 
 
-MODEL_NAME = 'deepset/gbert-base'#"emilyalsentzer/Bio_ClinicalBERT"
+MODEL_NAME = 'deepset/gbert-base'#"emilyalsentzer/Bio_ClinicalBERT" #medgpt/gbert-medical-ner
 DATA_PATH = "./data/synthetic_ner_data.json"
 OUTPUT_DIR = "./models/gbert-base"
 DATA_FILES = {
     "train": "./data/train.json",
-    "test": "./data/val.json"
+    "validation": "./data/val.json",
+    "test": "./data/test.json"
 }
+
 
  
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
@@ -129,12 +131,16 @@ def main():
         model=model,
         args=training_args,
         train_dataset=tokenized_datasets["train"],
-        eval_dataset=tokenized_datasets["test"],
+        eval_dataset=tokenized_datasets["validation"],
         tokenizer=tokenizer,
         data_collator=data_collator,
         compute_metrics=__compute_metrics,
     )
     trainer.train()
+    print("\nEvaluating on test dataset...")
+    test_metrics = trainer.evaluate(eval_dataset=datasets["test"])
+    print(f"Test metrics: {test_metrics}")
+
     trainer.save_model(OUTPUT_DIR)
     # === Evaluation on test dataset ===
     print("\n🔎 Running evaluation on test set:")
