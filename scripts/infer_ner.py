@@ -22,12 +22,12 @@ def main(file_path):
     entities = nlp(text)
     for ent in entities:
         # print(ent)
-        print(f"Entity: '{ent['word']}'  |  Type: {ent['entity_group']}  |  Score: {ent['score']:.3f}")
-    clean_entities = postprocess_entities(entities, confidence_threshold=0.1)
+        print(f"Entity: '{ent['word']}'  |  Type: {ent['entity']}  |  Score: {ent['score']:.3f} |  Span: ({ent['start']}, {ent['end']})")
+    clean_entities = postprocess_entities(entities)
 
     print("\n--- After postprocessing ---")
     for ent in clean_entities:
-        print(f"Entity: '{ent['word']}'  |  Type: {ent['entity_group']}  |  Score: {ent['score']:.3f}  |  Span: ({ent['start']}, {ent['end']})")
+        print(f"Entity: '{ent['word']}'  |  Type: {ent['entity']}  |  Score: {ent['score']:.3f}  |  Span: ({ent['start']}, {ent['end']})")
 
     fhir_output = map_ner_to_fhir(clean_entities)
 
