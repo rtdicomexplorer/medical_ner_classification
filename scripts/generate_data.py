@@ -9,6 +9,10 @@ from utils import *
 from sklearn.model_selection import train_test_split
 import simple_icd_10 as icd
 from idc_api import fetch_icd_description,get_token
+import uuid
+
+def _generate_patint_id():
+    return str(uuid.uuid4())[:8]
 
 def __generate_random_weight_height():
     # Gewicht zwischen 45 und 120 kg, auf 1 Dezimalstelle
@@ -16,6 +20,8 @@ def __generate_random_weight_height():
     # Größe zwischen 150 und 200 cm
     height = random.randint(50, 210)
     return f"{weight} kg",f"{height} cm"
+
+
 
 def __add_random_dose(med_name):
     doses = [
@@ -78,6 +84,7 @@ def generate_report(token=None):
     birthdate = __random_birthdate(min_age=1, max_age=95)
     family_status = __random_family_status()
     weight, height = __generate_random_weight_height()
+    pid = _generate_patint_id()
 
     symptom = random.choice(symptoms)
     medication = __add_random_dose(random.choice(medications))
@@ -108,6 +115,7 @@ def generate_report(token=None):
     # Build entity dictionary
     entities = {
         name: "PERSON",
+        pid :"PID",
         weight:"GEWICHT",
         height:"GROESSE",
         doctor: "DOCTOR",
@@ -158,7 +166,7 @@ def generate_report(token=None):
         f"Folgegrund: {followup_reason or 'keine Angabe'}. "
         f"{followup_sentence}",
         
-        f"{name} kam am {date} ins {hospital_name}, {hospital_address} mit {family_member} Beschwerden: {symptom}. "
+        f"{name} {gender} id: {pid}, kam am {date} ins {hospital_name}, {hospital_address} mit {family_member} Beschwerden: {symptom}. "
         f"Gewicht {weight} für eine Größe von {height} "
         f"Untersuchung durch {doctor}. Diagnose: {diagnosis} (ICD‑10: {icd10_code} – {icd_description}). "
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}. "
@@ -167,7 +175,7 @@ def generate_report(token=None):
         f"Laborbefund: {lab_result}. Tel: {hospital_phone}. "
         f"Folgegrund: {followup_reason or 'keine Angabe'}. {followup_sentence}",
         
-        f"Bei der Untersuchung am {date} im {hospital_name} wurde bei {name} {diagnosis} festgestellt. "
+        f"Bei der Untersuchung am {date} im {hospital_name} wurde bei {name} {gender} id: {pid}  {diagnosis} festgestellt. "
         f"Symptome: {symptom}. Behandelt mit {medication} und {treatment}. "
         f"Durchgeführt von {doctor} in der {department}. Labor: {lab_result}. "
         f"Adresse: {hospital_address}, Kontakt: {hospital_phone}. "
@@ -185,6 +193,7 @@ def generate_report(token=None):
         f"In der Familie bestehen Vorerkrankungen: Die {family_member} des Patienten litt ebenfalls an {diagnosis}. "
         f"Der Patient wurde von seiner {family_member} wegen zunehmender {symptom} in die Klinik gebracht. "
         f"Der Patient wiegt {weight} für eine Größe von {height}"
+        f"Patient ist {gender} und hat eine: {pid},"
         
        f"--- RADIOLOGY REPORT ---\n\n\nPatient: {name} ({gender}),  "
        f"geboren am {birthdate}\nDatum: {date}\nVerfahren: {procedure}\n  Beruf:{occupation}\n Gewicht: {weight} \n Größe: {height}\n"
@@ -194,7 +203,7 @@ def generate_report(token=None):
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}\nImpression: {impression or 'nicht dokumentiert'}\n"
         f"Folgegrund: {followup_reason or 'keine Angabe'}\n{followup_sentence}",
 
-        f"--- FOLLOW-UP VISIT ---\n\n\nDatum: {date}\nPatient: {name} ({gender}), geboren am {birthdate} Gewicht: {weight} \n Größe: {height}\n"
+        f"--- FOLLOW-UP VISIT ---\n\n\nDatum: {date}\nPatient: {name} ({gender}), id:{pid}, geboren am {birthdate} Gewicht: {weight} \n Größe: {height}\n"
         f"Arbeitet als {occupation}\n Grund: Nachuntersuchung wegen {symptom}\n "
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}\nImpression: {impression or 'nicht dokumentiert'}\n"
         f"Diagnose: {diagnosis} (ICD‑10: {icd10_code} – {icd_description})..\nAktueller Zustand stabil\n"
@@ -202,7 +211,7 @@ def generate_report(token=None):
         f"Abteilung: {department}\nKlinik: {hospital_name}\nAdresse: {hospital_address}\nTelefon: {hospital_phone}\n"
         f"Folgegrund: {followup_reason or 'keine Angabe'}\n{followup_sentence}",
 
-        f"--- Entlassungsbrief---\nPatient: {name} geboren am {birthdate}\nAufnahme: {date}\nKlinik: {hospital_name}\n"
+        f"--- Entlassungsbrief---\nPatient: {name} geboren am {birthdate}\nAufnahme: {date}\nKlinik: {hospital_name}\n Patient id:: {pid} .\n"
         f"Abteilung: {department}\n"
         f"Hauptdiagnose: {diagnosis}\nBeschwerden bei Aufnahme: {symptom}\nBehandlung: {medication} und {treatment}\n"
         f"Eingriff: {procedure}\nVerantwortlicher Arzt: {doctor}\nEntlassung in stabilem Zustand\n"
@@ -219,12 +228,15 @@ def generate_report(token=None):
         f"Adresse: {hospital_address}. Tel: {hospital_phone}.\n"
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}\nImpression: {impression or 'nicht dokumentiert'}\n"
         f"Folgegrund: {followup_reason or 'keine Angabe'}",
-        f"--- Artzbrief\n\n\n\n"
-        f"Patientenname : {name}\n\n"
-        f"Geburtsdatum : {birthdate}\n\n"
-        f"Gewicht: {weight}\n\n"
-        f"Größe: {height} cm\n\n\n"
-        f"Hausarzt : {doctor}.\n\n\n"
+
+        f"--- Artzbrief\n\n"
+        f"Patientenname : {name}\n"
+        f"Geschlecht: {gender}\n"
+        f"Geburtsdatum : {birthdate}\n"
+        f"Gewicht: {weight}\n"
+        f"Größe: {height} cm\n"
+        f"Hausarzt : {doctor}.\n"
+        f"ID: {pid}.\n\n"
         f"Der Patient, {name} , stellte sich mit stark anhaltend dumpfen {symptom} vor, die er seit gestern habe."
         f"Herr {name} sei auch niedergeschlagen. Darüber hinaus berichte er über Kribbeln auf der linke Arm."
         f"Er habe auch berichtet, dass er eine Sehstörung und Sprachstörung (Wortfindungsstörung und lallende Ansprache) entwickelt "
@@ -445,6 +457,11 @@ def __paraphrase_entity(entity_type, value):
            f"begleitet von {value}",
            f"bei sich hat {value}" 
         ],
+        "PID":[
+            f"patient-id {value}",
+            f"ID: {value}",
+            f"PID: {value}"
+        ],
         "VITALSIGNS":[
             f"{value}",
         ],
@@ -514,7 +531,19 @@ def __paraphrase_entity(entity_type, value):
             f"mögliche Risikofaktoren: {value}",
             f"es sind {value} möglich",
             f"es bestehen {value}"
+        ],
+        "WEIGHT":[
+            f"wiegt: {value}",
+            f"er/sie wiegt {value}",
+            f"das Gewicht ist {value}"
+        ],
+        "HEIGHT":[
+            f"Groesse: {value}",
+            f"er/sie is {value} groß",
+            f"die Größe is {value}",
         ]
+
+
         # add more as needed
     }
     if entity_type in variations:

@@ -430,22 +430,86 @@ def refresh_and_clean_ner_labels(data, id2label, threshold = 0.95):
 
 
 
+
+
+
+
+
+
+def extract_patterns_from_rad_openbook():
+    import pandas as pd
+
+    # Load the CSV
+    df = pd.read_csv("./documents/core-playbook-dev.csv")
+
+    # Drop rows with missing procedure names
+    df = df.dropna(subset=["LONG_NAME"])
+
+    # Build patterns
+    patterns = []
+
+    for _, row in df.iterrows():
+        proc_name = row["LONG_NAME"].strip()
+        modality = str(row.get("Modality", "")).strip()
+        anatomy = str(row.get("Anatomic_Focus", "")).strip()
+
+        # Add procedure
+        if proc_name:
+            patterns.append({"label": "PROCEDURE", "pattern": proc_name})
+
+        # Add anatomy
+        if anatomy and len(anatomy) > 2:
+            patterns.append({"label": "ANATOMY", "pattern": anatomy})
+
+        # Add modality
+        if modality and len(modality) > 2:
+            patterns.append({"label": "MODALITY", "pattern": modality})
+
+    # De-duplicate
+    unique_patterns = {f"{p['label']}::{p['pattern']}": p for p in patterns}
+    final_patterns = list(unique_patterns.values())
+
+    # Save to JSONL for use with spaCy EntityRuler
+    import json
+
+    with open("radlex_patterns.jsonl", "w", encoding="utf-8") as f:
+        for pattern in final_patterns:
+            json.dump(pattern, f)
+            f.write("\n")
+
+    print(f"Generated {len(final_patterns)} unique NER patterns.")
+
+
+
 if __name__ == "__main__":
+
+    from radlex_utilities import extract_reports_from_raw_file, basic_cleanup
+
+
+    extract_patterns_from_rad_openbook()
+    file_path = "./documents/ReportsDATASET.csv"
+    reports = extract_reports_from_raw_file(file_path)
+
+    print(f"Extracted {len(reports)} reports.")
+
+
+    cleaned_reports = basic_cleanup(reports)
+    print(f"Cleaned total: {len(cleaned_reports)} reports")
+    
+ 
+
+  
+    print("\n--- Sample Report ---\n")
+    print(reports[0])
+
+
     # Lade Daten
     data_path = "./data/train.json"
     output_path = "dein_datensatz_cleaned2.json"
 
     with open(data_path, "r", encoding="utf-8") as f:
         data = json.load(f)
-
-
     cleardata = refresh_and_clean_ner_labels(data,ID2LABEL, 0.95)
-
-    #stopwords = __generate_filtered_stopwords(data_path, ID2LABEL, 0.95)
-
-    # for entry in data:
-    #     entry["tokens"],entry["ner_tags"] = __clean_ner_tags(entry["tokens"], entry["ner_tags"], stopwords)
-
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(cleardata, f, indent=2, ensure_ascii=False)
 

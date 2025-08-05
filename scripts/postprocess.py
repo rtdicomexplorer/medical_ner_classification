@@ -39,6 +39,7 @@ def postprocess_entities(entities):
 
     LABEL_THRESHOLDS = {
         "PERSON": 0.15,
+        "PID": 0.15,
         "DOCTOR": 0.15,
         "SYMPTOM": 0.3,
         "MEDICATION": 0.3,
@@ -88,7 +89,7 @@ def postprocess_entities(entities):
         merged.append(buffer)
 
     # Step 2: Merge multi-token entities for selected labels
-    MULTI_TOKEN_LABELS = {"PERSON", "MEDICATION", "DIAGNOSIS", "OCCUPATION", "FAMILYMEMBER"}
+    MULTI_TOKEN_LABELS = {"PERSON", "MEDICATION", "DIAGNOSIS", "OCCUPATION", "FAMILYMEMBER", "BIRTHDATE", "DATE"}
 
     final = []
     buffer = None

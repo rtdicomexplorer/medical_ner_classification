@@ -12,54 +12,154 @@ MODEL_PATH = "./models/gbert-base"
 OUTPUTDIR = "output"
 
 def save_entity_comparison_html(raw_entities, post_entities, filename="ner_comparison.html"):
-    def render_entities(entities):
+    # Build lookup by span
+    raw_by_span = {(e["start"], e["end"]): e for e in raw_entities}
+    post_by_span = {(e["start"], e["end"]): e for e in post_entities}
+
+    all_spans = sorted(set(raw_by_span.keys()).union(post_by_span.keys()))
+
+    def render_table(entities_by_span, compare_to, direction):
         rows = ""
-        for ent in sorted(entities, key=lambda x: x["start"]):
+        for span in all_spans:
+            ent = entities_by_span.get(span)
+            other = compare_to.get(span)
+
+            if not ent:
+                # Entity missing in this version = added/removed
+                continue
+
             word = html.escape(ent["word"])
-            group = html.escape(ent["entity_group"])
+            label = html.escape(ent["entity_group"])
             score = f'{ent["score"]:.3f}'
-            span = f'{ent["start"]}, {ent["end"]}'
-            rows += f"<tr><td>{word}</td><td>{group}</td><td>{score}</td><td>{span}</td></tr>\n"
+            span_str = f'{span[0]}, {span[1]}'
+
+            # Defaults
+            word_class = label_class = score_class = row_class = ""
+
+            if not other:
+                row_class = "added" if direction == "post" else "removed"
+            else:
+                # Compare fields
+                if ent["word"] != other["word"]:
+                    word_class = "changed"
+                if ent["entity_group"] != other["entity_group"]:
+                    label_class = "changed"
+                if round(ent["score"], 3) != round(other["score"], 3):
+                    score_class = "changed"
+
+            rows += (
+                f"<tr class='{row_class}'>"
+                f"<td class='{word_class}'>{word}</td>"
+                f"<td class='{label_class}'>{label}</td>"
+                f"<td class='{score_class}'>{score}</td>"
+                f"<td>{span_str}</td>"
+                f"</tr>\n"
+            )
         return rows
 
     html_content = f"""
-    <!DOCTYPE html>
-    <html lang="de">
-    <head>
-        <meta charset="UTF-8">
-        <title>NER Vergleich</title>
-        <style>
-            body {{ font-family: Arial, sans-serif; margin: 20px; }}
-            table {{ border-collapse: collapse; width: 48%; margin: 1%; float: left; }}
-            th, td {{ border: 1px solid #ccc; padding: 6px 10px; text-align: left; }}
-            th {{ background-color: #f0f0f0; }}
-            h2 {{ clear: both; }}
-            .container {{ display: flex; gap: 2%; }}
-        </style>
-    </head>
-    <body>
-        <h1>NER Entity Vergleich</h1>
-        <div class="container">
-            <div>
-                <h2>Raw Entities</h2>
-                <table>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>NER Vergleich</title>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }}
+        h1 {{
+            text-align: center;
+            margin-bottom: 40px;
+        }}
+        .container {{
+            display: flex;
+            gap: 2%;
+            justify-content: space-between;
+        }}
+        .table-wrapper {{
+            width: 48%;
+            background: #fff;
+            padding: 15px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow-x: auto;
+        }}
+        table {{
+            border-collapse: collapse;
+            width: 100%;
+        }}
+        th, td {{
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+            text-align: left;
+            white-space: nowrap;
+        }}
+        th {{
+            background-color: #eaeaea;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }}
+        tr:hover {{
+            background-color: #f1f1f1;
+        }}
+        h2 {{
+            margin-top: 0;
+            font-size: 1.2em;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+        }}
+        .changed {{
+            background-color: #ffe0e0;
+            font-weight: bold;
+        }}
+        .added {{
+            background-color: #e0ffe0;
+            font-style: italic;
+        }}
+        .removed {{
+            background-color: #fce5cd;
+            font-style: italic;
+        }}
+    </style>
+</head>
+<body>
+    <h1>NER Entity Vergleich</h1>
+    <div class="container">
+        <div class="table-wrapper">
+            <h2>Raw Entities</h2>
+            <table>
+                <thead>
                     <tr><th>Text</th><th>Label</th><th>Score</th><th>Span</th></tr>
-                    {render_entities(raw_entities)}
-                </table>
-            </div>
-            <div>
-                <h2>Postprozessierte Entities</h2>
-                <table>
-                    <tr><th>Text</th><th>Label</th><th>Score</th><th>Span</th></tr>
-                    {render_entities(post_entities)}
-                </table>
-            </div>
+                </thead>
+                <tbody>
+                    {render_table(raw_by_span, post_by_span, direction="raw")}
+                </tbody>
+            </table>
         </div>
-    </body>
-    </html>
-    """
+        <div class="table-wrapper">
+            <h2>Postprozessierte Entities</h2>
+            <table>
+                <thead>
+                    <tr><th>Text</th><th>Label</th><th>Score</th><th>Span</th></tr>
+                </thead>
+                <tbody>
+                    {render_table(post_by_span, raw_by_span, direction="post")}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
+"""
     Path(filename).write_text(html_content, encoding="utf-8")
     print(f"Vergleich gespeichert unter: {filename}")
+
+
+
 def main(file_path):
     print(f"Extracting text from {file_path} ...")
     text = extract_text(file_path)
@@ -90,20 +190,20 @@ def main(file_path):
         print(f"Entity: '{ent['word']}'  |  Type: {entity_type}  |  Score: {ent['score']:.3f}  |  Span: ({ent['start']}, {ent['end']})")
 
 
+    output_html = os.path.join(OUTPUTDIR, "compare_entities.json")
+    save_entity_comparison_html(entities, clean_entities,output_html)
 
-    save_entity_comparison_html(entities, clean_entities)
+    fhir_output = map_ner_to_fhir(clean_entities)
 
-    # fhir_output = map_ner_to_fhir(clean_entities)
-
-    # output_json = os.path.join(OUTPUTDIR, "fhir_output.json")
-    # if os.path.exists(output_json):
-    #     os.remove(output_json)
-    # os.makedirs(OUTPUTDIR, exist_ok=True)
+    output_json = os.path.join(OUTPUTDIR, "fhir_output.json")
+    if os.path.exists(output_json):
+        os.remove(output_json)
+    os.makedirs(OUTPUTDIR, exist_ok=True)
     
-    # with open(output_json, "w", encoding="utf-8") as f:
-    #     json.dump(fhir_output, f, indent=2, ensure_ascii=False)
+    with open(output_json, "w", encoding="utf-8") as f:
+        json.dump(fhir_output, f, indent=2, ensure_ascii=False)
 
-    # print(f"\nFHIR resources saved to {output_json}")
+    print(f"\nFHIR resources saved to {output_json}")
 
 if __name__ == "__main__":
     import sys

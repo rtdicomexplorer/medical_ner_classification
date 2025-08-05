@@ -3,6 +3,7 @@
 
 LABEL_LIST = [
     "O",
+    "B-PID", "I-PID",
     "B-PERSON", "I-PERSON",
     "B-DOCTOR", "I-DOCTOR",
     "B-ORG", "I-ORG",
