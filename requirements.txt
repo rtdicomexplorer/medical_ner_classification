@@ -1,7 +1,7 @@
 transformers
 datasets
 scikit-learn
-torch>
+torch
 numpy
 pdfplumber 
 python-docx 
@@ -15,4 +15,4 @@ simple-icd-10
 transformers[torch]
 seqeval 
 evaluate
-
+tqdm

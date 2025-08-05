@@ -629,13 +629,16 @@ def __validate_bio_sequence(tokens, tags):
         if label == "O" and tokens[i] in [".", ",", ":", ";"]:
             continue  # OK
 
+
+from tqdm import tqdm
 def generate_dataset(n_samples=1000, save_reports=False, clean_data = False):
 
     ClientId = "db7c330e-8d75-450c-976c-e891ea61cf6a_8ba7953b-b758-4b5c-9f11-82eeff251802"
     ClientSecret = "3jf/LfXf6qsEE9la9/q8Hm3Jt4GAaVh2Vth06qQeSaY="
     #token = get_token(client_id= ClientId, client_secret= ClientSecret)
     data = []
-    for i in range(n_samples):
+    #for i in range(n_samples):
+    for i in tqdm(range(n_samples), desc="Generating dataset", ncols=80):
         text, entities, tokens, labels = generate_report(token=None)
 
         # we need to validate if the results, it they match with LABEL...
