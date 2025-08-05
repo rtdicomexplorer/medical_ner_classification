@@ -5,6 +5,6 @@ data
 txt_reports
 __pycache__
 models
-*output/
+*output*/
 finetuner/
 *.html

@@ -42,6 +42,28 @@ def extract_reports_from_raw_file(file_path):
     return reports
 
 
+
+def save_reports_to_individual_files(reports, output_dir):
+    import os
+    # Create the directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+
+    for idx, report in enumerate(reports, start=1):
+        # Clean up the report (optional)
+        clean = report.strip()
+
+        # Define the filename
+        filename = f"report_{idx:04d}.txt"  # e.g., report_0001.txt
+
+        # Full path
+        file_path = os.path.join(output_dir, filename)
+
+        # Write to file
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(clean)
+
+
+
 def basic_cleanup(reports):
     cleaned = []
     for report in reports:

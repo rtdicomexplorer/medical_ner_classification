@@ -483,24 +483,23 @@ def extract_patterns_from_rad_openbook():
 
 if __name__ == "__main__":
 
-    from radlex_utilities import extract_reports_from_raw_file, basic_cleanup
+    from radlex_utilities import extract_reports_from_raw_file, basic_cleanup, save_reports_to_individual_files
 
 
-    extract_patterns_from_rad_openbook()
+    #extract_patterns_from_rad_openbook()
     file_path = "./documents/ReportsDATASET.csv"
-    reports = extract_reports_from_raw_file(file_path)
+    raw_reports = extract_reports_from_raw_file(file_path)
 
-    print(f"Extracted {len(reports)} reports.")
+    print(f"Extracted {len(raw_reports)} reports.")
 
 
-    cleaned_reports = basic_cleanup(reports)
-    print(f"Cleaned total: {len(cleaned_reports)} reports")
-    
- 
+    reports = basic_cleanup(raw_reports)
+    print(f"Cleaned total: {len(reports)} reports")
 
-  
-    print("\n--- Sample Report ---\n")
-    print(reports[0])
+    save_reports_to_individual_files(reports, "output_reports")
+
+
+
 
 
     # Lade Daten
