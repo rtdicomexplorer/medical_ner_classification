@@ -51,82 +51,12 @@ The pipeline processes clinical documents (PDFs, DOCX, images, TXT), extracts te
 
 
 
-## Prediction Pipeline Steps
-
-1. **Text Extraction**  
-   Handles different file types:
-   - PDFs (normal and scanned via OCR)  
-   - DOCX documents  
-   - Images (PNG, JPG, TIFF, etc.)  
-   - Plain text files (TXT)  
-
-2. **NER Inference**  
-   Uses a fine-tuned ClinicalBERT model for token classification to extract entities such as PERSON, DOCTOR, DIAGNOSIS, MEDICATION, etc.
-
-3. **Mapping to FHIR**  
-   Converts detected entities into appropriate FHIR resource JSON structures, e.g., Patient, Condition, MedicationRequest.
-
----
-## File Structure
-
-- `text_extractor.py`  
-  Extracts raw text from various document formats.
-
-- `generate_data.py`  
-  Generates synthetic labeled clinical text data for training.
-
-- `train_ner.py`  
-  Fine-tunes the ClinicalBERT model on synthetic data.
-
-- `infer_ner.py`  
-  Loads the trained model and runs inference on extracted text.
-
-- `ner_to_fhir.py`  
-  Maps NER entities to FHIR resources.
-
-- `config.py`  
-  Configuration and label mappings.
-
----
-
 ## Usage
 python -m venv venv
 - venv\Scripts\activate (win)
 - source venv/bin/activate  (linux)
 
 pip install -r requirements.txt
-
-
-### Training:
-
-- python generate_data.py
-- python train_ner.py
-
---- 
-
-
-### Extract text from a file:
-
-from text_extractor import extract_text_from_file
-text = extract_text_from_file("path/to/document.pdf")
-print(text)
-
----
-
-### Run NER inference on extracted text:
-from infer_ner import load_model, infer_text
-
-nlp = load_model()
-entities = infer_text(nlp, text)
-print(entities)
-
----
-### Map NER results to FHIR:
-
-from ner_to_fhir import map_ner_to_fhir
-
-fhir_resources = map_ner_to_fhir(entities)
-print(fhir_resources)
 
 ---
 ## Contaact
@@ -159,16 +89,18 @@ Want me to help you save this as a file or customize it?
 
 
 
-
-
-
 ### question
 I'd like to train a model that can recovery medical information, name date diagnosis etc from medical report. How can I proced
 
 
-### https://medium.com/one-medical-technology/rapid-prototyping-and-deployment-of-clinical-nlp-models-e4096e3ce833
+### related works
+- https://medium.com/one-medical-technology/rapid-prototyping-and-deployment-of-clinical-nlp-models-e4096e3ce833
 
-#### links
+- https://www.youtube.com/watch?v=tk4ykvAvV7w
+
+- https://www.mdpi.com/2076-3417/15/6/3379
+
+#### tools
 - https://github.com/doccano/doccano
 
 
@@ -236,4 +168,4 @@ Compare model output against labeled data
 
 Use seqeval, classification_report, etc.
 
-#### previous works : https://www.mdpi.com/2076-3417/15/6/3379
+

@@ -10,6 +10,26 @@ from sklearn.model_selection import train_test_split
 import simple_icd_10 as icd
 from idc_api import fetch_icd_description,get_token
 
+def generate_random_weight_height():
+    # Gewicht zwischen 45 und 120 kg, auf 1 Dezimalstelle
+    weight = round(random.uniform(45, 120), 1)
+    # Größe zwischen 150 und 200 cm
+    height = random.randint(150, 200)
+    return f"{weight} kg",f"{height} cm"
+
+# Beispielnutzung
+weight, height = generate_random_weight_height()
+print(f"Gewicht: {weight} kg")
+print(f"Größe: {height} cm")
+def add_random_dose(med_name):
+    doses = [
+        "5mg", "10mg", "20mg", "50mg", "100mg",
+        "5ml", "10ml", "15ml", "100ml",
+        "1g", "2g", "500mcg"
+    ]
+    dose = random.choice(doses)
+    return f"{med_name} {dose}"
+
 diagnosis_icd10_map = {
     "Hypertonie": "I10",
     "Diabetes Mellitus": "E11.9",
@@ -18,18 +38,27 @@ diagnosis_icd10_map = {
 }
 
 vitalsigns = [
-    "Blutdruck 120/80 mmHg", "Puls 72/min", "Temperatur 37,2 °C",
-    "Sauerstoffsättigung 98 %"
+    "Blutdruck 120/80 mmHg", 
+    "Puls 72/min", 
+    "Temperatur 37,2 °C",
+    "Sauerstoffsättigung 98 %",
+    "Atemfrequenz 16/min",
+    "Taillenumfang 90 cm",
+    "BMI 23.1 kg/m²",
+    "Blutzucker (BZ) 110 mg/dL",
+    "Temperatur rektal / tympanisch 38.2 °C",
+    "Laktatwert 1.8 mmol/L",
+    "Zentralvenöser Druck (ZVD) 5 mmHg"
 ]
 
 lifestyles = [
     "Nichtraucher", "Raucher (5 Zigaretten/Tag)", "gelegentlicher Alkoholgenuss",
-    "regelmäßige Bewegung"
+    "regelmäßige Bewegung","Drogenmissbrauch", "trinkt Bier täglich",
 ]
 
 risk_factors = [
-    "familiäre Vorbelastung Diabetes", "Adipositas BMI 32",
-    "Hyperlipidämie", "Schlafapnoe"
+    "familiäre Vorbelastung Diabetes", "Adipositas BMI 32","Nikotinabusus"
+    "Hyperlipidämie", "Schlafapnoe","Hypercholesterinämie", "RR erhöht","höheres Lebensalter"
 ]
 
 # Names and other data
@@ -39,8 +68,148 @@ doctors = ["Dr. Müller", "Dr. Schneider", "Dr. Becker", "Dr. Weber","Dr. Suhle 
            "Dr. Adams", "Dr. Lee", "Dr. Patel", "Dr. Chen"]
 
 
-symptoms = ["Brustschmerzen", "Atemnot", "Fieber", "Müdigkeit","dumpfe Kopfschmerzen", "Sehstörung", "Sprachstörung", "Kribbeln im linken Arm"]
-medications = ["Metformin", "Lisinopril", "Albuterol", "Amoxicillin","Ramipril 5mg", "Metformin", "Schlafmedikamente"]
+symptoms = [
+
+    # 🧠 Neurologische Symptome
+    "Kopfschmerzen",
+    "Schwindel",
+    "Sprachstörung",
+    "Sehstörung",
+    "Kribbeln",
+    "Taubheitsgefühl",
+    "Gangunsicherheit",
+    "Lähmungen",
+    "Bewusstseinsstörung",
+    "Verwirrtheit",
+    "Gedächtnisstörung",
+    "Tremor",
+    "Epileptischer Anfall",
+
+    # ❤️ Kardiopulmonale Symptome
+    "Brustschmerzen",
+    "Atemnot",
+    "Palpitationen",
+    "Orthopnoe",
+    "Husten",
+    "Zyanose",
+    "Druckgefühl in der Brust",
+    "Kaltschweißigkeit",
+    "Synkope",
+
+    # 🧬 Allgemeine Symptome
+    "Fieber",
+    "Müdigkeit",
+    "Appetitlosigkeit",
+    "Gewichtsverlust",
+    "Nachtschweiß",
+    "Abgeschlagenheit",
+    "Schlafstörung",
+    "Konzentrationsstörung",
+    "Gliederschmerzen",
+    "Unwohlsein",
+
+    # 🧑‍⚕️ Gastrointestinale Symptome
+    "Übelkeit",
+    "Erbrechen",
+    "Bauchschmerzen",
+    "Durchfall",
+    "Verstopfung",
+    "Blut im Stuhl",
+    "Blähungen",
+    "Appetitverlust",
+    "Reflux",
+    "Völlegefühl",
+
+    # 🧪 Urologische Symptome
+    "Schmerzen beim Wasserlassen",
+    "Häufiger Harndrang",
+    "Nykturie",
+    "Harnverhalt",
+    "Blut im Urin",
+    "Inkontinenz",
+
+    # 🔬 Dermatologische Symptome
+    "Hautausschlag",
+    "Juckreiz",
+    "Schwellung",
+    "Rötung",
+    "Hautveränderungen"
+]
+medications = [
+
+    # 💊 Blutdruckmedikamente (Antihypertensiva)
+    "Ramipril",
+    "Amlodipin",
+    "Bisoprolol",
+    "Lisinopril",
+    "Valsartan",
+    "Metoprolol",
+    "Hydrochlorothiazid",
+    "Candesartan",
+    "Enalapril",
+
+    # 💉 Antidiabetika
+    "Metformin",
+    "Insulin",
+    "Empagliflozin",
+    "Glimepirid",
+    "Sitagliptin",
+    "Dapagliflozin",
+
+    # ❤️ Cholesterinsenker
+    "Atorvastatin",
+    "Simvastatin",
+    "Rosuvastatin",
+    "Pravastatin",
+
+    # 🧠 Psychopharmaka & Schlafmittel
+    "Diazepam",
+    "Lorazepam",
+    "Zolpidem",
+    "Amitriptylin",
+    "Mirtazapin",
+    "Sertralin",
+    "Citalopram",
+
+    # 🩺 Schmerzmittel / NSAR
+    "Ibuprofen",
+    "Paracetamol",
+    "ASS",
+    "Diclofenac",
+    "Naproxen",
+    "Novalgin",
+    "Metamizol",
+
+    # 🦠 Antibiotika
+    "Amoxicillin",
+    "Ciprofloxacin",
+    "Azithromycin",
+    "Doxycyclin",
+    "Clarithromycin",
+
+    # 🫁 Asthma / COPD
+    "Salbutamol",
+    "Formoterol",
+    "Budesonid",
+    "Tiotropium",
+    "Beclometason",
+
+    # 🩸 Blutverdünner / Antikoagulantien
+    "Marcumar",
+    "Xarelto",
+    "Eliquis",
+    "Pradaxa",
+    "Heparin",
+    "Clopidogrel",
+
+    # 🦴 Rheuma / Immunsuppressiva
+    "Methotrexat",
+    "Prednisolon",
+    "Cortison",
+    "Adalimumab",
+    "Infliximab"
+]
+
 treatments = ["Sauerstofftherapie", "Operation", "Chemotherapie", "Physiotherapie"]
 lab_results = ["Hb 13.5 g/dL", "Blutzucker 110 mg/dL", "Cholesterin 200 mg/dL","Glukose: 110 mg/dL"]
 allergies = ["Penicillin", "Pollen", "Nüsse"]
@@ -130,9 +299,10 @@ def generate_report(token=None):
     gender = __random_gender()
     birthdate = __random_birthdate(min_age=1, max_age=95)
     family_status = __random_family_status()
+    weight, height = generate_random_weight_height()
 
     symptom = random.choice(symptoms)
-    medication = random.choice(medications)
+    medication = add_random_dose(random.choice(medications))
     treatment = random.choice(treatments)
     procedure = random.choice(procedures)
     department = random.choice(departments)
@@ -160,6 +330,8 @@ def generate_report(token=None):
     # Build entity dictionary
     entities = {
         name: "PERSON",
+        weight:"GEWICHT",
+        height:"GROESSE",
         doctor: "DOCTOR",
         occupation: "OCCUPATION",
         family_member: "FAMILYMEMBER",
@@ -196,7 +368,7 @@ def generate_report(token=None):
   
 
     templates = [
-        f"Am {date} stellte sich Patient {name} ({gender}), geboren am {birthdate}, Familienstand: {family_status} mit {symptom} vor, beschäftigt als {occupation} "
+        f"Am {date} stellte sich Patient {name} ({gender}), {height} per {weight} geboren am {birthdate}, Familienstand: {family_status} mit {symptom} vor, beschäftigt als {occupation} "
         f"Der {occupation} wurde mit starken Beschwerden von seiner {family_member} in die Klinik begleitet."
         f"Diagnose: {diagnosis}. "
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}. "
@@ -209,6 +381,7 @@ def generate_report(token=None):
         f"{followup_sentence}",
         
         f"{name} kam am {date} ins {hospital_name}, {hospital_address} mit {family_member} Beschwerden: {symptom}. "
+        f"Gewicht {weight} für eine Größe von {height} "
         f"Untersuchung durch {doctor}. Diagnose: {diagnosis} (ICD‑10: {icd10_code} – {icd_description}). "
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}. "
         f"Impression: {impression or 'nicht dokumentiert'}. "
@@ -223,24 +396,27 @@ def generate_report(token=None):
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}. "
         f"Impression: {impression or 'nicht dokumentiert'}. "
         f"Folgegrund: {followup_reason or 'keine Angabe'}. {followup_sentence}",
-        f"Die {family_member} des Patienten brachte ihn zur Untersuchung, da sie über anhaltende Beschwerden berichtete.",
+        f"Die {family_member} des Patienten brachte ihn zur Untersuchung, da sie über anhaltende Beschwerden berichtete. "
+        f"Der Patient wiegt {weight} für eine Größe von {height}"
+        ,
 
-        f"Der Patient arbeitet als {occupation} und lebt mit seiner {family_member} in einem gemeinsamen Haushalt."
+        f"Der Patient arbeitet als {occupation} und lebt mit seiner {family_member} in einem gemeinsamen Haushalt. "
         f"Aufgrund seiner Tätigkeit als {occupation} ist der Patient häufig körperlich belastet, "
-        f"was möglicherweise zur aktuellen Symptomatik beiträgt."
-        f"Der Patient gibt an, seine Arbeit als {occupation} derzeit nicht ausüben zu können."
-        f"In der Familie bestehen Vorerkrankungen: Die {family_member} des Patienten litt ebenfalls an {diagnosis}."
-        f"Der Patient wurde von seiner {family_member} wegen zunehmender {symptom} in die Klinik gebracht.",
+        f"was möglicherweise zur aktuellen Symptomatik beiträgt. "
+        f"Der Patient gibt an, seine Arbeit als {occupation} derzeit nicht ausüben zu können. "
+        f"In der Familie bestehen Vorerkrankungen: Die {family_member} des Patienten litt ebenfalls an {diagnosis}. "
+        f"Der Patient wurde von seiner {family_member} wegen zunehmender {symptom} in die Klinik gebracht. "
+        f"Der Patient wiegt {weight} für eine Größe von {height}"
         
        f"--- RADIOLOGY REPORT ---\n\n\nPatient: {name} ({gender}),  "
-       f"geboren am {birthdate}\nDatum: {date}\nVerfahren: {procedure}\n  Beruf:{occupation}\n"
+       f"geboren am {birthdate}\nDatum: {date}\nVerfahren: {procedure}\n  Beruf:{occupation}\n Gewicht: {weight} \n Größe: {height}\n"
         f"Begleitet von {family_member}\n"
         f"Indikation: {symptom}\nBefund: Zeichen einer {diagnosis}\nEmpfehlung: {treatment}\n"
         f"Radiologe: {doctor}\nAbteilung: {department}\n{hospital_name}, {hospital_address}\nTelefon: {hospital_phone}\n"
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}\nImpression: {impression or 'nicht dokumentiert'}\n"
         f"Folgegrund: {followup_reason or 'keine Angabe'}\n{followup_sentence}",
 
-        f"--- FOLLOW-UP VISIT ---\n\n\nDatum: {date}\nPatient: {name} ({gender}), geboren am {birthdate} "
+        f"--- FOLLOW-UP VISIT ---\n\n\nDatum: {date}\nPatient: {name} ({gender}), geboren am {birthdate} Gewicht: {weight} \n Größe: {height}\n"
         f"Arbeitet als {occupation}\n Grund: Nachuntersuchung wegen {symptom}\n "
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}\nImpression: {impression or 'nicht dokumentiert'}\n"
         f"Diagnose: {diagnosis} (ICD‑10: {icd10_code} – {icd_description})..\nAktueller Zustand stabil\n"
@@ -268,8 +444,8 @@ def generate_report(token=None):
         f"--- Artzbrief\n\n\n\n"
         f"Patientenname : {name}\n\n"
         f"Geburtsdatum : {birthdate}\n\n"
-        f"Gewicht: {random.choice([30, 140])} Kg\n\n"
-        f"Große: {random.choice([120, 200])} cm\n\n\n"
+        f"Gewicht: {weight}\n\n"
+        f"Größe: {height} cm\n\n\n"
         f"Hausarzt : {doctor}.\n\n\n"
         f"Der Patient, {name} , stellte sich mit stark anhaltend dumpfen {symptom} vor, die er seit gestern habe."
         f"Herr {name} sei auch niedergeschlagen. Darüber hinaus berichte er über Kribbeln auf der linke Arm."

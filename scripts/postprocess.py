@@ -20,7 +20,7 @@ def __resolve_conflicts(entities):
 
     grouped = {}
     for ent in entities:
-        key = (ent["word"].lower(), ent["start"], ent["end"])
+        key = (ent["start"], ent["end"])
         if key not in grouped:
             grouped[key] = ent
         else:
@@ -53,8 +53,12 @@ def postprocess_entities(entities):
     def should_merge(e1, e2):
         gap = e2["start"] - e1["end"]
         same_label = e1["entity_group"] == e2["entity_group"]
-        continuation = e2["word"][0].isupper()
-        return same_label and (0 <= gap <= 1 or continuation)
+        
+        # Prüfen, ob e2 ein Subwort ist (mit "##" Tokenisierung)
+        is_subword = e2["word"].startswith("##")
+        
+        # Nur Subwörter direkt anfügen oder Wörter, die direkt angrenzen (gap=0)
+        return same_label and (gap == 0 or is_subword)
 
     # Step 1: Filter + Merge subwords
     for ent in entities:
@@ -83,7 +87,9 @@ def postprocess_entities(entities):
     if buffer:
         merged.append(buffer)
 
-    # Step 2: Merge multi-token PERSON names (e.g. "Otto Kromberger")
+    # Step 2: Merge multi-token entities for selected labels
+    MULTI_TOKEN_LABELS = {"PERSON", "MEDICATION", "DIAGNOSIS", "OCCUPATION", "FAMILYMEMBER"}
+
     final = []
     buffer = None
     for ent in merged:
@@ -91,12 +97,13 @@ def postprocess_entities(entities):
             buffer = ent
             continue
 
-        same_person = (
-            buffer["entity_group"] == ent["entity_group"] == "PERSON"
+        same_label_and_multi_token = (
+            buffer["entity_group"] == ent["entity_group"] 
+            and buffer["entity_group"] in MULTI_TOKEN_LABELS
             and 0 <= ent["start"] - buffer["end"] <= 2
         )
 
-        if same_person:
+        if same_label_and_multi_token:
             buffer["word"] += " " + ent["word"]
             buffer["end"] = ent["end"]
             buffer["score"] = max(buffer["score"], ent["score"])
@@ -143,4 +150,3 @@ def postprocess_entities(entities):
         clean.append(ent)
 
     return __resolve_conflicts(clean)
-    return clean
