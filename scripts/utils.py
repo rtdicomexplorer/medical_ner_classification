@@ -1,17 +1,231 @@
-# stopwords_generator.py
-import json
-import os
-import sys
 import unicodedata
 import re
+import json
 
 from config import LABEL2ID, ID2LABEL
+
+
+diagnosis_icd10_map = {
+    "Hypertonie": "I10",
+    "Diabetes Mellitus": "E11.9",
+    "Asthma": "J45",
+    "Pneumonie": "J18.9"
+}
+
+vitalsigns = [
+    "Blutdruck 120/80 mmHg", 
+    "Puls 72/min", 
+    "Temperatur 37,2 °C",
+    "Sauerstoffsättigung 98 %",
+    "Atemfrequenz 16/min",
+    "Taillenumfang 90 cm",
+    "BMI 23.1 kg/m²",
+    "Blutzucker (BZ) 110 mg/dL",
+    "Temperatur rektal / tympanisch 38.2 °C",
+    "Laktatwert 1.8 mmol/L",
+    "Zentralvenöser Druck (ZVD) 5 mmHg"
+]
+
+lifestyles = [
+    "Nichtraucher", "Raucher (5 Zigaretten/Tag)", "gelegentlicher Alkoholgenuss",
+    "regelmäßige Bewegung","Drogenmissbrauch", "trinkt Bier täglich",
+]
+
+risk_factors = [
+    "familiäre Vorbelastung Diabetes", "Adipositas BMI 32","Nikotinabusus"
+    "Hyperlipidämie", "Schlafapnoe","Hypercholesterinämie", "RR erhöht","höheres Lebensalter"
+]
+
+# Names and other data
+names = ["Herr. Max Müller", "Patientin: Anna Schmidt", "L. Weber", "Frau Sophie Fischer","Otto Kromberger",
+         "John Smith", "Mary Jones", "Robert Lee", "Emily Davis"]
+doctors = ["Dr. Müller", "Dr. Schneider", "Dr. Becker", "Dr. Weber","Dr. Suhle Nikolas", "Dr. Lehmann", "Dr. Fischer", "Dr. Weber",
+           "Dr. Adams", "Dr. Lee", "Dr. Patel", "Dr. Chen"]
+
+
+symptoms = [
+
+    #Neurologische Symptome
+    "Kopfschmerzen",
+    "Schwindel",
+    "Sprachstörung",
+    "Sehstörung",
+    "Kribbeln",
+    "Taubheitsgefühl",
+    "Gangunsicherheit",
+    "Lähmungen",
+    "Bewusstseinsstörung",
+    "Verwirrtheit",
+    "Gedächtnisstörung",
+    "Tremor",
+    "Epileptischer Anfall",
+
+    #Kardiopulmonale Symptome
+    "Brustschmerzen",
+    "Atemnot",
+    "Palpitationen",
+    "Orthopnoe",
+    "Husten",
+    "Zyanose",
+    "Druckgefühl in der Brust",
+    "Kaltschweißigkeit",
+    "Synkope",
+
+    #Allgemeine Symptome
+    "Fieber",
+    "Müdigkeit",
+    "Appetitlosigkeit",
+    "Gewichtsverlust",
+    "Nachtschweiß",
+    "Abgeschlagenheit",
+    "Schlafstörung",
+    "Konzentrationsstörung",
+    "Gliederschmerzen",
+    "Unwohlsein",
+
+    #Gastrointestinale Symptome
+    "Übelkeit",
+    "Erbrechen",
+    "Bauchschmerzen",
+    "Durchfall",
+    "Verstopfung",
+    "Blut im Stuhl",
+    "Blähungen",
+    "Appetitverlust",
+    "Reflux",
+    "Völlegefühl",
+
+    #Urologische Symptome
+    "Schmerzen beim Wasserlassen",
+    "Häufiger Harndrang",
+    "Nykturie",
+    "Harnverhalt",
+    "Blut im Urin",
+    "Inkontinenz",
+
+    #Dermatologische Symptome
+    "Hautausschlag",
+    "Juckreiz",
+    "Schwellung",
+    "Rötung",
+    "Hautveränderungen"
+]
+medications = [
+
+    #Blutdruckmedikamente (Antihypertensiva)
+    "Ramipril",
+    "Amlodipin",
+    "Bisoprolol",
+    "Lisinopril",
+    "Valsartan",
+    "Metoprolol",
+    "Hydrochlorothiazid",
+    "Candesartan",
+    "Enalapril",
+
+    #Antidiabetika
+    "Metformin",
+    "Insulin",
+    "Empagliflozin",
+    "Glimepirid",
+    "Sitagliptin",
+    "Dapagliflozin",
+
+    #Cholesterinsenker
+    "Atorvastatin",
+    "Simvastatin",
+    "Rosuvastatin",
+    "Pravastatin",
+
+    #Psychopharmaka & Schlafmittel
+    "Diazepam",
+    "Lorazepam",
+    "Zolpidem",
+    "Amitriptylin",
+    "Mirtazapin",
+    "Sertralin",
+    "Citalopram",
+
+    #Schmerzmittel / NSAR
+    "Ibuprofen",
+    "Paracetamol",
+    "ASS",
+    "Diclofenac",
+    "Naproxen",
+    "Novalgin",
+    "Metamizol",
+
+    #Antibiotika
+    "Amoxicillin",
+    "Ciprofloxacin",
+    "Azithromycin",
+    "Doxycyclin",
+    "Clarithromycin",
+
+    #Asthma / COPD
+    "Salbutamol",
+    "Formoterol",
+    "Budesonid",
+    "Tiotropium",
+    "Beclometason",
+
+    #Blutverdünner / Antikoagulantien
+    "Marcumar",
+    "Xarelto",
+    "Eliquis",
+    "Pradaxa",
+    "Heparin",
+    "Clopidogrel",
+
+    #Rheuma / Immunsuppressiva
+    "Methotrexat",
+    "Prednisolon",
+    "Cortison",
+    "Adalimumab",
+    "Infliximab"
+]
+
+treatments = ["Sauerstofftherapie", "Operation", "Chemotherapie", "Physiotherapie"]
+lab_results = ["Hb 13.5 g/dL", "Blutzucker 110 mg/dL", "Cholesterin 200 mg/dL","Glukose: 110 mg/dL"]
+allergies = ["Penicillin", "Pollen", "Nüsse"]
+immunizations = ["Masern-Impfung", "Grippeimpfung"]
+devices = ["Herzschrittmacher", "Insulinpumpe","Schlafmaske", "Blutdruckgerät"]
+family_histories = ["Mutter mit Diabetes", "Vater mit Bluthochdruck"]
+procedures = ["Angioplastie", "MRT-Scan", "Biopsie", "Ultraschall","CT Kopf", "Lyse-Therapie"]
+departments = ["Kardiologie", "Notaufnahme", "Onkologie", "Radiologie","Neurologie", "Innere Medizin"]
+
+hospital_names = ["St. Marien Krankenhaus", "Allgemeine Gesundheitsklinik",
+                  "Städtisches Medizinzentrum", "Universitätsklinikum München"]
+hospital_addresses = ["Hauptstraße 12, 80331 München", "Berliner Allee 45, 40212 Düsseldorf","Lindenstraße 8, 10115 Berlin", "Goetheplatz 9, 50674 Köln"]
+hospital_phones = ["089 123456", "0211 987654", "030 234567", "0221 456789"]
+
+followup_reasons = [
+    "zur Blutdruckkontrolle", "wegen anhaltender Schmerzen", "zur Verlaufskontrolle"
+]
+
+impressions = [
+    "Hinweis auf Pneumonie", "wahrscheinlich virale Ursache", "unklares Abdomen"
+]
+
+prev_diagnoses = [
+    "frühere Appendizitis", "bekannte Arthrose", "chronische Bronchitis"
+]
+occupations = [
+  "Gärtner", "Bäcker", "Metzger", "Professor", "Student", "Arbeitslose",
+  "Händler", "Kaufmann", "Kauffrau", "Studentin", "Verkäuferin",
+  "Lehrer", "Ärztin", "Ingenieur", "Friseur", "Journalist", "Sekretärin"
+]
+
+family_members = [
+  "Bruder", "Schwester", "Mutter", "Vater", "Großvater", "Großmutter",
+  "Onkel", "Kind", "Kinder", "Sohn", "Tochter", "Cousine", "Neffe", "Nichte"
+]
+
+
+
+
 def normalize_token(token):
     return unicodedata.normalize("NFKC", token.lower())
-
-import re
-
-import re
 
 def __merge_date_tokens(tokens, tags):
     merged_tokens = []
@@ -68,8 +282,7 @@ def is_numeric_or_code(token):
 
 
 
-
-def generate_filtered_stopwords(data, id2label, threshold=0.95):
+def __generate_filtered_stopwords(data, id2label, threshold=0.95):
     from collections import defaultdict
     import unicodedata
 
@@ -169,13 +382,6 @@ def generate_filtered_stopwords(data, id2label, threshold=0.95):
 
     return stop_words
 
-
-def __generate_filtered_stopwords(json_filepath, id2label, threshold=0.95):
-
-    with open(json_filepath, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    return generate_filtered_stopwords(data, id2label, threshold)
-
 def __clean_ner_tags(oldtokens, ner_tags, stop_words):
     #clean_tags = ner_tags.copy()
 
@@ -214,15 +420,13 @@ def __clean_ner_tags(oldtokens, ner_tags, stop_words):
 
 def refresh_and_clean_ner_labels(data, id2label, threshold = 0.95):
 
-    stopwords = generate_filtered_stopwords(data, id2label,threshold)
+    stopwords = __generate_filtered_stopwords(data, id2label,threshold)
     for entry in data:
         entry["tokens"],entry["ner_tags"] = __clean_ner_tags(entry["tokens"], entry["ner_tags"], stopwords)
 
     return data
 
-# main.py
 
-import json
 
 
 

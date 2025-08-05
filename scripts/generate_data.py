@@ -5,23 +5,19 @@ import os
 import re
 import datetime
 from config import LABEL2ID, ID2LABEL, ENTITY_LIST
-from utils import refresh_and_clean_ner_labels
+from utils import *
 from sklearn.model_selection import train_test_split
 import simple_icd_10 as icd
 from idc_api import fetch_icd_description,get_token
 
-def generate_random_weight_height():
+def __generate_random_weight_height():
     # Gewicht zwischen 45 und 120 kg, auf 1 Dezimalstelle
-    weight = round(random.uniform(45, 120), 1)
+    weight = round(random.uniform(1, 150), 1)
     # Größe zwischen 150 und 200 cm
-    height = random.randint(150, 200)
+    height = random.randint(50, 210)
     return f"{weight} kg",f"{height} cm"
 
-# Beispielnutzung
-weight, height = generate_random_weight_height()
-print(f"Gewicht: {weight} kg")
-print(f"Größe: {height} cm")
-def add_random_dose(med_name):
+def __add_random_dose(med_name):
     doses = [
         "5mg", "10mg", "20mg", "50mg", "100mg",
         "5ml", "10ml", "15ml", "100ml",
@@ -29,224 +25,6 @@ def add_random_dose(med_name):
     ]
     dose = random.choice(doses)
     return f"{med_name} {dose}"
-
-diagnosis_icd10_map = {
-    "Hypertonie": "I10",
-    "Diabetes Mellitus": "E11.9",
-    "Asthma": "J45",
-    "Pneumonie": "J18.9"
-}
-
-vitalsigns = [
-    "Blutdruck 120/80 mmHg", 
-    "Puls 72/min", 
-    "Temperatur 37,2 °C",
-    "Sauerstoffsättigung 98 %",
-    "Atemfrequenz 16/min",
-    "Taillenumfang 90 cm",
-    "BMI 23.1 kg/m²",
-    "Blutzucker (BZ) 110 mg/dL",
-    "Temperatur rektal / tympanisch 38.2 °C",
-    "Laktatwert 1.8 mmol/L",
-    "Zentralvenöser Druck (ZVD) 5 mmHg"
-]
-
-lifestyles = [
-    "Nichtraucher", "Raucher (5 Zigaretten/Tag)", "gelegentlicher Alkoholgenuss",
-    "regelmäßige Bewegung","Drogenmissbrauch", "trinkt Bier täglich",
-]
-
-risk_factors = [
-    "familiäre Vorbelastung Diabetes", "Adipositas BMI 32","Nikotinabusus"
-    "Hyperlipidämie", "Schlafapnoe","Hypercholesterinämie", "RR erhöht","höheres Lebensalter"
-]
-
-# Names and other data
-names = ["Herr. Max Müller", "Patientin: Anna Schmidt", "L. Weber", "Frau Sophie Fischer","Otto Kromberger",
-         "John Smith", "Mary Jones", "Robert Lee", "Emily Davis"]
-doctors = ["Dr. Müller", "Dr. Schneider", "Dr. Becker", "Dr. Weber","Dr. Suhle Nikolas", "Dr. Lehmann", "Dr. Fischer", "Dr. Weber",
-           "Dr. Adams", "Dr. Lee", "Dr. Patel", "Dr. Chen"]
-
-
-symptoms = [
-
-    # 🧠 Neurologische Symptome
-    "Kopfschmerzen",
-    "Schwindel",
-    "Sprachstörung",
-    "Sehstörung",
-    "Kribbeln",
-    "Taubheitsgefühl",
-    "Gangunsicherheit",
-    "Lähmungen",
-    "Bewusstseinsstörung",
-    "Verwirrtheit",
-    "Gedächtnisstörung",
-    "Tremor",
-    "Epileptischer Anfall",
-
-    # ❤️ Kardiopulmonale Symptome
-    "Brustschmerzen",
-    "Atemnot",
-    "Palpitationen",
-    "Orthopnoe",
-    "Husten",
-    "Zyanose",
-    "Druckgefühl in der Brust",
-    "Kaltschweißigkeit",
-    "Synkope",
-
-    # 🧬 Allgemeine Symptome
-    "Fieber",
-    "Müdigkeit",
-    "Appetitlosigkeit",
-    "Gewichtsverlust",
-    "Nachtschweiß",
-    "Abgeschlagenheit",
-    "Schlafstörung",
-    "Konzentrationsstörung",
-    "Gliederschmerzen",
-    "Unwohlsein",
-
-    # 🧑‍⚕️ Gastrointestinale Symptome
-    "Übelkeit",
-    "Erbrechen",
-    "Bauchschmerzen",
-    "Durchfall",
-    "Verstopfung",
-    "Blut im Stuhl",
-    "Blähungen",
-    "Appetitverlust",
-    "Reflux",
-    "Völlegefühl",
-
-    # 🧪 Urologische Symptome
-    "Schmerzen beim Wasserlassen",
-    "Häufiger Harndrang",
-    "Nykturie",
-    "Harnverhalt",
-    "Blut im Urin",
-    "Inkontinenz",
-
-    # 🔬 Dermatologische Symptome
-    "Hautausschlag",
-    "Juckreiz",
-    "Schwellung",
-    "Rötung",
-    "Hautveränderungen"
-]
-medications = [
-
-    # 💊 Blutdruckmedikamente (Antihypertensiva)
-    "Ramipril",
-    "Amlodipin",
-    "Bisoprolol",
-    "Lisinopril",
-    "Valsartan",
-    "Metoprolol",
-    "Hydrochlorothiazid",
-    "Candesartan",
-    "Enalapril",
-
-    # 💉 Antidiabetika
-    "Metformin",
-    "Insulin",
-    "Empagliflozin",
-    "Glimepirid",
-    "Sitagliptin",
-    "Dapagliflozin",
-
-    # ❤️ Cholesterinsenker
-    "Atorvastatin",
-    "Simvastatin",
-    "Rosuvastatin",
-    "Pravastatin",
-
-    # 🧠 Psychopharmaka & Schlafmittel
-    "Diazepam",
-    "Lorazepam",
-    "Zolpidem",
-    "Amitriptylin",
-    "Mirtazapin",
-    "Sertralin",
-    "Citalopram",
-
-    # 🩺 Schmerzmittel / NSAR
-    "Ibuprofen",
-    "Paracetamol",
-    "ASS",
-    "Diclofenac",
-    "Naproxen",
-    "Novalgin",
-    "Metamizol",
-
-    # 🦠 Antibiotika
-    "Amoxicillin",
-    "Ciprofloxacin",
-    "Azithromycin",
-    "Doxycyclin",
-    "Clarithromycin",
-
-    # 🫁 Asthma / COPD
-    "Salbutamol",
-    "Formoterol",
-    "Budesonid",
-    "Tiotropium",
-    "Beclometason",
-
-    # 🩸 Blutverdünner / Antikoagulantien
-    "Marcumar",
-    "Xarelto",
-    "Eliquis",
-    "Pradaxa",
-    "Heparin",
-    "Clopidogrel",
-
-    # 🦴 Rheuma / Immunsuppressiva
-    "Methotrexat",
-    "Prednisolon",
-    "Cortison",
-    "Adalimumab",
-    "Infliximab"
-]
-
-treatments = ["Sauerstofftherapie", "Operation", "Chemotherapie", "Physiotherapie"]
-lab_results = ["Hb 13.5 g/dL", "Blutzucker 110 mg/dL", "Cholesterin 200 mg/dL","Glukose: 110 mg/dL"]
-allergies = ["Penicillin", "Pollen", "Nüsse"]
-immunizations = ["Masern-Impfung", "Grippeimpfung"]
-devices = ["Herzschrittmacher", "Insulinpumpe","Schlafmaske", "Blutdruckgerät"]
-family_histories = ["Mutter mit Diabetes", "Vater mit Bluthochdruck"]
-procedures = ["Angioplastie", "MRT-Scan", "Biopsie", "Ultraschall","CT Kopf", "Lyse-Therapie"]
-departments = ["Kardiologie", "Notaufnahme", "Onkologie", "Radiologie","Neurologie", "Innere Medizin"]
-
-hospital_names = ["St. Marien Krankenhaus", "Allgemeine Gesundheitsklinik",
-                  "Städtisches Medizinzentrum", "Universitätsklinikum München"]
-hospital_addresses = ["Hauptstraße 12, 80331 München", "Berliner Allee 45, 40212 Düsseldorf","Lindenstraße 8, 10115 Berlin", "Goetheplatz 9, 50674 Köln"]
-hospital_phones = ["089 123456", "0211 987654", "030 234567", "0221 456789"]
-
-followup_reasons = [
-    "zur Blutdruckkontrolle", "wegen anhaltender Schmerzen", "zur Verlaufskontrolle"
-]
-
-impressions = [
-    "Hinweis auf Pneumonie", "wahrscheinlich virale Ursache", "unklares Abdomen"
-]
-
-prev_diagnoses = [
-    "frühere Appendizitis", "bekannte Arthrose", "chronische Bronchitis"
-]
-occupations = [
-  "Gärtner", "Bäcker", "Metzger", "Professor", "Student", "Arbeitslose",
-  "Händler", "Kaufmann", "Kauffrau", "Studentin", "Verkäuferin",
-  "Lehrer", "Ärztin", "Ingenieur", "Friseur", "Journalist", "Sekretärin"
-]
-
-family_members = [
-  "Bruder", "Schwester", "Mutter", "Vater", "Großvater", "Großmutter",
-  "Onkel", "Kind", "Kinder", "Sohn", "Tochter", "Cousine", "Neffe", "Nichte"
-]
-
-
 def __random_gender():
     return random.choice(["männlich", "weiblich", "divers"])
 
@@ -299,10 +77,10 @@ def generate_report(token=None):
     gender = __random_gender()
     birthdate = __random_birthdate(min_age=1, max_age=95)
     family_status = __random_family_status()
-    weight, height = generate_random_weight_height()
+    weight, height = __generate_random_weight_height()
 
     symptom = random.choice(symptoms)
-    medication = add_random_dose(random.choice(medications))
+    medication = __add_random_dose(random.choice(medications))
     treatment = random.choice(treatments)
     procedure = random.choice(procedures)
     department = random.choice(departments)
@@ -851,7 +629,7 @@ def __validate_bio_sequence(tokens, tags):
         if label == "O" and tokens[i] in [".", ",", ":", ";"]:
             continue  # OK
 
-def generate_dataset(n_samples=1000, save_reports=False):
+def generate_dataset(n_samples=1000, save_reports=False, clean_data = False):
 
     ClientId = "db7c330e-8d75-450c-976c-e891ea61cf6a_8ba7953b-b758-4b5c-9f11-82eeff251802"
     ClientSecret = "3jf/LfXf6qsEE9la9/q8Hm3Jt4GAaVh2Vth06qQeSaY="
@@ -874,14 +652,15 @@ def generate_dataset(n_samples=1000, save_reports=False):
         })
 
     from collections import Counter
-    clean_data = refresh_and_clean_ner_labels(data= data, id2label= ID2LABEL, threshold= 0.95)
-    all_labels = [label for sample in clean_data for label in sample["ner_tags"]]
-    print(Counter(all_labels))
+    if clean_data:
+        data = refresh_and_clean_ner_labels( data = data, id2label= ID2LABEL, threshold= 0.95)
+        all_labels = [label for sample in data for label in sample["ner_tags"]]
+        print(Counter(all_labels))
 
 
 
     # Split train/val
-    trains, validations = train_test_split(clean_data, test_size=0.1, random_state=42)
+    trains, validations = train_test_split(data, test_size=0.1, random_state=42)
     trains, tests = train_test_split(trains, test_size=0.1, random_state=42)
     
     os.makedirs("./data", exist_ok=True)
@@ -905,10 +684,13 @@ if __name__ == "__main__":
     import sys
     n_samples = 1000
     save_reports = False
+    clean_data = False
     if len(sys.argv) > 1:
         n_samples = int(sys.argv[1])
     if len(sys.argv) > 2:
         save_reports = sys.argv[2].lower() == 'true'
-    print(f"Starting generation of {n_samples} data. Saving reports is {save_reports}!")
-    generate_dataset(n_samples=n_samples, save_reports=save_reports)
+    if len(sys.argv) > 3:
+        clean_data = sys.argv[3].lower() == 'true'
+    print(f"Starting generation of {n_samples} data!\n Saving reports is {save_reports}!\n Cleaning data option {clean_data}!")
+    generate_dataset(n_samples=n_samples, save_reports=save_reports, clean_data= clean_data)
 
