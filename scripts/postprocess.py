@@ -33,6 +33,110 @@ def __resolve_conflicts(entities):
     return list(grouped.values())
 
 
+import re
+
+def clean_medication(text):
+    """
+    Keep medication name and dose, remove trailing verbs or instructions.
+    Example: "Diazepam 1g wurde verabreicht" -> "Diazepam 1g"
+    """
+    # Remove common trailing phrases
+    text = re.sub(r'\b(wurde|wird|wird noch|soll|sollte|kann|konnte|erhielt|erhalten|verabreicht|gegeben|eingenommen)\b.*', '', text)
+    return text.strip()
+
+def clean_person_name(name):
+    # Remove leading non-letter characters
+    name = re.sub(r'^[^a-zA-ZäöüÄÖÜß]+', '', name.strip())
+    return name
+    
+    # Check if first character is a letter
+    return name and name[0].isalpha()
+def clean_entity_text(entity_text, entity_type):
+    # Remove common labels (e.g., "Name:", "Geburtsdatum:")
+    entity_text = re.sub(r'^[A-Za-zäöüÄÖÜß\s]+:\s*', '', entity_text)
+
+    # Clean up PERSON, DOCTOR, ORG by removing prepositions
+    if entity_type in ["PERSON", "DOCTOR", "ORG"]:
+        prepositions = ["im ", "auf ", "mit ", "zu ", "bei ", "von ", "am ", "untersucht von ", "untersucht "]
+        lowered = entity_text.lower()
+        for prefix in prepositions:
+            if lowered.startswith(prefix):
+                entity_text = entity_text[len(prefix):].strip()
+                break
+
+    if entity_type in ["PERSON", "DOCTOR"]:
+        prefixes = ["herr", "frau"]
+        lowered = entity_text.lower()
+        for prefix in prefixes:
+            if lowered.startswith(prefix):
+                entity_text = clean_person_name (entity_text[len(prefix):])
+                break
+
+
+
+    # FAMILY_STATUS cleanup
+    if entity_type == "FAMILY_STATUS":
+        for prefix in ["bei sich hat ", "hat ", "ist ", "begleitet von"]:
+            if entity_text.lower().startswith(prefix):
+                entity_text = entity_text[len(prefix):].strip()
+                break
+    if entity_type == "MEDICATION":
+        entity_text= clean_medication(entity_text)
+
+    # ALLERGY: remove duplicates (e.g., "NüsseAllergien : Nüsse")
+    if entity_type == "ALLERGY":
+        parts = entity_text.split()
+        half = len(parts) // 2
+        if len(parts) > 1 and parts[:half] == parts[half:]:
+            entity_text = " ".join(parts[:half])
+
+    # DIAGNOSIS, RISKFACTOR, SYMPTOM: remove leading/trailing fillers
+    if entity_type in ["DIAGNOSIS", "RISKFACTOR", "SYMPTOM"]:
+        start_patterns = [
+            r"^(es wurde|es sind|hat|hatte|zeigt sich|zeigt|liegt|liegen|besteht|bestehen|vorliegt|vorhanden|wurde|wird|wurde eine|wird eine)\s+",
+            r"^(am|zum|zur|im|bei|mit|auf|in)\s+"
+        ]
+        for pattern in start_patterns:
+            entity_text = re.sub(pattern, '', entity_text, flags=re.IGNORECASE).strip()
+
+        # Remove trailing descriptive fillers
+        end_patterns = [
+            r"\s+(diagnostiziert|möglich|empfohlen|vorhanden|bestehend|gegeben|festgestellt)$"
+        ]
+        for pattern in end_patterns:
+            entity_text = re.sub(pattern, '', entity_text, flags=re.IGNORECASE).strip()
+
+    # DATE: Remove prefix phrases
+    if entity_type == "DATE":
+        entity_text = re.sub(r'^(am Untersuchungsdatum|am Datum|am|zum|bei)\s+', '', entity_text, flags=re.IGNORECASE).strip()
+
+    # DEVICE: extract what's inside braces or remove filler
+    if entity_type == "DEVICE":
+        brace_match = re.search(r"\{(.*?)\}", entity_text)
+        if brace_match:
+            entity_text = brace_match.group(1).strip()
+        else:
+            # Fallback if no braces
+            entity_text = re.sub(r"^(es wird|es wurde|wird)?\s*empfohlen\s*", '', entity_text, flags=re.IGNORECASE)
+            entity_text = re.sub(r"zu verwenden$", '', entity_text, flags=re.IGNORECASE).strip()
+
+    return entity_text
+
+def normalize_text(text):
+    # Lowercase and remove extra colons/spaces
+    text = text.lower().replace(":", "").strip()
+    
+    # Fix decimal numbers with space after dot, e.g., "97. 8" -> "97.8"
+    text = re.sub(r'(\d)\.\s+(\d)', r'\1.\2', text)
+    
+    # Ensure space between number and unit (e.g., "97.8kg" -> "97.8 kg")
+    text = re.sub(r'(\d)([a-zA-Z]+)', r'\1 \2', text)
+    
+    # Clean extra spaces
+    text = re.sub(r'\s+', ' ', text)
+    
+    return text.strip()
+
 def postprocess_entities(entities):
     merged = []
     buffer = None
@@ -89,7 +193,7 @@ def postprocess_entities(entities):
         merged.append(buffer)
 
     # Step 2: Merge multi-token entities for selected labels
-    MULTI_TOKEN_LABELS = {"PERSON", "MEDICATION", "DIAGNOSIS", "OCCUPATION", "FAMILYMEMBER", "BIRTHDATE", "DATE"}
+    MULTI_TOKEN_LABELS = {"PERSON", "MEDICATION", "DIAGNOSIS", "OCCUPATION", "FAMILYMEMBER", "BIRTHDATE", "DATE", "ORG", "ADDRESS"}
 
     final = []
     buffer = None
@@ -105,12 +209,17 @@ def postprocess_entities(entities):
         )
 
         if same_label_and_multi_token:
-            buffer["word"] += " " + ent["word"]
+            separator = " "
+            if "DATE" in ent["entity_group"] :
+                separator = "."
+            buffer["word"] += separator + ent["word"]
             buffer["end"] = ent["end"]
             buffer["score"] = max(buffer["score"], ent["score"])
         else:
             final.append(buffer)
             buffer = ent
+        if "DATE" in ent["entity_group"] or "GEWICHT" in ent["entity_group"]:
+            buffer['word'] = normalize_text(buffer['word'])
 
     if buffer:
         final.append(buffer)
@@ -131,7 +240,7 @@ def postprocess_entities(entities):
         group = ent["entity_group"]
 
         # Drop junk
-        if word in [",", ".", "und", "oder"]:
+        if word in [",", ".", "und", "oder","im", "zu", "auf", "bei", "mit"]:
             continue
 
         # Remove short PERSON or FAMILY_STATUS
@@ -142,11 +251,15 @@ def postprocess_entities(entities):
         if group == "PERSON" and word.lower() in ["arm", "bein", "auge", "ehefrau", "kinder"]:
             continue
 
+
         # Normalize or add context hints
         if word.lower() == "schlafmedikamente":
             ent["context_hint"] = "medication_or_symptom"
         if "rauch" in word.lower():
             ent["context_hint"] = "lifestyle_smoking"
+
+
+        ent["word"] = clean_entity_text(word, group)
 
         clean.append(ent)
 

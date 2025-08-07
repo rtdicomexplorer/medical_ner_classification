@@ -2,9 +2,9 @@ Patientenname : Otto Kromberger
 
 Geburtsdatum : 01.07.1950
 
-Gewicht: 1,72 m
+Große: 1,72 m
 
-Große: 110Kg
+Gewicht: 110Kg
 
 Hausarzt : Dr. Suhle Nikolas.
 

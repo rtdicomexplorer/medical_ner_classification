@@ -155,7 +155,7 @@ def generate_report(token=None):
 
     templates = [
         f"Am {date} stellte sich Patient {name} ({gender}), {height} per {weight} geboren am {birthdate}, Familienstand: {family_status} mit {symptom} vor, beschäftigt als {occupation} "
-        f"Der {occupation} wurde mit starken Beschwerden von seiner {family_member} in die Klinik begleitet."
+        f"Der Patient wurde mit starken Beschwerden von seiner {family_member} in die Klinik begleitet."
         f"Diagnose: {diagnosis}. "
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}. "
         f"Impression: {impression or 'nicht dokumentiert'}. "
@@ -520,8 +520,8 @@ def __paraphrase_entity(entity_type, value):
             f"Datum des Berichts: {value}"
         ],
         "DEVICE":[
-            "es wird empfohlen {value} zu verwenden",
-            "{value} wird verwendet",
+            f"es wird empfohlen {value} zu verwenden",
+            f"{value} wird verwendet",
         ],
         "FAMHIST":[
             f"in der Familie gab es schon fälle mit {value}",

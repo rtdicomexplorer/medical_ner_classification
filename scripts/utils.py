@@ -32,7 +32,7 @@ lifestyles = [
 ]
 
 risk_factors = [
-    "familiäre Vorbelastung Diabetes", "Adipositas BMI 32","Nikotinabusus"
+    "familiäre Vorbelastung Diabetes", "Adipositas BMI 32","Nikotinabusus",
     "Hyperlipidämie", "Schlafapnoe","Hypercholesterinämie", "RR erhöht","höheres Lebensalter"
 ]
 
@@ -187,17 +187,18 @@ medications = [
 
 treatments = ["Sauerstofftherapie", "Operation", "Chemotherapie", "Physiotherapie"]
 lab_results = ["Hb 13.5 g/dL", "Blutzucker 110 mg/dL", "Cholesterin 200 mg/dL","Glukose: 110 mg/dL"]
-allergies = ["Penicillin", "Pollen", "Nüsse"]
-immunizations = ["Masern-Impfung", "Grippeimpfung"]
-devices = ["Herzschrittmacher", "Insulinpumpe","Schlafmaske", "Blutdruckgerät"]
+allergies = ["Penicillin", "Pollen", "Nüsse","Hausstaubmilben","Tierhaar", "Soia"]
+immunizations = ["Masern-Impfung", "Grippeimpfung", "Covid 19"]
+devices = ["Herzschrittmacher", "Insulinpumpe","Schlafmaske", "Blutdruckgerät", "Kateter"]
 family_histories = ["Mutter mit Diabetes", "Vater mit Bluthochdruck"]
 procedures = ["Angioplastie", "MRT-Scan", "Biopsie", "Ultraschall","CT Kopf", "Lyse-Therapie"]
 departments = ["Kardiologie", "Notaufnahme", "Onkologie", "Radiologie","Neurologie", "Innere Medizin"]
 
 hospital_names = ["St. Marien Krankenhaus", "Allgemeine Gesundheitsklinik",
-                  "Städtisches Medizinzentrum", "Universitätsklinikum München"]
-hospital_addresses = ["Hauptstraße 12, 80331 München", "Berliner Allee 45, 40212 Düsseldorf","Lindenstraße 8, 10115 Berlin", "Goetheplatz 9, 50674 Köln"]
-hospital_phones = ["089 123456", "0211 987654", "030 234567", "0221 456789"]
+                  "Städtisches Medizinzentrum", "Universitätsklinikum München", "Kinderklinik Freiburg"]
+hospital_addresses = ["Hauptstraße 12, 80331 München", "Berliner Allee 45, 40212 Düsseldorf","Lindenstraße 8, 10115 Berlin", "Goetheplatz 9, 50674 Köln",
+                      "Hugstetterstr. 7 79106 Freiburg"]
+hospital_phones = ["089 123456", "0211 987654", "030 234567", "0221 456789", "0761 2720298"]
 
 followup_reasons = [
     "zur Blutdruckkontrolle", "wegen anhaltender Schmerzen", "zur Verlaufskontrolle"
@@ -429,79 +430,7 @@ def refresh_and_clean_ner_labels(data, id2label, threshold = 0.95):
 
 
 
-
-
-
-
-
-
-
-def extract_patterns_from_rad_openbook():
-    import pandas as pd
-
-    # Load the CSV
-    df = pd.read_csv("./documents/core-playbook-dev.csv")
-
-    # Drop rows with missing procedure names
-    df = df.dropna(subset=["LONG_NAME"])
-
-    # Build patterns
-    patterns = []
-
-    for _, row in df.iterrows():
-        proc_name = row["LONG_NAME"].strip()
-        modality = str(row.get("Modality", "")).strip()
-        anatomy = str(row.get("Anatomic_Focus", "")).strip()
-
-        # Add procedure
-        if proc_name:
-            patterns.append({"label": "PROCEDURE", "pattern": proc_name})
-
-        # Add anatomy
-        if anatomy and len(anatomy) > 2:
-            patterns.append({"label": "ANATOMY", "pattern": anatomy})
-
-        # Add modality
-        if modality and len(modality) > 2:
-            patterns.append({"label": "MODALITY", "pattern": modality})
-
-    # De-duplicate
-    unique_patterns = {f"{p['label']}::{p['pattern']}": p for p in patterns}
-    final_patterns = list(unique_patterns.values())
-
-    # Save to JSONL for use with spaCy EntityRuler
-    import json
-
-    with open("radlex_patterns.jsonl", "w", encoding="utf-8") as f:
-        for pattern in final_patterns:
-            json.dump(pattern, f)
-            f.write("\n")
-
-    print(f"Generated {len(final_patterns)} unique NER patterns.")
-
-
-
-if __name__ == "__main__":
-
-    from radlex_utilities import extract_reports_from_raw_file, basic_cleanup, save_reports_to_individual_files
-
-
-    #extract_patterns_from_rad_openbook()
-    file_path = "./documents/ReportsDATASET.csv"
-    raw_reports = extract_reports_from_raw_file(file_path)
-
-    print(f"Extracted {len(raw_reports)} reports.")
-
-
-    reports = basic_cleanup(raw_reports)
-    print(f"Cleaned total: {len(reports)} reports")
-
-    save_reports_to_individual_files(reports, "output_reports")
-
-
-
-
-
+def main():
     # Lade Daten
     data_path = "./data/train.json"
     output_path = "dein_datensatz_cleaned2.json"
@@ -513,3 +442,10 @@ if __name__ == "__main__":
         json.dump(cleardata, f, indent=2, ensure_ascii=False)
 
     print(f"✔ Bereinigt und gespeichert unter: {output_path}")
+
+
+if __name__ == "__main__":
+    main()
+
+
+   

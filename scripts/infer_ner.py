@@ -11,7 +11,7 @@ import html
 MODEL_PATH = "./models/gbert-base"
 OUTPUTDIR = "output"
 
-def save_entity_comparison_html(raw_entities, post_entities, filename="ner_comparison.html"):
+def save_entity_comparison_html_(raw_entities, post_entities, filename="ner_comparison.html"):
     # Build lookup by span
     raw_by_span = {(e["start"], e["end"]): e for e in raw_entities}
     post_by_span = {(e["start"], e["end"]): e for e in post_entities}
@@ -156,11 +156,138 @@ def save_entity_comparison_html(raw_entities, post_entities, filename="ner_compa
 </html>
 """
     Path(filename).write_text(html_content, encoding="utf-8")
-    print(f"Vergleich gespeichert unter: {filename}")
+    print(f"\nHTML compare saved to {filename}")
+
+def save_entity_comparison_html(raw_entities, post_entities, filename="ner_comparison.html"):
+    from pathlib import Path
+    import html
+
+    # Build lookups by span
+    raw_by_span = {(e["start"], e["end"]): e for e in raw_entities}
+    post_by_span = {(e["start"], e["end"]): e for e in post_entities}
+    all_spans = sorted(set(raw_by_span.keys()).union(post_by_span.keys()))
+
+    rows = ""
+    for span in all_spans:
+        raw = raw_by_span.get(span)
+        post = post_by_span.get(span)
+
+        # Prepare fields with safe defaults
+        entity_type = html.escape(raw["entity_group"] if raw else post["entity_group"])
+        raw_word = html.escape(raw["word"]) if raw else "(missing)"
+        post_word = html.escape(post["word"]) if post else "(missing)"
+        raw_score = f'{raw["score"]:.3f}' if raw else "-"
+        post_score = f'{post["score"]:.3f}' if post else "-"
+        span_str = f'{span[0]}, {span[1]}'
+
+        # Detect changes
+        row_class = ""
+        if not raw:
+            row_class = "added"
+        elif not post:
+            row_class = "removed"
+        elif raw["word"] != post["word"] or raw["entity_group"] != post["entity_group"]:
+            row_class = "changed"
+
+        rows += (
+            f"<tr class='{row_class}'>"
+            f"<td>{entity_type}</td>"
+            f"<td>{raw_word}</td>"
+            f"<td>{post_word}</td>"
+            f"<td>{raw_score}</td>"
+            f"<td>{post_score}</td>"
+            f"<td>{span_str}</td>"
+            f"</tr>\n"
+        )
+
+    html_content = f"""
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Compare entities (Merged View)</title>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }}
+        h1 {{
+            text-align: center;
+            margin-bottom: 30px;
+        }}
+        table {{
+            border-collapse: collapse;
+            width: 100%;
+        }}
+        th, td {{
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+            text-align: left;
+            white-space: nowrap;
+        }}
+        th {{
+            background-color: #eaeaea;
+            position: sticky;
+            top: 0;
+        }}
+        tr:hover {{
+            background-color: #f1f1f1;
+        }}
+        .changed {{
+            background-color: #ffe0e0;
+            font-weight: bold;
+        }}
+        .added {{
+            background-color: #e0ffe0;
+            font-style: italic;
+        }}
+        .removed {{
+            background-color: #fce5cd;
+            font-style: italic;
+        }}
+    </style>
+</head>
+<body>
+    <h1>Compare NER-Entities (RAW vs. Postpprocessing)</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Typ</th>
+                <th>Entity (Raw)</th>
+                <th>Entity (Post)</th>
+                <th>Score (Raw)</th>
+                <th>Score (Post)</th>
+                <th>Span</th>
+            </tr>
+        </thead>
+        <tbody>
+            {rows}
+        </tbody>
+    </table>
+</body>
+</html>
+"""
+    Path(filename).write_text(html_content, encoding="utf-8")
+    print(f"\nHTML merged comparison saved to {filename}")
 
 
+
+def save_predictions(predictions, patient_id, output_dir="predictions"):
+    os.makedirs(output_dir, exist_ok=True)
+    path = os.path.join(output_dir, f"{patient_id}.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(predictions, f, indent=2, ensure_ascii=False)
+    print(f"✅ Predictions saved to {path}")
 
 def main(file_path):
+
+    _, report_file_name = os.path.split(file_path)
+    
+    report_file_name, _ = os.path.splitext(report_file_name) 
+
+    print (report_file_name)
     print(f"Extracting text from {file_path} ...")
     text = extract_text(file_path)
     print(f"Text extracted (first 500 chars):\n{text[:500]}")
@@ -182,32 +309,42 @@ def main(file_path):
         entity_type = ent.get("entity_group", ent.get("entity"))
         # print(ent)
         print(f"Entity: '{ent['word']}'  |  Type: {entity_type}  |  Score: {ent['score']:.3f}")
+    #postprocess the entities to make them clean...
     clean_entities = postprocess_entities(entities)
+
+    save_predictions(clean_entities,report_file_name)
 
     print("\n--- After postprocessing ---")
     for ent in clean_entities:
         entity_type = ent.get("entity_group", ent.get("entity"))
         print(f"Entity: '{ent['word']}'  |  Type: {entity_type}  |  Score: {ent['score']:.3f}  |  Span: ({ent['start']}, {ent['end']})")
 
-
-    output_html = os.path.join(OUTPUTDIR, "compare_entities.json")
-    save_entity_comparison_html(entities, clean_entities,output_html)
-
-    fhir_output = map_ner_to_fhir(clean_entities)
-
-    output_json = os.path.join(OUTPUTDIR, "fhir_output.json")
-    if os.path.exists(output_json):
-        os.remove(output_json)
     os.makedirs(OUTPUTDIR, exist_ok=True)
     
-    with open(output_json, "w", encoding="utf-8") as f:
-        json.dump(fhir_output, f, indent=2, ensure_ascii=False)
+    output_html = os.path.join(OUTPUTDIR, f"compare_postprocessing_{report_file_name}.html")  
+    if os.path.exists(output_html):
+        os.remove(output_html)
+    save_entity_comparison_html(entities, clean_entities,output_html)
 
-    print(f"\nFHIR resources saved to {output_json}")
+
+    #fhir part not yet ready
+
+    # fhir_output = map_ner_to_fhir(clean_entities)
+
+    # output_json = os.path.join(OUTPUTDIR, "fhir_output.json")
+    # if os.path.exists(output_json):
+    #     os.remove(output_json)
+ 
+    
+    # with open(output_json, "w", encoding="utf-8") as f:
+    #     json.dump(fhir_output, f, indent=2, ensure_ascii=False)
+
+    # print(f"\nFHIR resources saved to {output_json}")
 
 if __name__ == "__main__":
     import sys
     file_path = './documents/artz_brief.txt'
+    file_path = './txt_reports/report_30.txt'
     if len(sys.argv) == 2:
         print("Usage: python infer_ner.py <path_to_file>")
     
