@@ -327,24 +327,11 @@ def main(file_path):
     save_entity_comparison_html(entities, clean_entities,output_html)
 
 
-    #fhir part not yet ready
-
-    # fhir_output = map_ner_to_fhir(clean_entities)
-
-    # output_json = os.path.join(OUTPUTDIR, "fhir_output.json")
-    # if os.path.exists(output_json):
-    #     os.remove(output_json)
- 
-    
-    # with open(output_json, "w", encoding="utf-8") as f:
-    #     json.dump(fhir_output, f, indent=2, ensure_ascii=False)
-
-    # print(f"\nFHIR resources saved to {output_json}")
 
 if __name__ == "__main__":
     import sys
     file_path = './documents/artz_brief.txt'
-    file_path = './txt_reports/report_30.txt'
+    file_path = './txt_reports/report_0.txt'
     if len(sys.argv) == 2:   
         file_path = sys.argv[1]
         if not os.path.exists(file_path):

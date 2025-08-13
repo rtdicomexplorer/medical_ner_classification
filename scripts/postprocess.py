@@ -1,4 +1,21 @@
 
+from utils import family_members, occupations, family_status, prev_diagnoses, followup_reasons,impressions
+import re
+import spacy
+from spacy.matcher import PhraseMatcher
+
+nlp = spacy.load("de_core_news_sm")
+
+def extract_occupation(entity_text):
+    doc = nlp(entity_text)
+    for token in doc:
+        if token.pos_ == "NOUN":
+            lemma = token.lemma_.capitalize()
+            if lemma in occupations:
+                return lemma
+    return entity_text
+
+
 def __resolve_conflicts(entities):
     """
     If the same span has multiple labels, pick the highest priority one.
@@ -33,7 +50,6 @@ def __resolve_conflicts(entities):
     return list(grouped.values())
 
 
-import re
 
 def clean_medication(text):
     """
@@ -48,9 +64,7 @@ def clean_person_name(name):
     # Remove leading non-letter characters
     name = re.sub(r'^[^a-zA-ZäöüÄÖÜß]+', '', name.strip())
     return name
-    
-    # Check if first character is a letter
-    return name and name[0].isalpha()
+
 def clean_entity_text(entity_text, entity_type):
     # Remove common labels (e.g., "Name:", "Geburtsdatum:")
     entity_text = re.sub(r'^[A-Za-zäöüÄÖÜß\s]+:\s*', '', entity_text)
@@ -71,8 +85,6 @@ def clean_entity_text(entity_text, entity_type):
             if lowered.startswith(prefix):
                 entity_text = clean_person_name (entity_text[len(prefix):])
                 break
-
-
 
     # FAMILY_STATUS cleanup
     if entity_type == "FAMILY_STATUS":
@@ -120,7 +132,136 @@ def clean_entity_text(entity_text, entity_type):
             entity_text = re.sub(r"^(es wird|es wurde|wird)?\s*empfohlen\s*", '', entity_text, flags=re.IGNORECASE)
             entity_text = re.sub(r"zu verwenden$", '', entity_text, flags=re.IGNORECASE).strip()
 
+    if entity_type == "OCCUPATION":
+        entity_text = extract_occupation(entity_text)
+
+
     return entity_text
+
+#################SPACY
+def create_matcher(label, phrase_list):
+    matcher = PhraseMatcher(nlp.vocab, attr="LOWER")
+    patterns = [nlp.make_doc(p) for p in phrase_list]
+    matcher.add(label, patterns)
+    return matcher
+
+matcher_list ={
+"FOLLOWUP_REASON" : create_matcher("FOLLOWUP_REASON", followup_reasons),
+"IMPRESSION" : create_matcher("IMPRESSION", impressions),
+"PREV_DIAGNOSIS" : create_matcher("PREV_DIAGNOSIS", prev_diagnoses),
+"FAMILYMEMBER" :create_matcher("FAMILYMEMBER", family_members),
+"FAMILY_STATUS" : create_matcher("FAMILY_STATUS", family_status)
+}
+
+def extract_name_spacy(text):
+    doc = nlp(text)
+    # Alle Entitäten der Klasse PERSON extrahieren
+    persons = [ent.text for ent in doc.ents if ent.label_ == "PER" or ent.label_ == "PERSON"]
+    if persons:
+        # Nimm die längste Person-Entität (falls mehrere)
+        return max(persons, key=len).strip()
+    else:
+        # Fallback: alle PROPN (Eigennamen) und NOUN in Folge zusammenfügen
+        tokens = [token.text for token in doc if token.pos_ in {"PROPN", "NOUN"}]
+        return " ".join(tokens).strip()
+
+
+def extract_date_spacy(text):
+    doc = nlp(text)
+    # Versuch SpaCy DATE-Entitäten zu finden
+    dates = [ent.text for ent in doc.ents if ent.label_ == "DATE"]
+    if dates:
+        # Gib die längste erkannte DATE-Entität zurück
+        return max(dates, key=len).strip()
+    
+    # Falls SpaCy nichts findet, suche mit Regex deutsche Datumsformate
+    regex = r"\b\d{2}\.\d{2}\.\d{4}\b"
+    match = re.search(regex, text)
+    if match:
+        return match.group(0)
+    
+    # Kein Datum gefunden
+    return None
+def extract_phrases(text, matcher):
+    doc = nlp(text)
+    result =  [doc[start:end].text for _, start, end in matcher(doc)]
+    return " ".join(result)
+
+def clean_medical_text_spacy(entity_text):
+    start_stopphrases = [
+        r"es wurde", r"es sind", r"hat", r"hatte", r"zeigt sich", r"zeigt", r"liegt", r"liegen",
+        r"besteht", r"bestehen", r"vorliegt", r"vorhanden", r"wurde", r"wird", r"wurde eine", r"wird eine",
+        r"am", r"zum", r"zur", r"im", r"bei", r"mit", r"auf", r"in"
+    ]
+    
+    # Kombiniere Phrasen zu einem Regex Pattern, ^ = Anfang des Strings
+    pattern = r"^(?:" + "|".join(start_stopphrases) + r")\s+"
+    
+    # Entferne die Startphrase am Anfang, wenn vorhanden (case-insensitive)
+    entity_text = re.sub(pattern, "", entity_text, flags=re.IGNORECASE).strip()
+    
+    # Entferne trailing Wörter
+    entity_text = re.sub(r'\s+(diagnostiziert|möglich|empfohlen|vorhanden|bestehend|gegeben|festgestellt)$', '', entity_text, flags=re.IGNORECASE).strip()
+    
+    # Lemmatisieren: nur NOUN, ADJ, PROPN behalten
+    doc = nlp(entity_text)
+    lemmas = [token.lemma_ for token in doc if token.pos_ in {"NOUN", "ADJ", "PROPN"}]
+    
+    # Falls nichts übrig bleibt, gebe den Originaltext zurück (Fallback)
+    cleaned = " ".join(lemmas)
+    return cleaned if cleaned else entity_text
+def extract_occupation_spacy(entity_text):
+    doc = nlp(entity_text)
+    for token in doc:
+        if token.pos_ == "NOUN" or token.pos_ == "PROPN":
+            lemma = token.lemma_.capitalize()
+            if lemma in occupations:
+                return lemma
+    return entity_text
+
+def clean_entity_text_spacy(entity_text, entity_type):
+    # 1. Allgemeines Trimmen & Label-Entfernung (z.B. "Name:", "Geburtsdatum:")
+    entity_text = entity_text.strip()
+    entity_text = re.sub(r'^[A-Za-zäöüÄÖÜß\s]+:\s*', '', entity_text)
+
+    if entity_type in ["PERSON", "DOCTOR", "ORG"]:
+        entity_text = extract_name_spacy(entity_text)
+  
+    elif entity_type == "OCCUPATION":
+        entity_text = extract_occupation_spacy(entity_text)
+    elif "DATE" in entity_type:
+        entity_text =extract_date_spacy( entity_text)
+
+    elif entity_type in ["FAMILY_STATUS","FAMILYMEMBER"]:
+        entity_text = extract_phrases(entity_text, matcher_list[entity_type])
+
+
+    elif entity_type == "MEDICATION":
+        # Regex Cleanup für Verben entfernen
+        entity_text = re.sub(r'\b(wurde|wird|wird noch|soll|sollte|kann|konnte|erhielt|erhalten|verabreicht|gegeben|eingenommen)\b.*', '', entity_text)
+        entity_text = entity_text.strip()
+
+
+    elif entity_type in ["DIAGNOSIS", "RISKFACTOR","SYMPTOM"]:
+        entity_text = clean_medical_text_spacy(entity_text) 
+
+    elif entity_type == "DEVICE":
+        brace_match = re.search(r"\{(.*?)\}", entity_text)
+        if brace_match:
+            entity_text = brace_match.group(1).strip()
+        else:
+            entity_text = re.sub(r"^(es wird|es wurde|wird)?\s*empfohlen\s*", '', entity_text, flags=re.IGNORECASE)
+            entity_text = re.sub(r"zu verwenden$", '', entity_text, flags=re.IGNORECASE).strip()
+
+    # Optional: Immer erst Recht nochmal trimmen
+    entity_text = entity_text.strip()
+
+    return entity_text
+
+
+##############END SPACY
+
+
 
 def normalize_text(text):
     # Lowercase and remove extra colons/spaces
@@ -259,7 +400,7 @@ def postprocess_entities(entities):
             ent["context_hint"] = "lifestyle_smoking"
 
 
-        ent["word"] = clean_entity_text(word, group)
+        ent["word"] = clean_entity_text_spacy(word, group)
 
         clean.append(ent)
 

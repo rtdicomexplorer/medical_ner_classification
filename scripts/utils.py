@@ -201,28 +201,37 @@ hospital_addresses = ["Hauptstraße 12, 80331 München", "Berliner Allee 45, 402
 hospital_phones = ["089 123456", "0211 987654", "030 234567", "0221 456789", "0761 2720298"]
 
 followup_reasons = [
-    "zur Blutdruckkontrolle", "wegen anhaltender Schmerzen", "zur Verlaufskontrolle"
+    "zur Blutdruckkontrolle", "wegen anhaltender Schmerzen", "zur Verlaufskontrolle",
+    "zur weiteren Abklärung", "zur Nachsorge", "zur Wundkontrolle", "zur Laborüberprüfung"
 ]
 
 impressions = [
-    "Hinweis auf Pneumonie", "wahrscheinlich virale Ursache", "unklares Abdomen"
+    "Hinweis auf Pneumonie", "wahrscheinlich virale Ursache", "unklares Abdomen",
+    "mögliche Fraktur", "Verdacht auf Infekt", "Hinweis auf Tumor"
 ]
 
 prev_diagnoses = [
-    "frühere Appendizitis", "bekannte Arthrose", "chronische Bronchitis"
+    "frühere Appendizitis", "bekannte Arthrose", "chronische Bronchitis",
+    "status post Herzinfarkt", "durchgemachte Pneumonie", "alte Fraktur", "bekannte COPD"
 ]
+
+
 occupations = [
   "Gärtner", "Bäcker", "Metzger", "Professor", "Student", "Arbeitslose",
   "Händler", "Kaufmann", "Kauffrau", "Studentin", "Verkäuferin",
-  "Lehrer", "Ärztin", "Ingenieur", "Friseur", "Journalist", "Sekretärin"
+  "Lehrer", "Ärztin", "Ingenieur", "Friseur", "Journalist", "Sekretärin",
+  "Arzt", "Ingenieur", "Polizist", "Koch", "Pfleger", "Krankenschwester", 
+  "Techniker", "Elektriker", "Kaufmann","Kauffrau", "Projektmanager"
+
+
 ]
 
 family_members = [
-  "Bruder", "Schwester", "Mutter", "Vater", "Großvater", "Großmutter",
-  "Onkel", "Kind", "Kinder", "Sohn", "Tochter", "Cousine", "Neffe", "Nichte"
+  "Bruder", "Schwester", "Mutter", "Vater", "Großvater", "Großmutter", "Enkel", "Enkelin",
+  "Onkel", "Kind", "Kinder", "Sohn", "Tochter", "Cousine", "Neffe", "Nichte", "Witwe"
 ]
 
-
+family_status = ["verheiratet", "geschieden", "verwitwet", "ledig", "getrennt", "in einer Beziehung", "alleinstehend"]
 
 
 def normalize_token(token):

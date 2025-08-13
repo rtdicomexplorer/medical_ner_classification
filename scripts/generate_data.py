@@ -50,7 +50,7 @@ def __random_birthdate(min_age=18, max_age=90):
 
 
 def __random_family_status():
-    return random.choice(["ledig", "verheiratet", "geschieden", "verwitwet"])
+    return random.choice(family_status)
 
 
 def __random_date(start_year=2015, end_year=2024):
@@ -145,7 +145,7 @@ def generate_report(token=None):
     add_entity_safe(allergy, "ALLERGY")
     add_entity_safe(immunization, "IMMUNIZATION")
     add_entity_safe(device, "DEVICE")
-    add_entity_safe(family_history, "FAMHIS")
+    add_entity_safe(family_history, "FAMHIST")
     add_entity_safe(vital, "VITALSIGNS")
     add_entity_safe(lifestyle, "LIFESTYLE")
     add_entity_safe(riskfactor, "RISKFACTOR")
@@ -154,9 +154,10 @@ def generate_report(token=None):
   
 
     templates = [
-        f"Am {date} stellte sich Patient {name} ({gender}), {height} per {weight} geboren am {birthdate}, Familienstand: {family_status} mit {symptom} vor, beschäftigt als {occupation} "
+        f"Am {date} stellte sich Patient {name} ({gender}), {height} per {weight} geboren am {birthdate}, Familienstand: {family_status}, der Patient stellt folgenden Symptome  {symptom} vor, beschäftigt als {occupation} "
         f"Der Patient wurde mit starken Beschwerden von seiner {family_member} in die Klinik begleitet."
         f"Diagnose: {diagnosis}. "
+        f"Familienanamnese: {family_history}. " 
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}. "
         f"Impression: {impression or 'nicht dokumentiert'}. "
         f"Behandlung: {medication} und {treatment}. Verfahren: {procedure}. "
@@ -171,6 +172,7 @@ def generate_report(token=None):
         f"Untersuchung durch {doctor}. Diagnose: {diagnosis} (ICD‑10: {icd10_code} – {icd_description}). "
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}. "
         f"Impression: {impression or 'nicht dokumentiert'}. "
+        f"Familiäre Häufung: {family_history}. "
         f"Verabreichtes Medikament: {medication}. Eingriff: {procedure}. "
         f"Laborbefund: {lab_result}. Tel: {hospital_phone}. "
         f"Folgegrund: {followup_reason or 'keine Angabe'}. {followup_sentence}",
@@ -181,6 +183,7 @@ def generate_report(token=None):
         f"Adresse: {hospital_address}, Kontakt: {hospital_phone}. "
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}. "
         f"Impression: {impression or 'nicht dokumentiert'}. "
+        f"Genetische Vorbelastung: {family_history}. "
         f"Folgegrund: {followup_reason or 'keine Angabe'}. {followup_sentence}",
         f"Die {family_member} des Patienten brachte ihn zur Untersuchung, da sie über anhaltende Beschwerden berichtete. "
         f"Der Patient wiegt {weight} für eine Größe von {height}"
@@ -188,16 +191,18 @@ def generate_report(token=None):
 
         f"Der Patient arbeitet als {occupation} und lebt mit seiner {family_member} in einem gemeinsamen Haushalt. "
         f"Aufgrund seiner Tätigkeit als {occupation} ist der Patient häufig körperlich belastet, "
-        f"was möglicherweise zur aktuellen Symptomatik beiträgt. "
+        f"was möglicherweise zur aktuellen Symptomatik beiträgt. Als familiäre Disposition {family_history} "
         f"Der Patient gibt an, seine Arbeit als {occupation} derzeit nicht ausüben zu können. "
         f"In der Familie bestehen Vorerkrankungen: Die {family_member} des Patienten litt ebenfalls an {diagnosis}. "
         f"Der Patient wurde von seiner {family_member} wegen zunehmender {symptom} in die Klinik gebracht. "
-        f"Der Patient wiegt {weight} für eine Größe von {height}"
+        f"Der Patient wiegt {weight} für eine Größe von {height}."
+        f"Familienanamnese: {family_history}. " 
         f"Patient ist {gender} und hat eine: {pid},"
         
        f"--- RADIOLOGY REPORT ---\n\n\nPatient: {name} ({gender}),  "
        f"geboren am {birthdate}\nDatum: {date}\nVerfahren: {procedure}\n  Beruf:{occupation}\n Gewicht: {weight} \n Größe: {height}\n"
-        f"Begleitet von {family_member}\n"
+        f"Begleitet von {family_member},\n"
+        f"Es stellt sich eine genetische Vorbelastung {family_history} vor. "
         f"Indikation: {symptom}\nBefund: Zeichen einer {diagnosis}\nEmpfehlung: {treatment}\n"
         f"Radiologe: {doctor}\nAbteilung: {department}\n{hospital_name}, {hospital_address}\nTelefon: {hospital_phone}\n"
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}\nImpression: {impression or 'nicht dokumentiert'}\n"
@@ -227,8 +232,8 @@ def generate_report(token=None):
         f"Empfehlung: {followup_sentence}\nBitte melden Sie sich bei der Abteilung {department} im {hospital_name}.\n"
         f"Adresse: {hospital_address}. Tel: {hospital_phone}.\n"
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}\nImpression: {impression or 'nicht dokumentiert'}\n"
-        f"Folgegrund: {followup_reason or 'keine Angabe'}",
-
+        f"Folgegrund: {followup_reason or 'keine Angabe'}\n"
+        f"Familiäre Anamnese : {family_history}",
         f"--- Artzbrief\n\n"
         f"Patientenname : {name}\n"
         f"Geschlecht: {gender}\n"
@@ -274,7 +279,7 @@ def generate_report(token=None):
         if allergy: optional_fields.append(f"Allergien: {allergy}.")
         if immunization: optional_fields.append(f"Impfung: {immunization}.")
         if device: optional_fields.append(f"Gerät: {device}.")
-        if family_history: optional_fields.append(f"Familienanamnese: {family_history}.")
+        # if family_history: optional_fields.append(f"Familienanamnese: {family_history}.")
         if vital: optional_fields.append(f"Vitalzeichen: {vital}.")
         if lifestyle: optional_fields.append(f"Lebensstil: {lifestyle}.")
         if riskfactor: optional_fields.append(f"Risikofaktor: {riskfactor}.")
@@ -454,6 +459,10 @@ def __paraphrase_entity(entity_type, value):
             f"Geburtsdatum: {value}",
         ],
         "FAMILY_STATUS":[
+           f" familienzustand: {value}",
+           f"Er ist {value}" 
+        ],
+        "FAMILYMEMBER":[
            f"begleitet von {value}",
            f"bei sich hat {value}" 
         ],
@@ -525,6 +534,10 @@ def __paraphrase_entity(entity_type, value):
         ],
         "FAMHIST":[
             f"in der Familie gab es schon fälle mit {value}",
+            f" Familienanamnese: {value}",
+            f" familiäre häufung {value} ",
+             f" familiäre vorbelastung {value} ",
+             f" familiäre Anamnese: {value}"
         ],
 
         "RISKFACTOR":[

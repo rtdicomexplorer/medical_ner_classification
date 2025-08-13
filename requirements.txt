@@ -16,3 +16,4 @@ transformers[torch]
 seqeval 
 evaluate
 tqdm
+spacy
