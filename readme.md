@@ -68,22 +68,48 @@ The pipeline processes clinical documents (PDFs, DOCX, images, TXT), extracts te
      │ Model Training (NER)│  <-- train_ner.py (Fine-tune a transformer (e.g. ClinicalBERT or DeBERTa) using Hugging Face Trainer)
      └────────┬────────────┘
               │
+              ▼  models/gber-base
+        
+### Predictions
+
+           report_xxx
+              │
               ▼
-      ┌──────────────────┐
-      │ Trained NER Model│  (e.g., fine-tuned BERT)
-      └────────┬─────────┘
-               │
-               ▼
      ┌────────────────────┐
      │ Inference Pipeline │  <-- infer_ner.py   (Use infer_ner.py to run predictions on unseen reports)
      └────────┬───────────┘
               │
               ▼
       ┌──────────────────────┐
-      │ NER Output (Entities)│ --- (Returns detected entity spans and labels.)
+      │ NER Output (Entities)│ --- (Returns detected entity spans and labels. )
       └────────┬─────────────┘
                │
                ▼
+predictions/            output/                      
+report_xxx.json         compare_postprocessing_report_xxx.html
+        
+
+
+
+### Evaluation:
+ To evaluate the model, we have created expected results (update of previous prediction)  
+ and compare those with the new prediction.  
+ The results of the evaluation will saved in evaluation_report..
+
+        
+        prediction  expected
+      ┌──────────────────────┐
+      │    evaluate_ner.py   │ --- (Returns detected entity spans and labels. )
+      └────────┬─────────────┘
+               │
+               ▼
+        ** evaluation ?
+
+
+
+        ------------------------------------------------Not yet ready
+
+
      ┌──────────────────────────┐
      │ FHIR Mapping Logic       │  <-- fhir_mapper.py (DOCTOR → Practitioner, DIAGNOSIS → Condition,MEDICATION → MedicationRequest)
      └────────┬─────────────────┘

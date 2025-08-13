@@ -345,9 +345,7 @@ if __name__ == "__main__":
     import sys
     file_path = './documents/artz_brief.txt'
     file_path = './txt_reports/report_30.txt'
-    if len(sys.argv) == 2:
-        print("Usage: python infer_ner.py <path_to_file>")
-    
+    if len(sys.argv) == 2:   
         file_path = sys.argv[1]
         if not os.path.exists(file_path):
             print(f"File not found: {file_path}")
