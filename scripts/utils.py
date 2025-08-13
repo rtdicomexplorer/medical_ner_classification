@@ -187,6 +187,26 @@ medications = [
 
 treatments = ["Sauerstofftherapie", "Operation", "Chemotherapie", "Physiotherapie"]
 lab_results = ["Hb 13.5 g/dL", "Blutzucker 110 mg/dL", "Cholesterin 200 mg/dL","Glukose: 110 mg/dL"]
+findings =[ "Infiltrat in der rechten Lunge"  , 
+            "Herzvergrößerung", 
+            "Pleuraerguss"    , 
+            "Leukozytose"     , 
+            "Erhöhte Leberwerte"              , 
+            "Positive Bakterienkultur"        , 
+            "Nicht verschobene Radiusfraktur" , 
+            "Normaler EEG-Befund" , 
+            "Glatte Hirnhaut"     , 
+            "Kein Nachweis von Metastasen"    , 
+            "Verdickte Darmwand im Colon"     , 
+            "Beidseitige Pneumonie"           , 
+            "Erhöhte Blutsenkungsgeschwindigkeit" , 
+            "Hyperglykämie"             , 
+            "Reduzierte Nierenfunktion" , 
+            "Pathologisches EKG"        , 
+            "Hämaturie"                 , 
+            "Albuminurie"               , 
+            "Hautausschlag an den Extremitäten"   , 
+            "Geringe Beweglichkeit im rechten Kniegelenk"]
 allergies = ["Penicillin", "Pollen", "Nüsse","Hausstaubmilben","Tierhaar", "Soia"]
 immunizations = ["Masern-Impfung", "Grippeimpfung", "Covid 19"]
 devices = ["Herzschrittmacher", "Insulinpumpe","Schlafmaske", "Blutdruckgerät", "Kateter"]

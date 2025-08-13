@@ -92,7 +92,7 @@ def generate_report(token=None):
     procedure = random.choice(procedures)
     department = random.choice(departments)
     lab_result = random.choice(lab_results)
-
+    finding = random.choice(findings)
     occupation = random.choice(occupations)
     family_member = random.choice(family_members)
 
@@ -114,43 +114,47 @@ def generate_report(token=None):
 
     # Build entity dictionary
     entities = {
-        name: "PERSON",
-        pid :"PID",
+        name:"PERSON",
+        pid:"PID",
+        gender:"GENDER", 
+        birthdate:"BIRTHDATE",
+        family_member:"FAMILYMEMBER",
+        family_status: "FAMILY_STATUS", 
+        date:"DATE",
+        symptom:"SYMPTOM",
+        impression:"IMPRESSION", 
+        lab_result:"LAB_RESULT",
+        finding:"FINDING", 
+        prev_diagnosis:"PREV_DIAGNOSIS",
+        occupation:"OCCUPATION",
+        diagnosis:"DIAGNOSIS",
+        medication:"MEDICATION",
+        icd10_code:"ICD10_CODE",
+        icd_description:"ICD10_DESC",
+        procedure: "PROCEDURE", 
+        treatment:"TREATMENT",     
+        doctor:"DOCTOR", 
+        department:"DEPARTMENT",
+        hospital_name:"ORG", 
+        hospital_address:"ADDRESS",
+        hospital_phone:"PHONE", 
         weight:"GEWICHT",
-        height:"GROESSE",
-        doctor: "DOCTOR",
-        occupation: "OCCUPATION",
-        family_member: "FAMILYMEMBER",
-        date: "DATE",
-        diagnosis: "DIAGNOSIS",
-        symptom: "SYMPTOM",
-        medication: "MEDICATION",
-        treatment: "TREATMENT",
-        procedure: "PROCEDURE",
-        department: "DEPARTMENT",
-        hospital_name: "ORG",
-        hospital_address: "ADDRESS",
-        hospital_phone: "PHONE",
-        gender: "GENDER",
-        birthdate: "BIRTHDATE",
-        family_status: "FAMILY_STATUS",
-        icd10_code: "ICD10_CODE",
-        icd_description: "ICD10_DESC",
+        height:"GROESSE"
     }
     def add_entity_safe(key, label):
         if key and key not in entities:
             entities[key] = label
 
 
-    add_entity_safe(allergy, "ALLERGY")
-    add_entity_safe(immunization, "IMMUNIZATION")
-    add_entity_safe(device, "DEVICE")
-    add_entity_safe(family_history, "FAMHIST")
-    add_entity_safe(vital, "VITALSIGNS")
-    add_entity_safe(lifestyle, "LIFESTYLE")
-    add_entity_safe(riskfactor, "RISKFACTOR")
-    add_entity_safe(followup_sentence, "FlWUREC")
-    add_entity_safe(followup_reason, "FlWUREASON")
+        add_entity_safe(allergy, "ALLERGY")
+        add_entity_safe(immunization, "IMMUNIZATION")
+        add_entity_safe(device, "DEVICE")
+        add_entity_safe(family_history, "FAMHIST")
+        add_entity_safe(vital, "VITALSIGNS")
+        add_entity_safe(lifestyle, "LIFESTYLE")
+        add_entity_safe(riskfactor, "RISKFACTOR")
+        add_entity_safe(followup_sentence, "FlWUREC")
+        add_entity_safe(followup_reason, "FlWUREASON")
   
 
     templates = [
@@ -272,14 +276,11 @@ def generate_report(token=None):
     else:
         # Use structured template
         template = random.choice(templates )
-
-
         # Optional field appending
         optional_fields = []
         if allergy: optional_fields.append(f"Allergien: {allergy}.")
         if immunization: optional_fields.append(f"Impfung: {immunization}.")
         if device: optional_fields.append(f"Gerät: {device}.")
-        # if family_history: optional_fields.append(f"Familienanamnese: {family_history}.")
         if vital: optional_fields.append(f"Vitalzeichen: {vital}.")
         if lifestyle: optional_fields.append(f"Lebensstil: {lifestyle}.")
         if riskfactor: optional_fields.append(f"Risikofaktor: {riskfactor}.")
@@ -291,8 +292,8 @@ def generate_report(token=None):
         # spans = __find_entity_spans(text, entities)
 
         # bio_labels = __char_spans_to_bio_labels(text, spans, LABEL2ID)
-        tokens, labels = __tokenize_and_label(text, entities)# before  entities
-        labels = clean_ner_tags_generic(tokens, labels)
+        tokens, labels = __tokenize_and_label2(text, entities)# before  entities
+        #labels = clean_ner_tags_generic(tokens, labels)
     return text, entities, tokens, labels
 
 def clean_ner_tags_generic(tokens, ner_tags):
@@ -584,10 +585,6 @@ def __generate_augmented_sentence_with_spans(entities, inject_noise_flag=True):
         text: generated sentence (string)
         spans: list of tuples (start_char, end_char, entity_type)
     """
-
-    # Define a logical order for entity types for better flow
-   # order = ['PERSON', 'SYMPTOM', 'DIAGNOSIS', 'MEDICATION', 'TREATMENT', 'DOCTOR', 'ORG', 'DATE']
-
     pieces = []
     spans = []
     current_pos = 0
@@ -649,6 +646,32 @@ def __tokenize_and_label(text, entities):
 
     label_ids = [LABEL2ID.get(label, 0) for label in labels]
     return tokens, label_ids
+
+
+def __tokenize_and_label2(text, entities_dict):
+    tokens = __simple_tokenize(text)
+    labels = ["O"] * len(tokens)
+
+    # Sortiere Entitäten nach Länge (damit lange zuerst gematcht werden)
+    sorted_entities = sorted(entities_dict.items(), key=lambda x: len(__simple_tokenize(x[0])), reverse=True)
+
+    for entity_text, ent_type in sorted_entities:
+        ent_tokens = __simple_tokenize(entity_text)
+        n = len(ent_tokens)
+        if n == 0:
+            continue
+
+        for i in range(len(tokens) - n + 1):
+            # Lowercase-Vergleich
+            token_slice = tokens[i:i+n]
+            if [t.lower() for t in token_slice] == [t.lower() for t in ent_tokens]:
+                # Stelle sicher, dass wir keine Labels überschreiben
+                if all(label == "O" for label in labels[i:i+n]):
+                    labels[i] = f"B-{ent_type}"
+                    for j in range(1, n):
+                        labels[i+j] = f"I-{ent_type}"
+
+    return tokens, [LABEL2ID.get(label, 0) for label in labels]
 
 
 def __simple_tokenize(text):
