@@ -50,3 +50,17 @@ def generate_bio_labels(entity_list):
 LABEL_LIST = generate_bio_labels(entity_list=ENTITY_LIST)
 LABEL2ID = {label: idx for idx, label in enumerate(LABEL_LIST)}
 ID2LABEL = {idx: label for label, idx in LABEL2ID.items()}
+
+
+def save_to_jscript_snippet(id2label):
+    # Write to JavaScript file
+    with open("id2label.js", "w", encoding="utf-8") as f:
+        f.write("const ID2LABEL = {\n")
+        for idx, label in id2label.items():
+            f.write(f"  {idx}: \"{label}\",\n")
+        f.write("};\n")
+
+
+
+if __name__ == "__main__":
+    save_to_jscript_snippet(ID2LABEL)
