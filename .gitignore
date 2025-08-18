@@ -10,3 +10,4 @@ finetuner/
 *.html
 expected/
 predictions/
+temp/

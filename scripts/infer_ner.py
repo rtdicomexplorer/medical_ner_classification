@@ -293,6 +293,8 @@ def main(file_path):
     print(f"Text extracted (first 500 chars):\n{text[:500]}")
     print(f"\n=============================================\n")
     # text = "Patient Otto Kromberger leidet an Kopfschmerzen."
+
+    # MODEL_PATH = 'deepset/gbert-base'
     tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
     model = AutoModelForTokenClassification.from_pretrained(MODEL_PATH)
 
@@ -331,7 +333,7 @@ def main(file_path):
 if __name__ == "__main__":
     import sys
     file_path = './documents/artz_brief.txt'
-    file_path = './txt_reports/report_0.txt'
+    file_path = './txt_reports/report_7.txt'
     if len(sys.argv) == 2:   
         file_path = sys.argv[1]
         if not os.path.exists(file_path):

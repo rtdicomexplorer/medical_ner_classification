@@ -220,8 +220,8 @@ OUTPUTDIR = "output"
 if __name__ == "__main__":
     import os
     os.makedirs(OUTPUTDIR, exist_ok=True)
-    gold_file = "./expected/report_30.json"
-    pred_file = "./predictions/report_30.json"
+    gold_file = "./expected/report_7.json"
+    pred_file = "./predictions/report_7.json"
    
     gold_entities = load_entities(gold_file)
     pred_entities = load_entities(pred_file)

@@ -4,7 +4,7 @@ import re
 import spacy
 from spacy.matcher import PhraseMatcher
 
-nlp = spacy.load("de_core_news_sm")
+nlp = spacy.load("de_core_news_md")
 
 def extract_occupation(entity_text):
     doc = nlp(entity_text)
@@ -164,21 +164,26 @@ def extract_name_spacy(text):
         # Fallback: alle PROPN (Eigennamen) und NOUN in Folge zusammenfügen
         tokens = [token.text for token in doc if token.pos_ in {"PROPN", "NOUN"}]
         return " ".join(tokens).strip()
+    
 
+def normalize_dates(text):
+    # Replace 'dd. mm. yyyy' or 'dd. mm.yyyy' with 'dd.mm.yyyy'
+    normalized_text = re.sub(r"(\d{2})\.\s*(\d{2})\.\s*(\d{4})", r"\1.\2.\3", text)
+    return normalized_text
 
 def extract_date_spacy(text):
-    doc = nlp(text)
-    # Versuch SpaCy DATE-Entitäten zu finden
-    dates = [ent.text for ent in doc.ents if ent.label_ == "DATE"]
-    if dates:
-        # Gib die längste erkannte DATE-Entität zurück
-        return max(dates, key=len).strip()
-    
-    # Falls SpaCy nichts findet, suche mit Regex deutsche Datumsformate
-    regex = r"\b\d{2}\.\d{2}\.\d{4}\b"
-    match = re.search(regex, text)
+    normalized_text = normalize_dates(text)
+    doc = nlp(normalized_text)
+
+    spacy_dates = [ent.text for ent in doc.ents if ent.label_ == "DATE"]
+    if spacy_dates:
+        return max(spacy_dates, key=len).strip()
+
+    # fallback regex for dd.mm.yyyy
+    match = re.search(r"\b\d{2}\.\d{2}\.\d{4}\b", normalized_text)
     if match:
         return match.group(0)
+    return None
     
     # Kein Datum gefunden
     return None
