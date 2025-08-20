@@ -84,6 +84,3 @@ def save_to_jscript_snippet(id2label):
 
 if __name__ == "__main__":
     save_to_jscript_snippet(ID2LABEL)
-
-
-

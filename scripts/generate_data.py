@@ -286,7 +286,7 @@ def generate_report(token=None):
 
 
     # Generate text from template or augmented sentence
-    if random.random() < 0.0001:
+    if random.random() < 0.5:
         # Paraphrased version
         text, spans = __generate_augmented_sentence_with_spans(entities)
         # spans2 = build_spans(text, entities)
