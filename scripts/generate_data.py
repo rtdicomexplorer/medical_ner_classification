@@ -11,16 +11,6 @@ import simple_icd_10 as icd
 from idc_api import fetch_icd_description,get_token
 import uuid
 
-def _generate_patint_id():
-    return str(uuid.uuid4())[:8]
-
-def __generate_random_weight_height():
-    # Gewicht zwischen 45 und 120 kg, auf 1 Dezimalstelle
-    weight = round(random.uniform(1, 150), 1)
-    # Größe zwischen 150 und 200 cm
-    height = random.randint(50, 210)
-    return f"{weight} kg",f"{height} cm"
-
 
 
 def __add_random_dose(med_name):
@@ -53,13 +43,7 @@ def __random_family_status():
     return random.choice(family_status)
 
 
-def __random_date(start_year=2015, end_year=2024):
-    start = datetime.date(start_year, 1, 1)
-    end = datetime.date(end_year, 12, 31)
-    delta = end - start
-    random_days = random.randint(0, delta.days)
-    date = start + datetime.timedelta(days=random_days)
-    return date.strftime("%d.%m.%Y")  # z. B. 27.06.2024
+
 
 
 def random_optional_field(value_list):
@@ -77,14 +61,15 @@ def generate_report(token=None):
 
     icd_description = icd.get_description(icd10_code) if not token else fetch_icd_description(icd10_code, token) or icd.get_description(icd10_code)
 
-    date = __random_date(start_year=1980,end_year=2024)
+    date = random_date(start_year=1980,end_year=2024)
     idx = random.randint(0, len(hospital_names) - 1)
     hospital_name, hospital_address, hospital_phone = hospital_names[idx], hospital_addresses[idx], hospital_phones[idx]
     gender = __random_gender()
     birthdate = __random_birthdate(min_age=1, max_age=95)
     family_status = __random_family_status()
-    weight, height = __generate_random_weight_height()
-    pid = _generate_patint_id()
+    weight = generate_random_weight
+    height = generate_random_height()
+    pid = generate_patint_id()
 
     symptom = random.choice(symptoms)
     medication = __add_random_dose(random.choice(medications))
@@ -95,7 +80,8 @@ def generate_report(token=None):
     finding = random.choice(findings)
     occupation = random.choice(occupations)
     family_member = random.choice(family_members)
-
+    document_type = random.choice(document_types)
+  
     followup_times = ["in 2 Wochen", "in 4 Wochen", "in einem Monat", "in 10 Tagen", "in drei Wochen"]
     followup_phrases = ["empfohlen", "dringend empfohlen", "zur weiteren Abklärung empfohlen"]
     followup_sentence = f"Eine erneute Kontrolluntersuchung wird {random.choice(followup_times)} {random.choice(followup_phrases)}."
@@ -114,86 +100,118 @@ def generate_report(token=None):
 
     # Build entity dictionary
     entities = {
-        name:"PERSON",
-        pid:"PID",
-        gender:"GENDER", 
-        birthdate:"BIRTHDATE",
-        family_member:"FAMILYMEMBER",
-        family_status: "FAMILY_STATUS", 
-        date:"DATE",
-        symptom:"SYMPTOM",
-        impression:"IMPRESSION", 
-        lab_result:"LAB_RESULT",
-        finding:"FINDING", 
-        prev_diagnosis:"PREV_DIAGNOSIS",
-        occupation:"OCCUPATION",
-        diagnosis:"DIAGNOSIS",
-        medication:"MEDICATION",
-        icd10_code:"ICD10_CODE",
-        icd_description:"ICD10_DESC",
-        procedure: "PROCEDURE", 
-        treatment:"TREATMENT",     
-        doctor:"DOCTOR", 
-        department:"DEPARTMENT",
-        hospital_name:"ORG", 
-        hospital_address:"ADDRESS",
-        hospital_phone:"PHONE", 
-        weight:"GEWICHT",
-        height:"GROESSE"
+        hospital_address: "ADDRESS",
+        birthdate: "BIRTHDATE",
+        date: "DATE",
+        department: "DEPARTMENT",
+        diagnosis: "DIAGNOSIS",
+        doctor: "DOCTOR",
+        document_type:'DOCUMENT_TYPE',
+        family_member: "FAMILYMEMBER",
+        family_status: "FAMILY_STATUS",
+        finding: "FINDING",
+        gender: "GENDER",
+        weight: "GEWICHT",
+        height: "GROESSE",
+        icd10_code: "ICD10_CODE",
+        icd_description: "ICD10_DESC",
+        impression: "IMPRESSION",
+        lab_result: "LAB_RESULT",
+        medication: "MEDICATION",
+        name: "PERSON",
+        occupation: "OCCUPATION",
+        pid: "PID",
+        prev_diagnosis: "PREV_DIAGNOSIS",
+        procedure: "PROCEDURE",
+        symptom: "SYMPTOM",
+        treatment: "TREATMENT",
+        hospital_name: "ORG",
+        hospital_phone: "PHONE"
     }
     def add_entity_safe(key, label):
         if key and key not in entities:
             entities[key] = label
-
-
         add_entity_safe(allergy, "ALLERGY")
-        add_entity_safe(immunization, "IMMUNIZATION")
         add_entity_safe(device, "DEVICE")
         add_entity_safe(family_history, "FAMHIST")
-        add_entity_safe(vital, "VITALSIGNS")
+        add_entity_safe(followup_sentence, "FOLLOWUP_REQ")
+        add_entity_safe(followup_reason, "FOLLOWUP_REASON")
+        add_entity_safe(immunization, "IMMUNIZATION")
         add_entity_safe(lifestyle, "LIFESTYLE")
         add_entity_safe(riskfactor, "RISKFACTOR")
-        add_entity_safe(followup_sentence, "FlWUREC")
-        add_entity_safe(followup_reason, "FlWUREASON")
+        add_entity_safe(vital, "VITALSIGNS")
+   
+        
+    
   
 
     templates = [
-        f"Am {date} stellte sich Patient {name} ({gender}), {height} per {weight} geboren am {birthdate}, Familienstand: {family_status}, der Patient stellt folgenden Symptome  {symptom} vor, beschäftigt als {occupation} "
+        
+        f"{document_type}:\n  Am {date} stellte sich der Patient {name} (männlich), {height} per {weight} geboren am {birthdate}, Familienstand: {family_status}, "
+        f"der Patient stellt folgenden Symptome  {symptom} vor, beschäftigt als {occupation} "
         f"Der Patient wurde mit starken Beschwerden von seiner {family_member} in die Klinik begleitet."
-        f"Diagnose: {diagnosis}. "
-        f"Familienanamnese: {family_history}. " 
-        f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}. "
-        f"Impression: {impression or 'nicht dokumentiert'}. "
-        f"Behandlung: {medication} und {treatment}. Verfahren: {procedure}. "
-        f"Untersuchung durch {doctor} in der Abteilung {department}. "
-        f"Krankenhaus: {hospital_name}, {hospital_address}, Tel: {hospital_phone}. "
-        f"Labor: {lab_result}. "
+        f"Diagnose: {diagnosis}. \n"
+        f"Familienanamnese: {family_history}. \n" 
+        f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}. \n"
+        f"Impression: {impression or 'nicht dokumentiert'}. \n"
+        f"Behandlung: {medication} und {treatment}. Verfahren: {procedure}. \n"
+        f"Untersuchung durch {doctor} in der Abteilung {department}. \n"
+        f"Krankenhaus: {hospital_name}, {hospital_address}, Tel: {hospital_phone}. \n"
+        f"Labor: {lab_result}. \n"
         f"Folgegrund: {followup_reason or 'keine Angabe'}. "
         f"{followup_sentence}",
         
-        f"{name} {gender} id: {pid}, kam am {date} ins {hospital_name}, {hospital_address} mit {family_member} Beschwerden: {symptom}. "
-        f"Gewicht {weight} für eine Größe von {height} "
-        f"Untersuchung durch {doctor}. Diagnose: {diagnosis} (ICD‑10: {icd10_code} – {icd_description}). "
-        f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}. "
-        f"Impression: {impression or 'nicht dokumentiert'}. "
-        f"Familiäre Häufung: {family_history}. "
-        f"Verabreichtes Medikament: {medication}. Eingriff: {procedure}. "
-        f"Laborbefund: {lab_result}. Tel: {hospital_phone}. "
-        f"Folgegrund: {followup_reason or 'keine Angabe'}. {followup_sentence}",
+
+        f"{document_type}:\n Am {date} stellte sich die Patientin {name} (weiblich), {height} per {weight} geboren am {birthdate} vor, "
+        f"Familienstand: {family_status}, die Patientin stellt folgenden Symptome  {symptom} vor, sie beschäftigt sich als {occupation} "
+        f"Sie wurde mit starken Beschwerden von ihren {family_member} in die Klinik begleitet.\n"
+        f"Diagnose: {diagnosis}. \n"
+        f"Familienanamnese: {family_history}. \n" 
+        f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}. \n"
+        f"Impression: {impression or 'nicht dokumentiert'}. \n"
+        f"Behandlung: {medication} und {treatment}.\n Verfahren: {procedure}. \n"
+        f"Untersuchung durch {doctor} in der Abteilung {department}. \n"
+        f"Krankenhaus: {hospital_name}, {hospital_address}, Tel: {hospital_phone}. \n"
+        f"Labor: {lab_result}. \n"
+        f"Folgegrund: {followup_reason or 'keine Angabe'}. "
+        f"{followup_sentence}",
         
-        f"Bei der Untersuchung am {date} im {hospital_name} wurde bei {name} {gender} id: {pid}  {diagnosis} festgestellt. "
+        
+        f"{document_type}:\n {name} ({gender}) id: {pid}, kam am {date} ins {hospital_name}, {hospital_address} mit {family_member}. \n"
+        f"Beschwerden: {symptom}.  \n"
+        f"Gewicht {weight} für eine Größe von {height} \n"
+        f"Untersucht von {doctor}. Diagnose: {diagnosis} (ICD‑10: {icd10_code} – {icd_description}). \n"
+        f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}. \n"
+        f"Impression: {impression or 'nicht dokumentiert'}. \n"
+        f"Familiäre Häufung: {family_history}. \n"
+        f"Verabreichtes Medikament: {medication}. Eingriff: {procedure}. \n"
+        f"Laborbefund: {lab_result}. Tel: {hospital_phone}. \n"
+        f"Folgegrund: {followup_reason or 'keine Angabe'}. {followup_sentence} \n",
+        
+
+
+        f"{document_type}:\n Finding: Brustpa-lat-XR-Bildgebungsstudie Xray Chest PA und laterale Untersuchung: 2 Ansichten der Brust left/lat."
+        f"Vergleich: Keine."
+        f"Indikation: Positive TB -Testbefunde: Die Herz -Silhouette- und Mediastinumgröße liegt innerhalb der normalen Grenzen. "
+        f"Es gibt kein Lungenödem. Es gibt keine fokale Konsolidierung. Es gibt keine Hinweise eines Pleura -Ergusss. "
+        f"Es gibt keine Hinweise auf Pneumothorax. Eindruck: Normale Brust. Diese Prüfung und die gemeldeten Ergebnisse wurden vom Unterzeichneten überprüft und bestätigt."
+        f"{doctor} {department} {hospital_name}  {hospital_address}, Kontakt: {hospital_phone}. ",
+
+        f"{document_type}:\n Prüfung am {date} der Radiologiebericht PA und laterale Ansichten der Brust {name} bei 12 Stunden Historie: 19-Jähriger mädchen mit {family_history}. Vergleich: Keine verfügbaren Ergebnisse: Es gibt diffuse bilaterale interstitielle und alveoläre Opazitäten, die mit chronisch obstruktiven Lungenerkrankungen und Bullous -Emphysem übereinstimmen. Es gibt unregelmäßige Opaces in der linken Lungenspitze, die eine kavitäre Läsion in der linken Lungenspitze darstellen könnten. In der rechten oberen Lappen, XXXX -Narben, befinden sich streikige Opaces. Die kardiomediastinale Silhouette ist normal in Größe und Kontur. Es gibt keinen Pneumothorax oder keinen großen Pleura -Erguss. Transkribiert durch - PSC -Transkriptionsdatum - XXXX -Eindruck 1. Bullous Emphysem und Interstitial -Fibrose. 2. Wahrscheinlich Narben in der linken Spitze, obwohl es schwierig ist, eine kavitäre Läsion auszuschließen. 3. Opacities in den bilateralen oberen Lappen könnten Narben darstellen. Das Fehlen einer Vergleichsprüfung empfiehlt jedoch kurze Intervall -Followup Röntgenaufnahme oder CT -Thorax, um die Auflösung zu dokumentieren. Signatur {doctor},"
+        f"{hospital_name}  Adresse: {hospital_address}, Kontakt: {hospital_phone} {department} ",
+
+        f"{document_type}:\n Bei der Untersuchung am {date} im {hospital_name} wurde bei {name} {gender} id: {pid}  folgend {diagnosis} festgestellt. "
         f"Symptome: {symptom}. Behandelt mit {medication} und {treatment}. "
         f"Durchgeführt von {doctor} in der {department}. Labor: {lab_result}. "
         f"Adresse: {hospital_address}, Kontakt: {hospital_phone}. "
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}. "
         f"Impression: {impression or 'nicht dokumentiert'}. "
         f"Genetische Vorbelastung: {family_history}. "
-        f"Folgegrund: {followup_reason or 'keine Angabe'}. {followup_sentence}",
+        f"Folgegrund: {followup_reason or 'keine Angabe'}. {followup_sentence}"
         f"Die {family_member} des Patienten brachte ihn zur Untersuchung, da sie über anhaltende Beschwerden berichtete. "
-        f"Der Patient wiegt {weight} für eine Größe von {height}"
-        ,
+        f"Der Patient wiegt {weight} für eine Größe von {height}",
 
-        f"Der Patient arbeitet als {occupation} und lebt mit seiner {family_member} in einem gemeinsamen Haushalt. "
+        f"{document_type}:\n Der Patient arbeitet als {occupation} und lebt mit seiner {family_member} in einem gemeinsamen Haushalt. "
         f"Aufgrund seiner Tätigkeit als {occupation} ist der Patient häufig körperlich belastet, "
         f"was möglicherweise zur aktuellen Symptomatik beiträgt. Als familiäre Disposition {family_history} "
         f"Der Patient gibt an, seine Arbeit als {occupation} derzeit nicht ausüben zu können. "
@@ -201,9 +219,9 @@ def generate_report(token=None):
         f"Der Patient wurde von seiner {family_member} wegen zunehmender {symptom} in die Klinik gebracht. "
         f"Der Patient wiegt {weight} für eine Größe von {height}."
         f"Familienanamnese: {family_history}. " 
-        f"Patient ist {gender} und hat eine: {pid},"
+        f"Patient ist {gender} und hat eine: {pid}",
         
-       f"--- RADIOLOGY REPORT ---\n\n\nPatient: {name} ({gender}),  "
+       f"{document_type}:\n Patient: {name} ({gender}) "
        f"geboren am {birthdate}\nDatum: {date}\nVerfahren: {procedure}\n  Beruf:{occupation}\n Gewicht: {weight} \n Größe: {height}\n"
         f"Begleitet von {family_member},\n"
         f"Es stellt sich eine genetische Vorbelastung {family_history} vor. "
@@ -212,7 +230,7 @@ def generate_report(token=None):
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}\nImpression: {impression or 'nicht dokumentiert'}\n"
         f"Folgegrund: {followup_reason or 'keine Angabe'}\n{followup_sentence}",
 
-        f"--- FOLLOW-UP VISIT ---\n\n\nDatum: {date}\nPatient: {name} ({gender}), id:{pid}, geboren am {birthdate} Gewicht: {weight} \n Größe: {height}\n"
+        f"--- FOLLOW-UP VISIT ---\n\n{document_type}:\n \nDatum: {date}\nPatient: {name} ({gender}), id:{pid}, geboren am {birthdate} Gewicht: {weight} \n Größe: {height}\n"
         f"Arbeitet als {occupation}\n Grund: Nachuntersuchung wegen {symptom}\n "
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}\nImpression: {impression or 'nicht dokumentiert'}\n"
         f"Diagnose: {diagnosis} (ICD‑10: {icd10_code} – {icd_description})..\nAktueller Zustand stabil\n"
@@ -220,7 +238,7 @@ def generate_report(token=None):
         f"Abteilung: {department}\nKlinik: {hospital_name}\nAdresse: {hospital_address}\nTelefon: {hospital_phone}\n"
         f"Folgegrund: {followup_reason or 'keine Angabe'}\n{followup_sentence}",
 
-        f"--- Entlassungsbrief---\nPatient: {name} geboren am {birthdate}\nAufnahme: {date}\nKlinik: {hospital_name}\n Patient id:: {pid} .\n"
+        f"---- {document_type} ----:\nPatient: {name} geboren am {birthdate}\nAufnahme: {date}\nKlinik: {hospital_name}\n Patient id:: {pid} .\n"
         f"Abteilung: {department}\n"
         f"Hauptdiagnose: {diagnosis}\nBeschwerden bei Aufnahme: {symptom}\nBehandlung: {medication} und {treatment}\n"
         f"Eingriff: {procedure}\nVerantwortlicher Arzt: {doctor}\nEntlassung in stabilem Zustand\n"
@@ -228,7 +246,7 @@ def generate_report(token=None):
         f"Impression: {impression or 'nicht dokumentiert'}\nFolgegrund: {followup_reason or 'keine Angabe'}\n"
         f"Kontakt: {hospital_phone}\n{followup_sentence}",
 
-        f"--- FOLLOW-UP RECOMMENDATION ---\nPatient: {name} ({gender}), geboren am {birthdate}, Familienstand: {family_status}."
+        f"{document_type}:\n \nPatient: {name} ({gender}), geboren am {birthdate}, Familienstand: {family_status}."
         f"Im moment arbeitet er/sie als {occupation} \n"
         f"Er/sie muss begleitet werden mit {family_member} "
         f"Datum der letzten Untersuchung: {date}.\nBeschwerden: {symptom}. Diagnose: {diagnosis}.\n"
@@ -238,7 +256,7 @@ def generate_report(token=None):
         f"Vorherige Diagnose: {prev_diagnosis or 'keine bekannt'}\nImpression: {impression or 'nicht dokumentiert'}\n"
         f"Folgegrund: {followup_reason or 'keine Angabe'}\n"
         f"Familiäre Anamnese : {family_history}",
-        f"--- Artzbrief\n\n"
+        f"--- {document_type}:\n \n\n"
         f"Patientenname : {name}\n"
         f"Geschlecht: {gender}\n"
         f"Geburtsdatum : {birthdate}\n"
@@ -268,7 +286,7 @@ def generate_report(token=None):
 
 
     # Generate text from template or augmented sentence
-    if random.random() < 0.5:
+    if random.random() < 0.0001:
         # Paraphrased version
         text, spans = __generate_augmented_sentence_with_spans(entities)
         # spans2 = build_spans(text, entities)
@@ -286,14 +304,9 @@ def generate_report(token=None):
         if riskfactor: optional_fields.append(f"Risikofaktor: {riskfactor}.")
         if optional_fields:
             template += "\n" + " ".join(optional_fields)
-
         text = template
-
-        # spans = __find_entity_spans(text, entities)
-
-        # bio_labels = __char_spans_to_bio_labels(text, spans, LABEL2ID)
         tokens, labels = __tokenize_and_label2(text, entities)# before  entities
-        #labels = clean_ner_tags_generic(tokens, labels)
+
     return text, entities, tokens, labels
 
 def clean_ner_tags_generic(tokens, ner_tags):
@@ -447,122 +460,6 @@ def __char_spans_to_bio_labels(text, spans, label_map):
 
     return tokens, label_ids
 
-def __paraphrase_entity(entity_type, value):
-    variations = {
-        "PERSON": [
-            f"Patient: {value}",
-            f"Name: {value}",
-            f"{value} stellte sich vor",
-            f"Betroffene Person: {value}"
-        ],
-        "BIRTHDATE":[
-            f"geboren am: {value}",
-            f"Geburtsdatum: {value}",
-        ],
-        "FAMILY_STATUS":[
-           f" familienzustand: {value}",
-           f"Er ist {value}" 
-        ],
-        "FAMILYMEMBER":[
-           f"begleitet von {value}",
-           f"bei sich hat {value}" 
-        ],
-        "PID":[
-            f"patient-id {value}",
-            f"ID: {value}",
-            f"PID: {value}"
-        ],
-        "VITALSIGNS":[
-            f"{value}",
-        ],
-
-        "IMMUNIZATION":[
-            f"Impfungen: {value}",
-            f"geimpft gegen {value}"
-        ],
-        "OCCUPATION":[
-            f"aktueller Beruf: {value}",
-            f"is {value} von Beruf",
-            f"er ist {value}",
-            f"arbeitet als {value}",
-            f"keine Beschäftigung",
-        ],
-        "ALLERGY":[
-            f"allergisch auf: {value}",
-            f"bekannte Allergien: {value}"
-            f"Allergien: {value}"
-            ],
-        "DIAGNOSIS": [
-            f"es wurde {value} diagnostiziert",
-            f"Diagnose: {value}",
-            f"leidet an {value}",
-            f"{value} wurde festgestellt"
-        ],
-        "MEDICATION": [
-            f"bekommt {value}",
-            f"Therapie mit {value}",
-            f"{value} wurde verabreicht",
-            f"Medikation: {value}"
-        ],
-        "SYMPTOM": [
-            f"klagt über {value}",
-            f"hat {value}",
-            f"{value} wurde berichtet",
-            f"zeigt Symptome von {value}"
-        ],
-        "DOCTOR": [
-            f"behandelt durch {value}",
-            f"untersucht von {value}",
-            f"{value} führte die Untersuchung durch",
-            f"Arzt: {value}"
-        ],
-
-        "ORG": [
-            f"im Krankenhaus {value}",
-            f"Einrichtung: {value}",
-            f"im {value}",
-            f"Klinik: {value}"
-        ],
-        "DATE": [
-            f"am {value}",
-            f"Datum: {value}",
-            f"am Untersuchungsdatum {value}",
-            f"Datum des Berichts: {value}"
-        ],
-        "DEVICE":[
-            f"es wird empfohlen {value} zu verwenden",
-            f"{value} wird verwendet",
-        ],
-        "FAMHIST":[
-            f"in der Familie gab es schon fälle mit {value}",
-            f" Familienanamnese: {value}",
-            f" familiäre häufung {value} ",
-             f" familiäre vorbelastung {value} ",
-             f" familiäre Anamnese: {value}"
-        ],
-
-        "RISKFACTOR":[
-            f"mögliche Risikofaktoren: {value}",
-            f"es sind {value} möglich",
-            f"es bestehen {value}"
-        ],
-        "WEIGHT":[
-            f"wiegt: {value}",
-            f"er/sie wiegt {value}",
-            f"das Gewicht ist {value}"
-        ],
-        "HEIGHT":[
-            f"Groesse: {value}",
-            f"er/sie is {value} groß",
-            f"die Größe is {value}",
-        ]
-
-
-        # add more as needed
-    }
-    if entity_type in variations:
-        return random.choice(variations[entity_type])
-    return value
 import re
 def __get_random_filler():
     fillers = [
@@ -616,7 +513,7 @@ def __generate_augmented_sentence_with_spans(entities, inject_noise_flag=True):
         random.shuffle(ent_items)
         for value, etype in entities.items():
             if etype == ent_type:
-                phrase = __paraphrase_entity(ent_type, value)
+                phrase = paraphrase_entity(ent_type, value)
                 add_phrase(phrase, ent_type)
             
 
@@ -629,23 +526,6 @@ def __generate_augmented_sentence_with_spans(entities, inject_noise_flag=True):
 
     return text, spans
 
-
-def __tokenize_and_label(text, entities):
-    tokens = __simple_tokenize(text)
-    labels = ["O"] * len(tokens)
-
-    for entity_text, ent_type in entities.items():
-        ent_tokens = __simple_tokenize(entity_text)
-        n = len(ent_tokens)
-        for i in range(len(tokens) - n + 1):
-            if [t.lower() for t in tokens[i:i+n]] == [t.lower() for t in ent_tokens]:
-                if all(label == "O" for label in labels[i:i+n]):
-                    labels[i] = f"B-{ent_type}"
-                    for j in range(1, n):
-                        labels[i+j] = f"I-{ent_type}"
-
-    label_ids = [LABEL2ID.get(label, 0) for label in labels]
-    return tokens, label_ids
 
 
 def __tokenize_and_label2(text, entities_dict):
@@ -680,11 +560,6 @@ def __simple_tokenize(text):
     return re.findall(pattern, text, re.UNICODE)
 
 
-
-def __save_reports_as_txt(text, filename):
-    with open(filename, "w", encoding="utf-8") as f:
-        f.write(text)
-
 def __validate_bio_sequence(tokens, tags):
     for i, tag in enumerate(tags):
         label = ID2LABEL[tag]
@@ -712,7 +587,16 @@ def generate_dataset(n_samples=1000, save_reports=False, clean_data = False):
         if save_reports:
             filename = f"./txt_reports/report_{i+1}.txt"
             os.makedirs(os.path.dirname(filename), exist_ok=True)
-            __save_reports_as_txt(text, filename)
+
+            with open(filename, "w", encoding="utf-8") as f:
+                f.write(text)
+
+
+            entity_filename = f"./entities/entity_{i+1}.json"
+            os.makedirs(os.path.dirname(entity_filename), exist_ok=True)
+            with open(entity_filename, 'w',encoding="utf-8") as f:
+                json.dump(entities, f,ensure_ascii=False, indent=4)  # `indent=4` makes it nicely formatted
+
 
         data.append({
             "tokens": tokens,
@@ -732,6 +616,10 @@ def generate_dataset(n_samples=1000, save_reports=False, clean_data = False):
     trains, tests = train_test_split(trains, test_size=0.1, random_state=42)
     
     os.makedirs("./data", exist_ok=True)
+    with open("./data/all_data.json", "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+        print(f"saved all data  ./data/all_data.json ")
+
 
     with open("./data/train.json", "w", encoding="utf-8") as f:
         json.dump(trains, f, indent=2, ensure_ascii=False)
@@ -750,7 +638,7 @@ def generate_dataset(n_samples=1000, save_reports=False, clean_data = False):
 # Run as script
 if __name__ == "__main__":
     import sys
-    n_samples = 1000
+    n_samples = 10
     save_reports = False
     clean_data = False
     if len(sys.argv) > 1:

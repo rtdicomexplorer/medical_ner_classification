@@ -1,44 +1,64 @@
 
 #[the order follows a logic to create dynthetic data]
-ENTITY_LIST = [
-    "PERSON",
-    "PID",
-    "GENDER", 
-    "BIRTHDATE",
-    "FAMILYMEMBER",
-    "FAMILY_STATUS", 
-    "DATE",
-    "SYMPTOM",
-    "IMPRESSION", 
-    "LAB_RESULT",
-    "FINDING", 
-    "PREV_DIAGNOSIS",
-    "OCCUPATION",
-    "DIAGNOSIS",
-    "MEDICATION",
-    "ICD10_CODE",
-    "ICD10_DESC",
-    "PROCEDURE", 
-    "TREATMENT",     
-    "DOCTOR", 
-    "DEPARTMENT",
-    "ORG", 
+ENTITY_LIST =[
     "ADDRESS",
-    "PHONE", 
+    "ALLERGY",
+    "BIRTHDATE",
+    "DATE",
+    "DOCUMENT_TYPE",
+    "DEPARTMENT",
+    "DEVICE",
+    "DIAGNOSIS",
+    "DOCTOR",
+    "FAMILY_STATUS",
+    "FAMILYMEMBER",
+    "FAMHIST",
+    "FINDING",
+    "FOLLOWUP_REASON",
+    "FOLLOWUP_REQ",
+    "GENDER",
     "GEWICHT",
     "GROESSE",
-    "ALLERGY", 
+    "ICD10_CODE",
+    "ICD10_DESC",
     "IMMUNIZATION",
-    "DEVICE", 
-    "FAMHIST",
-    "VITALSIGNS", 
+    "IMPRESSION",
+    "LAB_RESULT",
     "LIFESTYLE",
+    "MEDICATION",
+    "OCCUPATION",
+    "ORG",
+    "PERSON",
+    "PHONE",
+    "PID",
+    "PREV_DIAGNOSIS",
+    "PROCEDURE",
     "RISKFACTOR",
-    "FlWUREC",
-    "FlWUREASON", 
+    "SYMPTOM",
+    "TREATMENT",
+    "VITALSIGNS"
 ]
 
 
+NEW_ENTITIES =[
+                       
+'COURSE'                                        
+'SMOKING_STATUS',                  
+'ALCOHOL_CONSUMPTION',             
+'BLOOD_TYPE',                      
+'ADMISSION_DATE',
+'DISCHARGE_DATE',
+'DOSAGE',   
+'DURATION', 
+'FREQUENCY',
+'ROUTE',    
+'BODY_PART',
+'INSURANCE_ID', 
+'HOSPITAL_STAY',
+'ROOM_NUMBER'  
+
+
+]
 
 def generate_bio_labels(entity_list):
     label_list = ["O"]  # O "Outside" the first one
@@ -64,3 +84,6 @@ def save_to_jscript_snippet(id2label):
 
 if __name__ == "__main__":
     save_to_jscript_snippet(ID2LABEL)
+
+
+
