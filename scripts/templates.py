@@ -39,9 +39,9 @@ operationsbericht_template = (
 )
 
 entlassungsbericht_template = (
-    "{DOCUMENT_TYPE} – Entlassung am {DATE} aus der Klinik {ORG}, Abteilung: {DEPARTMENT}.\n"
+    "{DOCUMENT_TYPE} – Entlassung am {DISCHARGE_DATE} aus der Klinik {ORG}, Abteilung: {DEPARTMENT}.\n"
     "Patient: {PERSON} ({GENDER}), geb. {BIRTHDATE}, PID: {PID}.\n"
-    "Aufnahmediagnose: {DIAGNOSIS}, Symptome: {SYMPTOM}, Risikofaktoren: {RISKFACTOR}.\n"
+    "Aufnahmediagnose: {DIAGNOSIS}, am {ADMISSION_DATE} Symptome: {SYMPTOM}, Risikofaktoren: {RISKFACTOR}.\n"
     "Behandlung: {TREATMENT}, Medikation: {MEDICATION}, Prozedur: {PROCEDURE}.\n"
     "Befunde: {FINDING}, Labordaten: {LAB_RESULT}.\n"
     "Entlassungsdiagnose: {DIAGNOSIS} ({ICD10_CODE} – {ICD10_DESC}).\n"
@@ -90,7 +90,7 @@ patho_template = (
     "Mikroskopie: {DIAGNOSIS}, ICD-10: {ICD10_CODE} – {ICD10_DESC}.\n"
     "Zusätzliche Tests: {LAB_RESULT}.\n"
     "Beurteilung: {IMPRESSION}.\n"
-    "Arzt: {DOCTOR}, Tel: {PHONE}."
+    "Arzt: {DOCTOR}, Tel: {PHONE}, der Abteilung {DEPARTMENT}."
 )
 
 ueberweisung_template = (
@@ -167,14 +167,15 @@ opfreigabe_template = (
 )
 
 aufnahmebogen_template = (
-    "{DOCUMENT_TYPE} – Aufnahme am {DATE} in {ORG}, Abteilung: {DEPARTMENT}.\n"
+    "{DOCUMENT_TYPE} – Aufnahme am {ADMISSION_DATE} in {ORG}, Abteilung: {DEPARTMENT}.\n"
     "Patient: {PERSON}, {GENDER}, geboren am {BIRTHDATE}, PID: {PID}.\n"
     "Adresse: {ADDRESS}, Tel: {PHONE}, Familienstand: {FAMILY_STATUS}.\n"
     "Beschwerden: {SYMPTOM}, Vorbefunde: {PREV_DIAGNOSIS}.\n"
     "Aktuelle Medikation: {MEDICATION}, Allergien: {ALLERGY}.\n"
     "Größe: {GROESSE}, Gewicht: {GEWICHT}, Vitalwerte: {VITALSIGNS}.\n"
     "Begleitung durch: {FAMILYMEMBER}.\n"
-    "Untersuchender Arzt: {DOCTOR}."
+    "Untersuchender Arzt: {DOCTOR}.\n"
+    "Verlegt auf Staion 7 Zimmer {ROOM_NUMBER}"
 )
 
 hkp_template = (
@@ -197,13 +198,15 @@ attest_template = (
 )
 
 notfall_template = (
-    "{DOCUMENT_TYPE} – Datum: {DATE}, ausgestellt durch {DOCTOR}, Klinik: {ORG}.\n"
+    "{DOCUMENT_TYPE} – Datum: {ADMISSION_DATE}, ausgestellt durch {DOCTOR}, Klinik: {ORG}.\n"
     "Patient: {PERSON}, {GENDER}, geb. am {BIRTHDATE}, PID: {PID}.\n"
+    "Telefon: {PHONE}, Adresse: {ADDRESS}.\n"
     "Begleitet von {FAMILYMEMBER}.\n"
     "Symptome: {SYMPTOM}, Vitalwerte: {VITALSIGNS}, Risikofaktoren: {RISKFACTOR}.\n"
     "Durchgeführte Maßnahmen: {TREATMENT}, verabreichte Medikation: {MEDICATION}.\n"
     "Diagnose: {DIAGNOSIS} ({ICD10_CODE} – {ICD10_DESC}).\n"
-    "Telefon: {PHONE}, Adresse: {ADDRESS}."
+    "Patient wurde stationär auf die Station Escherich Zimmer {ROOM_NUMBER} aufgenommen.\n"
+
 )
 
 ekg_template = (
@@ -250,7 +253,8 @@ reha_gutachten_template = (
     "Familiäre Vorbelastung: {FAMHIST}.\n"
     "Sozialmedizinische Bewertung: {IMPRESSION}.\n"
     "Empfohlene Maßnahmen: {FOLLOWUP_REQ}, Grund: {FOLLOWUP_REASON}.\n"
-    "Kontaktarzt: {DOCTOR}, Klinik: {ORG}, Tel: {PHONE}."
+    "Kontaktarzt: {DOCTOR}, Klinik: {ORG}, Tel: {PHONE}. \n"
+    "Stationäre befindet sich der Patient im Zimmer {ROOM_NUMBER}."
 )
 
 complete_template = (
@@ -258,7 +262,7 @@ complete_template = (
     "{DOCUMENT_TYPE}:\n Am {DATE} stellte sich der Patient {PERSON} ({GENDER}), {GROESSE} per {GEWICHT} geboren am {BIRTHDATE}\n"
     "Familienstand: {FAMILY_STATUS}, Symptome: {SYMPTOM}, Diagnose: {DIAGNOSIS}\n "
     "Beruf: {OCCUPATION}, Medikament: {MEDICATION}, Behandlung: {TREATMENT}, "
-    "Durchgeführt von {DOCTOR} in der Abteilung {DEPARTMENT}.\n"
+    "Durchgeführt von {DOCTOR} in der Abteilung {DEPARTMENT}  zimmer {ROOM_NUMBER}.\n"
     "Krankenhaus: {ORG}, {ADDRESS}, Tel: {PHONE}.\n"
     "{DOCUMENT_TYPE} vom {DATE}:\n"
     "Patient: {PERSON} ({GENDER}), geboren am {BIRTHDATE}, PID: {PID}.\n"

@@ -4,8 +4,8 @@ from utils import *
 from sklearn.model_selection import train_test_split
 from config import LABEL2ID, ENTITY_LIST
 from templates import TEMPLATES_LIST
-from transformers import AutoTokenizer
-tokenizer = AutoTokenizer.from_pretrained("bert-base-german-cased")
+# from transformers import AutoTokenizer
+# tokenizer = AutoTokenizer.from_pretrained("bert-base-german-cased")
 #region templates
 entity_values = {                       
     "ALCOHOL_CONSUMPTION": 	alcohol_consumptions,	
@@ -125,6 +125,33 @@ def __extract_entities(text, values):
             ents.append({"ENTITY": label,"START":start, "END":end, "VALUE":value})
     return ents
 
+# def __bio_tags_to_ids_smart(tags, label2id):
+#     tag_ids = []
+#     for tag in tags[0]:
+#         if tag not in label2id:
+#             raise ValueError(f"Unbekannter Tag '{tag}' – fehlt im label2id?")
+#         tag_ids.append(label2id[tag])
+#     return tag_ids
+
+# def __create_bio_tags_smart(text, entities):
+#     encoding = tokenizer(text, return_offsets_mapping=True, return_attention_mask=False, add_special_tokens=False)
+#     tags = ["O"] * len(encoding["offset_mapping"])
+    
+#     for ent in entities:
+#         start_char = ent["START"]
+#         end_char = ent["END"]
+#         label = ent["ENTITY"]
+        
+#         for i, (start, end) in enumerate(encoding["offset_mapping"]):
+#             if start >= end_char or end <= start_char:
+#                 continue
+#             if start >= start_char and end <= end_char:
+#                 if tags[i] == "O":
+#                     tags[i] = f"B-{label}" if start == start_char else f"I-{label}"
+#     return tags, encoding.tokens()
+
+
+
 
 def __create_sample():
     return {ent: random.choice(entity_values[ent]) for ent in ENTITY_LIST if ent in entity_values}
@@ -144,37 +171,9 @@ def __extract_entities_smart(text, values):
                 break  # Nur erstes Vorkommen pro Label
     return ents
 
-
-
-
-def __create_bio_tags_smart(text, entities):
-    encoding = tokenizer(text, return_offsets_mapping=True, return_attention_mask=False, add_special_tokens=False)
-    tags = ["O"] * len(encoding["offset_mapping"])
-    
-    for ent in entities:
-        start_char = ent["START"]
-        end_char = ent["END"]
-        label = ent["ENTITY"]
-        
-        for i, (start, end) in enumerate(encoding["offset_mapping"]):
-            if start >= end_char or end <= start_char:
-                continue
-            if start >= start_char and end <= end_char:
-                if tags[i] == "O":
-                    tags[i] = f"B-{label}" if start == start_char else f"I-{label}"
-    return tags, encoding.tokens()
-
-
 def __bio_tags_to_ids(tags, label2id):
     return [label2id.get(tag, 0) for tag in tags]
 
-def __bio_tags_to_ids_smart(tags, label2id):
-    tag_ids = []
-    for tag in tags[0]:
-        if tag not in label2id:
-            raise ValueError(f"Unbekannter Tag '{tag}' – fehlt im label2id?")
-        tag_ids.append(label2id[tag])
-    return tag_ids
 def __generate_paraphrase_text(values):
     phrases = []
     temp_values = values.copy()
@@ -200,18 +199,16 @@ def __generate_paraphrase_text(values):
     random.shuffle(phrases)
     return " ".join(phrases)
 
-
 def __generate_dataset(n_samples,save_reports):
     import os
     dataset = []
-
     count_template = 0
     count_paraphrase = 0
     for i in range(n_samples):
         try:
             template = random.choice(TEMPLATES_LIST)
             values = __create_sample()
-            if random.random() < 0.0000001:            
+            if random.random() < 0.5:            
                 text = template.format(**values)
                 # text = Template(template).safe_substitute(values) just with preformatted string f" vvava {value}"
                 count_template +=1
@@ -224,10 +221,9 @@ def __generate_dataset(n_samples,save_reports):
             matched_entities = {e["ENTITY"]: e["VALUE"] for e in entities}
             # print(f"Entities:\n {entities}")
             tokens = smart_tokenize(text)
-            tags = __create_bio_tags(tokens, matched_entities, text)
+            #tags_bio = __create_bio_tags(tokens, matched_entities, text)
+            tags = __create_bio_tags_from_offsets(tokens=tokens,entities=entities, text=text)
             tag_ids = __bio_tags_to_ids(tags, LABEL2ID)
-            #tags = __create_bio_tags_smart(text=text, entities=entities)
-            #tag_ids = __bio_tags_to_ids_smart(tags, LABEL2ID)
 
             if save_reports:
                 filename = f"./txt_reports/report_{i+1}.txt"

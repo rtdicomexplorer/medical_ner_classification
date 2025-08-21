@@ -529,7 +529,7 @@ def paraphrase_entity(entity_type, value):
 
         "ROOM_NUMBER": [
             f"Zimmernummer: {value}",
-            f"untergebracht in Zimmer {value}",
+            f"untergebracht ins Zimmer {value}",
             f"Raum: {value}"
             ],
 
@@ -689,9 +689,17 @@ stay_reasons=[
 ]
 
 room_numbers = [
-    "Zimmer 101",
-    "Station 3B, Zimmer 45",
-    "Zimmer 12A"
+    "101",
+    "3B",
+    "45",
+    "12A"
+]
+
+station_names=[
+    "Station escherich",
+    "Station 7",
+    "Station Moro",
+    "Station 2A"
 ]
 
 

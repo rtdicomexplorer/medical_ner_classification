@@ -1,4 +1,68 @@
 let allSamples = [];
+const ENTITY_COLORS = {
+    ALCOHOL_CONSUMPTION: "#b1a3dfff",
+    ADDRESS: "#bdd1c2ff",
+    ADMISSION_DATE: "#c0c70a",
+    ALLERGY: "#b5c4ecff",
+    BIRTHDATE: "#c359cc",
+    BLOOD_TYPE: "#d029a4",
+    BODY_PART: "#add0e7",
+    COURSE: "#e98788",
+    DATE: "#ca143a",
+    DEPARTMENT: "#199aef",
+    DEVICE: "#d2231e",
+    DIAGNOSIS: "#911593",
+    DISCHARGE_DATE: "#9fe7e4ff",
+    DOCTOR: "#57e665",
+    DOCUMENT_TYPE: "#f5716f",
+    DOSAGE: "#f6bf96",
+    DURATION: "#269323",
+    FAMILY_STATUS: "#03d080",
+    FAMILYMEMBER: "#8facdfff",
+    FAMHIST: "#1ca2fcff",
+    FINDING: "#e5a6b4ff",
+    FOLLOWUP_REASON: "#f556ad",
+    FOLLOWUP_REQ: "#56cb78",
+    FREQUENCY: "#e31919",
+    GENDER: "#d0d17e",
+    GEWICHT: "#519451",
+    GROESSE: "#40bb55",
+    HOSPITAL_STAY: "#5a8b08",
+    ICD10_CODE: "#c76f07",
+    ICD10_DESC: "#d381c2ff",
+    IMMUNIZATION: "#3066ed",
+    IMPRESSION: "#d44cbe",
+    INSURANCE_ID: "#b46e98",
+    LAB_RESULT: "#466af6",
+    LIFESTYLE: "#7882b6",
+    MEDICATION: "#e2ec82ff",
+    OCCUPATION: "#c0a0db",
+    ORG: "#f52243",
+    PERSON: "#b1de4c",
+    PHONE: "#dab744ff",
+    PID: "#9da5b2",
+    PREV_DIAGNOSIS: "#09f5eb",
+    PROCEDURE: "#c1defa",
+    RISKFACTOR: "#d3d678ff",
+    ROOM_NUMBER: "#b52f3d",
+    ROUTE: "#b390c7ff",
+    SMOKING_STATUS: "#9182fa",
+    STAY_REASON: "#adec71ff",
+    SYMPTOM: "#08e843",
+    TREATMENT: "#c1d89aff",
+    VITALSIGNS: "#24d332",
+    // ... füge hier weitere Labels nach Bedarf hinzu ...
+};
+
+
+
+
+
+function RgbToHex(r, g, b) {
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
+
 
 const fileInput = document.getElementById("fileInput");
 const sampleSelector = document.getElementById("sampleSelector");
@@ -8,11 +72,12 @@ const selectorContainer = document.getElementById(
 const jsonPreview = document.getElementById("jsonPreview");
 const entityViewer = document.getElementById("entityViewer");
 const labelLegend = document.getElementById("labelLegend");
-
+const fileNameDisplay = document.getElementById("fileNameDisplay");
 fileInput.addEventListener("change", async (e) => {
     const file = e.target.files[0];
+    fileNameDisplay.textContent = file ? file.name : "No file selected";
     if (!file) return;
-
+  
     const text = await file.text();
     try {
         allSamples = JSON.parse(text);
@@ -32,6 +97,8 @@ fileInput.addEventListener("change", async (e) => {
     }
 
     selectorContainer.style.display = "block";
+    document.getElementById("mainPanel").style.display = "block";
+
     sampleSelector.innerHTML = "";
     allSamples.forEach((_, i) => {
         const option = document.createElement("option");
@@ -39,8 +106,7 @@ fileInput.addEventListener("change", async (e) => {
         option.textContent = `Sample ${i + 1}`;
         sampleSelector.appendChild(option);
     });
-
-    renderLegend();
+    console.log("change event")
     displaySample(0);
 });
 
@@ -49,11 +115,11 @@ sampleSelector.addEventListener("change", () => {
     displaySample(idx);
 });
 
-function renderLegend() {
+function renderLegend_() {
     const types = extractEntityTypes(ID2LABEL);
     labelLegend.innerHTML = "";
     types.forEach((type) => {
-        const color = colorFromString(type);
+        const color = ENTITY_COLORS[type] || "#d3d3d3";
         const label = document.createElement("span");
         label.textContent = type;
         label.style.background = color;
@@ -66,6 +132,35 @@ function renderLegend() {
     });
 }
 
+function renderLegend(activeEntityTypes = []) {
+    const types = extractEntityTypes(ID2LABEL);
+    labelLegend.innerHTML = "";
+
+    types.forEach((type) => {
+        const color = ENTITY_COLORS[type] || "#ddd";
+        const label = document.createElement("span");
+
+        label.textContent = type;
+        label.style.background = color;
+        label.style.padding = "4px 8px";
+        label.style.borderRadius = "4px";
+        label.style.fontSize = "0.9rem";
+        label.style.color = "#333";
+        label.style.border = "1px solid #ccc";
+        label.style.marginRight = "6px";
+        label.style.display = "inline-block";
+
+        if (activeEntityTypes.includes(type)) {
+            label.style.fontWeight = "bold";
+            label.style.border = "2px solid black";  // oder z. B. "#444"
+        }
+
+        labelLegend.appendChild(label);
+    });
+}
+
+
+
 function extractEntityTypes(labelMap) {
     const types = new Set();
     Object.values(labelMap).forEach((label) => {
@@ -76,19 +171,21 @@ function extractEntityTypes(labelMap) {
     return Array.from(types).sort();
 }
 
-function colorFromString(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const hue = hash % 360;
-    return `hsl(${hue}, 65%, 75%)`;
-}
 
 function displaySample(index) {
     const data = allSamples[index];
     const { tokens, ner_tags } = data;
+    const activeTypes = new Set();
+    ner_tags.forEach((id) => {
+        const label = ID2LABEL[id];
+        if (label && (label.startsWith("B-") || label.startsWith("I-"))) {
+            activeTypes.add(label.slice(2));
+        }
+    });
+    renderLegend(Array.from(activeTypes));
+
     jsonPreview.textContent = JSON.stringify(data, null, 2);
+
     entityViewer.innerHTML = "";
 
     const labelData = ner_tags.map((id) => ID2LABEL[id] || "O");
@@ -97,27 +194,52 @@ function displaySample(index) {
     let i = 0;
     while (i < tokens.length) {
         const label = labelData[i];
+
         if (label === "O") {
-            container.append(tokens[i] + " ");
+            container.append(document.createTextNode(tokens[i] + " "));
             i++;
-        } else if (label.startsWith("B-")) {
+            continue;
+        }
+
+        if (label.startsWith("B-")) {
             const entityType = label.slice(2);
             let phrase = tokens[i];
             let j = i + 1;
+            let tooltipLabels = [`B-${entityType}`];
+
             while (j < tokens.length && labelData[j] === `I-${entityType}`) {
                 phrase += " " + tokens[j];
+                tooltipLabels.push(`I-${entityType}`);
                 j++;
             }
 
+            // Sichtbarer Text
+            // ... im while-Block, wenn ein Entity erkannt wird
             const span = document.createElement("span");
             span.className = "entity";
             span.textContent = phrase;
-            span.style.background = colorFromString(entityType);
-            span.title = entityType;
-            container.append(span, " ");
+            span.style.background = ENTITY_COLORS[entityType] || "#d3d3d3";
+
+            // Tooltip Text (Option 2)
+            const tooltip = document.createElement("span");
+            tooltip.className = "tooltip-text";
+            tooltip.textContent = `${entityType} (${tooltipLabels.length} token${tooltipLabels.length > 1 ? "s" : ""})`;
+
+            // Wrapper mit Tooltip-Klasse
+            const wrapper = document.createElement("span");
+            wrapper.className = "tooltip";
+            wrapper.style.position = "relative";
+            wrapper.style.display = "inline-block";
+
+            wrapper.appendChild(span);
+            wrapper.appendChild(tooltip);
+
+            container.append(wrapper, " ");
             i = j;
-        } else {
-            container.append(tokens[i] + " ");
+
+        }
+        else {
+            container.append(document.createTextNode(tokens[i] + " "));
             i++;
         }
     }
