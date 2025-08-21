@@ -69,7 +69,10 @@ ID2LABEL = {idx: label for label, idx in LABEL2ID.items()}
 
 def save_to_jscript_snippet(id2label):
     # Write to JavaScript file
-    with open("id2label.js", "w", encoding="utf-8") as f:
+    import os
+    out_dir = 'html'
+    os.makedirs(out_dir, exist_ok=True)
+    with open(os.path.join(out_dir, "id2label.js"), "w", encoding="utf-8") as f:
         f.write("const ID2LABEL = {\n")
         for idx, label in id2label.items():
             f.write(f"  {idx}: \"{label}\",\n")

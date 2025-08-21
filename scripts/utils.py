@@ -87,7 +87,7 @@ def paraphrase_hospital_stay(entities):
         "Der Krankenhausaufenthalt dauerte vom {admission} bis {discharge}.",
         "Patient wurde am {admission} aufgenommen und am {discharge} entlassen.",
         "Grund des Krankenhausaufenthalts: {stay_reason}.",
-        "Er/si wird staionär wegen {stay_reason} bis {discarge}",
+        "Er/Sie wird staionär wegen {stay_reason} bis {discharge}",
         "Krankenhausaufenthalt wegen {stay_reason} vom {admission} bis {discharge}.",
         "Aufgenommen am {admission}, entlassen am {discharge} aufgrund von {stay_reason}.",
     ]
@@ -136,6 +136,16 @@ def paraphrase_medication_combination(entities):
     frequency = entities.get("FREQUENCY")
     duration = entities.get("DURATION")
 
+
+
+    # Fallback wenn nicht alle Werte vorhanden
+    if not medication:
+        return None
+
+    # Einfacher Satz falls nur Medikament angegeben
+    if not any([dosage, route, frequency, duration]):
+        return f"Behandlung mit {medication}"
+
     templates = [
         "Therapie mit {medication}, {dosage}, {route}, {frequency} für {duration}.",
         "{medication} wurde {route} in einer Dosis von {dosage} verabreicht – {frequency} über {duration}.",
@@ -143,25 +153,29 @@ def paraphrase_medication_combination(entities):
         "Behandlung mit {medication} ({dosage}), {route}, {frequency}, geplant für {duration}.",
     ]
 
-    # Fallback wenn nicht alle Werte vorhanden
-    if not medication:
-        return None
-
-    # Einfacher Satz falls nur Medikament angegeben
-    if not (dosage or route or frequency or duration):
-        return f"Behandlung mit {medication}"
-
     # Wähle zufällige Vorlage
     template = random.choice(templates)
 
-    # Ersetze fehlende Werte durch leeren Text
-    return template.format(
+    # Formatieren mit leeren Strings statt None
+    phrase = template.format(
         medication=medication or "",
         dosage=dosage or "",
         route=route or "",
         frequency=frequency or "",
         duration=duration or "",
-    ).replace("  ", " ").strip()
+    )
+
+    # Überflüssige Kommata und Leerzeichen entfernen (z.B. ", ,", ", .", "  ")
+    phrase = re.sub(r'\s+,', ',', phrase)  # Leerzeichen vor Komma entfernen
+    phrase = re.sub(r',\s*,', ',', phrase) # Mehrfache Kommata reduzieren
+    phrase = re.sub(r',\s*\.', '.', phrase) # Komma vor Punkt entfernen
+    phrase = re.sub(r'\s{2,}', ' ', phrase) # Mehrfache Leerzeichen auf eins reduzieren
+    phrase = phrase.strip()
+
+    # Falls Satz mit Komma endet, ersetze durch Punkt
+    if phrase.endswith(','):
+        phrase = phrase[:-1] + '.'
+    return phrase
 
 def paraphrase_entity(entity_type, value):
     variations = {
@@ -169,7 +183,7 @@ def paraphrase_entity(entity_type, value):
             f"Alkoholkonsum: {value}",
             f"er/sie konsumiert {value}",
             f"Trinkverhalten: {value}"
-        ],
+            ],
 
         "ALLERGY":[
             f"allergisch auf: {value}",
@@ -178,7 +192,8 @@ def paraphrase_entity(entity_type, value):
             f"verträgt {value} nicht",
             f"zeigt Allergien gegen {value}",
             f"Allergische Reaktion auf {value} dokumentiert"
-                    ],
+            ],
+
         "ADDRESS": [
             f"wohnhaft in {value}",
             f"Adresse: {value}",
@@ -186,48 +201,46 @@ def paraphrase_entity(entity_type, value):
             f"Wohnadresse: {value}",
             f"zu finden in {value}",
             f"gemeldet unter {value}"
-        ],
+            ],
 
         "ADMISSION_DATE": [
             f"Aufnahme am {value}",
             f"Patient wurde aufgenommen am {value}",
             f"Datum der Einweisung: {value}"
-        ],
-
+            ],
 
         "BIRTHDATE":[
              f"geboren am: {value}",
             f"Geburtsdatum: {value}",
             f"Der Geburtstag ist der {value}",
             f"Geboren wurde am {value}"
-        ],
-
+            ],
 
         "BLOOD_TYPE": [
             f"Blutgruppe: {value}",
             f"hat Blutgruppe {value}",
             f"Bluttyp: {value}"
-        ],
+            ],
 
         "BODY_PART": [
             f"betroffene Region: {value}",
             f"lokalisiert an: {value}",
             f"Körperteil: {value}"
-        ],
+            ],
 
         "COURSE": [
             f"Verlauf: {value}",
             f"klinischer Verlauf war {value}",
             f"der Krankheitsverlauf zeigt {value}"
-        ],
-
+            ],
 
         "DATE": [
             f"am {value}",
             f"Datum: {value}",
             f"am Untersuchungsdatum {value}",
             f"Datum des Berichts: {value}"
-        ],
+            ],
+
         "DEVICE":[
             f"es wird empfohlen {value} zu verwenden",
             f"{value} wird verwendet",
@@ -241,14 +254,15 @@ def paraphrase_entity(entity_type, value):
             f"verwendetes medizinisches Gerät: {value}",
             f"technisch unterstützt durch {value}",
             f"{value} wurde zur Untersuchung verwendet"
-                ],
+            ],
+
         "DEPARTMENT": [
             f"Abteilung: {value}",
             f"Fachbereich: {value}",
             f"medizinische Einheit: {value}",
             f"zugewiesen an die Abteilung {value}",
             f"{value}-Abteilung"
-        ],
+            ],
 
         "DIAGNOSIS": [
             f"es wurde {value} diagnostiziert",
@@ -261,13 +275,13 @@ def paraphrase_entity(entity_type, value):
             f"festgestellt wurde {value}",
             f"es handelt sich um {value}",
             f"medizinische Diagnose: {value}"
-                        ],
+            ],
        
         "DISCHARGE_DATE": [
             f"Entlassen am {value}",
             f"Entlassdatum: {value}",
             f"Datum der Entlassung: {value}"
-        ],
+            ],
 
         "DOCTOR": [
             f"behandelt durch {value}",
@@ -278,7 +292,7 @@ def paraphrase_entity(entity_type, value):
             f"{value} als behandelnder Arzt",
             f"unter der Aufsicht von {value}",
             f"{value} hat die Behandlung übernommen"
-                ],
+            ],
 
         "DOCUMENT_TYPE": [
             f"Berichtstyp: {value}",
@@ -287,33 +301,36 @@ def paraphrase_entity(entity_type, value):
             f"{value} liegt vor",
             f"Typ: {value}",
             f"es handelt sich um einen {value}"
-        ],
+            ],
+
         "DOSAGE": [
             f"Dosierung: {value}",
             f"verabreichte Menge: {value}",
             f"{value} wurde gegeben"
-        ],
-
+            ],
 
         "DURATION": [
             f"über einen Zeitraum von {value}",
             f"Dauer: {value}",
             f"Behandlungsdauer betrug {value}"
-        ],
+            ],
+
         "FAMILY_STATUS":[
                 f"Familienstand: {value}",
                 f"Er ist {value}",
                 f"Der Familienstatus lautet {value}",
                 f"Status in der Familie: {value}",
                 f"Familienverhältnis: {value}"
-                    ],
+                ],
+
         "FAMILYMEMBER":[
                 f"begleitet von {value}",
                 f"bei sich hat {value}",
                 f"{value} ist als Begleitung dabei",
                 f"Anwesend ist {value}",
                 f"Mit dabei: {value}"
-                    ],
+                ],
+
         "FAMHIST":[
             f"in der Familie gab es schon Fälle mit {value}",
             f"Familienanamnese: {value}",
@@ -322,7 +339,8 @@ def paraphrase_entity(entity_type, value):
             f"es liegen familiäre Fälle von {value} vor",
             f"familiäre Erkrankung: {value}",
             f"in der Verwandtschaft tritt {value} auf"
-                ],
+            ],
+
         "FINDING": [
             f"Befund: {value}",
             f"es zeigte sich {value}",
@@ -331,27 +349,29 @@ def paraphrase_entity(entity_type, value):
             f"{value} trat auf",
             f"nachgewiesen: {value}",
             f"diagnostischer Befund: {value}"
-        ],
+            ],
+
         "FOLLOWUP_REASON": [
             f"Grund für die Nachsorge: {value}",
             f"Folgegrund: {value}",
             f"Nachsorge erforderlich wegen {value}",
             f"{value} als Anlass für Nachkontrolle",
             f"{value} wurde als Folgegrund angegeben"
-        ],
+            ],
+
         "FOLLOWUP_REQ": [
             f"Folgeanforderung: {value}",
             f"weiteres Vorgehen: {value}",
             f"empfohlene Maßnahme: {value}",
             f"{value} soll durchgeführt werden",
             f"{value} wurde als nächste Maßnahme geplant"
-        ],
+            ],
 
         "FREQUENCY": [
             f"Häufigkeit: {value}",
             f"{value} verabreicht",
             f"Verabreichung {value}"
-        ],
+            ],
 
         "GEWICHT":[
             f"wiegt: {value}",
@@ -359,26 +379,28 @@ def paraphrase_entity(entity_type, value):
             f"das Gewicht beträgt {value}",
             f"das Körpergewicht liegt bei {value}",
             f"Gewicht: {value}"
-                ],
+            ],
+
         "GROESSE":[
             f"Größe: {value}",
             f"er/sie ist {value} groß",
             f"die Körpergröße beträgt {value}",
             f"die Größe ist {value}",
             f"die Körpergröße liegt bei {value}"
-                ],
+            ],
+
         "HOSPITAL_STAY": [
             f"Aufenthaltsdauer: {value}",
             f"stationär für {value}",
             f"Krankenhausaufenthalt von {value}"
-        ],        
+            ],        
         "IMMUNIZATION":[
             f"Impfungen: {value}",
             f"geimpft gegen {value}",
             f"Impfstatus: {value}",
             f"Der Patient wurde immunisiert gegen {value}",
             f"Impfungen liegen vor für {value}"
-                ],
+            ],
 
          "IMPRESSION": [
             f"Einschätzung: {value}",
@@ -391,13 +413,12 @@ def paraphrase_entity(entity_type, value):
             f"{value} als zusammenfassender Befund"
         ],
 
-        
-
         "INSURANCE_ID": [
             f"Versicherungsnummer: {value}",
             f"Vers.-ID: {value}",
             f"Versicherten-ID: {value}"
-        ],
+            ],
+    
         "LAB_RESULT": [
             f"Laborergebnisse: {value}",
             f"Im Labor zeigte sich: {value}",
@@ -407,7 +428,7 @@ def paraphrase_entity(entity_type, value):
             f"diagnostisch relevante Werte: {value}",
             f"Laborparameter: {value}",
             f"{value} wurden im Labor festgestellt"
-        ],
+            ],
 
         "LIFESTYLE": [
             f"Lebensstil: {value}",
@@ -415,7 +436,7 @@ def paraphrase_entity(entity_type, value):
             f"Verhaltensmuster: {value}",
             f"Lebensgewohnheiten: {value}",
             f"Lebensweise: {value}"
-        ],
+            ],
 
         "MEDICATION": [
             f"bekommt {value}",
@@ -425,7 +446,8 @@ def paraphrase_entity(entity_type, value):
             f"wird behandelt mit {value}",
             f"Medikamentöse Behandlung mit {value}",
             f"erhält {value} als Medikament"
-                ],
+            ],
+
         "OCCUPATION":[
             f"aktueller Beruf: {value}",
             f"is {value} von Beruf",
@@ -436,7 +458,8 @@ def paraphrase_entity(entity_type, value):
             f"{value} ist sein/ihr Beruf",
             f"Beruflich tätig als {value}",
             f"Zurzeit ohne Beschäftigung" if random.random() < 0.2 else f"Er/Sie ist {value}",
-        ],
+            ],
+
         "ORG": [
                 f"im Krankenhaus {value}",
                 f"Einrichtung: {value}",
@@ -446,7 +469,7 @@ def paraphrase_entity(entity_type, value):
                 f"zugehörig zu {value}",
                 f"behandelt im {value}",
                 f"Arbeitsort: {value}"
-        ],
+            ],
 
         "PERSON": [
                 f"Patient: {value}",
@@ -456,14 +479,15 @@ def paraphrase_entity(entity_type, value):
                 f"{value} wurde aufgenommen",
                 f"Es handelt sich um {value}",
                 f"Die Person namens {value}"
-        ],
+            ],
+            
         "PHONE": [
             f"Telefonnummer: {value}",
             f"Kontakt: {value}",
             f"Telefon: {value}",
             f"erreichbar unter: {value}",
             f"Rufnummer: {value}"
-        ],
+            ],
 
         "PID":[
             f"patient-id {value}",
@@ -471,7 +495,7 @@ def paraphrase_entity(entity_type, value):
             f"PID: {value}",
             f"Patientenkennzeichen: {value}",
             f"Identifikationsnummer: {value}"
-                ],
+            ],
 
         "PREV_DIAGNOSIS": [
             f"frühere Diagnose: {value}",
@@ -482,7 +506,7 @@ def paraphrase_entity(entity_type, value):
             f"bisherige Diagnose: {value}",
             f"medizinische Vorgeschichte zeigt {value}",
             f"diagnostiziert in der Vergangenheit: {value}"
-        ],
+            ],
 
         "PROCEDURE": [
             f"durchgeführte Prozedur: {value}",
@@ -491,7 +515,8 @@ def paraphrase_entity(entity_type, value):
             f"{value} wurde angewendet",
             f"{value} wurde durchgeführt",
             f"diagnostisches Verfahren: {value}"
-        ],
+            ],
+
         "RISKFACTOR": [
             f"mögliche Risikofaktoren: {value}",
             f"es bestehen folgende Risiken: {value}",
@@ -500,33 +525,32 @@ def paraphrase_entity(entity_type, value):
             f"{value} gelten als Risikofaktoren",
             f"erhöhtes Risiko durch: {value}",
             f"relevante Risiken: {value}"
-        ],
-
+            ],
 
         "ROOM_NUMBER": [
             f"Zimmernummer: {value}",
             f"untergebracht in Zimmer {value}",
             f"Raum: {value}"
-        ],
+            ],
 
         "ROUTE": [
             f"Applikationsweg: {value}",
             f"wurde {value} verabreicht",
             f"Verabreichungsform: {value}"
-        ],
-
+        ]   ,
         
         "SMOKING_STATUS": [
             f"Raucherstatus: {value}",
             f"er/sie ist {value}",
             f"Tabakkonsum: {value}"
-        ],
+            ],
+    
         "STAY_REASON":[
             f"Grund des Krankenhausaufenthalts: {value}.",
             f"Aufgrund von {value}",
             f"muss noch stationär wegen {value}",
             f"wegen {value} muss stationäre."
-        ],
+            ],
 
         "SYMPTOM": [
             f"klagt über {value}",
@@ -536,7 +560,7 @@ def paraphrase_entity(entity_type, value):
             f"es wurden {value} beobachtet",
             f"{value} wurde berichtet",
             f"leidet unter {value}"
-        ],
+            ],
 
         "TREATMENT": [
             f"erhält Behandlung mit {value}",
@@ -546,7 +570,7 @@ def paraphrase_entity(entity_type, value):
             f"es erfolgte eine Behandlung mittels {value}",
             f"Therapie: {value}",
             f"therapeutische Maßnahme: {value}"
-        ],
+            ],
 
         "VITALSIGNS":[
             f"{value}",
@@ -554,12 +578,6 @@ def paraphrase_entity(entity_type, value):
             f"Die Vitalzeichen zeigen: {value}",
             f"Gemessene Werte: {value}"
             ],
-
-
-
-
-
-
         # add more as needed
     }
     if entity_type in variations:
