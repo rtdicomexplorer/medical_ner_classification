@@ -61,7 +61,7 @@ def generate_report(token=None):
 
     icd_description = icd.get_description(icd10_code) if not token else fetch_icd_description(icd10_code, token) or icd.get_description(icd10_code)
 
-    date = random_date(start_year=1980,end_year=2024)
+    date =   random_date(start_year=1980,end_year=2024).strftime("%d.%m.%Y") 
     idx = random.randint(0, len(hospital_names) - 1)
     hospital_name, hospital_address, hospital_phone = hospital_names[idx], hospital_addresses[idx], hospital_phones[idx]
     gender = __random_gender()

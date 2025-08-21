@@ -1,28 +1,39 @@
 
 #[the order follows a logic to create dynthetic data]
 ENTITY_LIST =[
+    "ALCOHOL_CONSUMPTION",
     "ADDRESS",
+    'ADMISSION_DATE',
     "ALLERGY",
     "BIRTHDATE",
-    "DATE",
-    "DOCUMENT_TYPE",
+    "BLOOD_TYPE",
+    "BODY_PART",
+    'COURSE',
+    "DATE",   
     "DEPARTMENT",
     "DEVICE",
     "DIAGNOSIS",
+    'DISCHARGE_DATE',
     "DOCTOR",
+    "DOCUMENT_TYPE",
+    "DOSAGE",
+    "DURATION",
     "FAMILY_STATUS",
     "FAMILYMEMBER",
     "FAMHIST",
     "FINDING",
     "FOLLOWUP_REASON",
     "FOLLOWUP_REQ",
+    "FREQUENCY",
     "GENDER",
     "GEWICHT",
     "GROESSE",
+    'HOSPITAL_STAY',
     "ICD10_CODE",
     "ICD10_DESC",
     "IMMUNIZATION",
     "IMPRESSION",
+    "INSURANCE_ID",
     "LAB_RESULT",
     "LIFESTYLE",
     "MEDICATION",
@@ -34,40 +45,24 @@ ENTITY_LIST =[
     "PREV_DIAGNOSIS",
     "PROCEDURE",
     "RISKFACTOR",
+    "ROOM_NUMBER",
+    "ROUTE",
+    "SMOKING_STATUS",  
+    "STAY_REASON",
     "SYMPTOM",
     "TREATMENT",
-    "VITALSIGNS"
+    "VITALSIGNS",
 ]
 
 
-NEW_ENTITIES =[
-                       
-'COURSE'                                        
-'SMOKING_STATUS',                  
-'ALCOHOL_CONSUMPTION',             
-'BLOOD_TYPE',                      
-'ADMISSION_DATE',
-'DISCHARGE_DATE',
-'DOSAGE',   
-'DURATION', 
-'FREQUENCY',
-'ROUTE',    
-'BODY_PART',
-'INSURANCE_ID', 
-'HOSPITAL_STAY',
-'ROOM_NUMBER'  
-
-
-]
-
-def generate_bio_labels(entity_list):
+def __generate_bio_labels_list(entity_list):
     label_list = ["O"]  # O "Outside" the first one
     for entity in entity_list:
         label_list.append(f"B-{entity}")# begin
         label_list.append(f"I-{entity}")# inside
     return label_list
 
-LABEL_LIST = generate_bio_labels(entity_list=ENTITY_LIST)
+LABEL_LIST = __generate_bio_labels_list(entity_list=ENTITY_LIST)
 LABEL2ID = {label: idx for idx, label in enumerate(LABEL_LIST)}
 ID2LABEL = {idx: label for label, idx in LABEL2ID.items()}
 
