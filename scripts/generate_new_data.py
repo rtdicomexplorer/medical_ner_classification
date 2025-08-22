@@ -2,11 +2,11 @@ import random
 import json
 from utils import *
 from sklearn.model_selection import train_test_split
-from config import LABEL2ID, ENTITY_LIST
+from config import LABEL2ID, ENTITY_LIST, MORE_VAL_ENTITIES
 from templates import TEMPLATES_LIST
-# from transformers import AutoTokenizer
-# tokenizer = AutoTokenizer.from_pretrained("bert-base-german-cased")
-#region templates
+from collections import defaultdict
+
+
 entity_values = {                       
     "ALCOHOL_CONSUMPTION": 	alcohol_consumptions,	
     "ADDRESS": 				hospital_addresses,	
@@ -61,7 +61,6 @@ entity_values = {
     "VITALSIGNS":          	vitalsigns
 }
 
-
 def __create_bio_tags_from_offsets(tokens, entities, text):
     tags = ["O"] * len(tokens)
 
@@ -96,27 +95,7 @@ def __create_bio_tags_from_offsets(tokens, entities, text):
 
     return tags
 
-
-def __create_bio_tags(tokens, entities, text):
-
-    tags = ["O"] * len(tokens)
-
-    for ent_name, ent_val in entities.items():
-        if not ent_val:
-            continue
-        ent_tokens = smart_tokenize(ent_val)
-        len_ent = len(ent_tokens)
-
-        for i in range(len(tokens) - len_ent + 1):
-            if tokens[i:i+len_ent] == ent_tokens:
-                tags[i] = f"B-{ent_name}"
-                for j in range(i+1, i+len_ent):
-                    tags[j] = f"I-{ent_name}"
-    return tags
-
-
-
-def __extract_entities(text, values):
+def __extract_entities__(text, values):
     ents = []
     for label, value in values.items():
         start = text.find(value)
@@ -125,36 +104,82 @@ def __extract_entities(text, values):
             ents.append({"ENTITY": label,"START":start, "END":end, "VALUE":value})
     return ents
 
-# def __bio_tags_to_ids_smart(tags, label2id):
-#     tag_ids = []
-#     for tag in tags[0]:
-#         if tag not in label2id:
-#             raise ValueError(f"Unbekannter Tag '{tag}' – fehlt im label2id?")
-#         tag_ids.append(label2id[tag])
-#     return tag_ids
 
-# def __create_bio_tags_smart(text, entities):
-#     encoding = tokenizer(text, return_offsets_mapping=True, return_attention_mask=False, add_special_tokens=False)
-#     tags = ["O"] * len(encoding["offset_mapping"])
-    
-#     for ent in entities:
-#         start_char = ent["START"]
-#         end_char = ent["END"]
-#         label = ent["ENTITY"]
-        
-#         for i, (start, end) in enumerate(encoding["offset_mapping"]):
-#             if start >= end_char or end <= start_char:
-#                 continue
-#             if start >= start_char and end <= end_char:
-#                 if tags[i] == "O":
-#                     tags[i] = f"B-{label}" if start == start_char else f"I-{label}"
-#     return tags, encoding.tokens()
+def __create_sample_more_text():
+    sample = {}
+    # Einmalige Entities - wähle einen Wert
+    for ent in ENTITY_LIST:
+        if ent in entity_values:
+            sample[ent] = random.choice(entity_values[ent])
+    # Mehrfachwerte Entities - wähle eine Liste von Werten
+    for ent in MORE_VAL_ENTITIES:
+        if ent in entity_values:
+            sample[ent] = random.sample(entity_values[ent], 
+                                       k=random.randint(1, min(3, len(entity_values[ent]))))
+    return sample
 
+def __normalize_text(text):
+    return re.sub(r"\s+", " ", text.lower().strip())
 
+def __extract_entities_generalized(text, values):
+    """ To catch more details around prev_diagnosis or symptoms  maybe later..."""
+    ENTITY_SYNONYMS = {
+        "PREV_DIAGNOSIS": {
+            "Herzinfarkt": ["status post Herzinfarkt", "Infarkt", "früherer Herzinfarkt"],
+            "Fraktur": ["alte Fraktur", "Knochenbruch", "frühere Fraktur"],
+            "Arthrose": ["bekannte Arthrose", "Arthrose", "Gelenkverschleiß"],
+        },
+        "SYMPTOM": {
+            "Zyanose": ["bläuliche Verfärbung", "Zyanose"],
+            "Taubheitsgefühl": ["Gefühllosigkeit", "Taubheit", "Taubheitsgefühl"],
+            "Lähmung": ["Bewegungseinschränkung", "Lähmungen", "Paralyse"],
+        },
+        # Weitere ENTITY-Typen hier eintragen...
+    }
 
+    ents = []
+    used_spans = set()
+    text_norm = __normalize_text(text)
 
-def __create_sample():
-    return {ent: random.choice(entity_values[ent]) for ent in ENTITY_LIST if ent in entity_values}
+    for label, value in values.items():
+        value_list = value if isinstance(value, list) else [value]
+        synonyms = ENTITY_SYNONYMS.get(label, {})
+
+        for val in value_list:
+            val_str = str(val).strip()
+            if not val_str:
+                continue
+
+            # 1. Alle möglichen Suchbegriffe (Original + Synonyme)
+            search_terms = [val_str]
+            if isinstance(synonyms, dict) and val_str in synonyms:
+                search_terms.extend(synonyms[val_str])
+
+            # 2. Überprüfe jeden Suchbegriff
+            found = False
+            for term in search_terms:
+                term_norm = __normalize_text(term)
+                matches = list(re.finditer(re.escape(term_norm), text_norm))
+                for match in matches:
+                    # Finde tatsächliche Position im Originaltext (unsicher bei Normalisierung!)
+                    span_start = text.lower().find(term_norm, match.start())
+                    if span_start == -1:
+                        continue
+                    span_end = span_start + len(term_norm)
+                    
+                    if (span_start, span_end) not in used_spans:
+                        ents.append({
+                            "ENTITY": label,
+                            "START": span_start,
+                            "END": span_end,
+                            "VALUE": val_str
+                        })
+                        used_spans.add((span_start, span_end))
+                        found = True
+                        break
+                if found:
+                    break  # gehe zur nächsten Value
+    return ents
 
 
 def __extract_entities_smart(text, values):
@@ -162,42 +187,96 @@ def __extract_entities_smart(text, values):
     used_spans = set()
 
     for label, value in values.items():
-        # Verwende re.finditer für mehrere Vorkommen
-        for match in re.finditer(re.escape(value), text):
-            start, end = match.span()
-            if (start, end) not in used_spans:
-                ents.append({"ENTITY": label, "START": start, "END": end, "VALUE": value})
-                used_spans.add((start, end))
-                break  # Nur erstes Vorkommen pro Label
+        value_list = value if isinstance(value, list) else [value]
+
+        for val in value_list:
+            val_str = str(val).strip()
+            if not val_str:
+                continue
+
+            for match in re.finditer(re.escape(val_str), text):
+                start, end = match.span()
+                if (start, end) not in used_spans:
+                    ents.append({
+                        "ENTITY": label,
+                        "START": start,
+                        "END": end,
+                        "VALUE": val_str
+                    })
+                    used_spans.add((start, end))
+                    break  # Nur das erste Vorkommen pro Wert
     return ents
+
 
 def __bio_tags_to_ids(tags, label2id):
     return [label2id.get(tag, 0) for tag in tags]
 
-def __generate_paraphrase_text(values):
+def __generate_paraphrase_more_text(values):
     phrases = []
-    temp_values = values.copy()
-    hospital_phrase = paraphrase_hospital_stay(temp_values)
-    if hospital_phrase:
-        phrases.append(hospital_phrase)
-        # Optional: remove single Keys
-        for key in ["ADMISSION_DATE", "DISCHARGE_DATE", "STAY_REASON"]:
-            temp_values.pop(key, None)
-    # Medication special
-    medication_phrase = paraphrase_medication_combination(temp_values)
-    if medication_phrase:
-        phrases.append(medication_phrase)
-        for key in ["MEDICATION", "DOSAGE", "FREQUENCY", "DURATION"]:
-            temp_values.pop(key, None)
 
-    for ent_type in ENTITY_LIST:
-        if ent_type in temp_values:
-            phrase = paraphrase_entity(ent_type, temp_values[ent_type])
-            phrases.append(phrase)
+    # Paraphrase für Mehrfachwerte-Entities (alle Werte)
+    for ent in MORE_VAL_ENTITIES:
+        if ent in values:
+            # values[ent] ist Liste → paraphrasiere alle und füge hinzu
+            for val in values[ent]:
+                phrases.append(paraphrase_entity(ent, val))
 
-    # Shuffle the phrases and join
+    # Paraphrase für Einmal-Entities
+    for ent in ENTITY_LIST:
+        if ent in values and ent not in MORE_VAL_ENTITIES:
+            phrases.append(paraphrase_entity(ent, values[ent]))
+
     random.shuffle(phrases)
     return " ".join(phrases)
+
+
+
+def count_entity_placeholders(template):
+   
+    pattern = r"{(\w+)}"
+    counts = defaultdict(int)
+    for match in re.findall(pattern, template):
+        counts[match] += 1
+    return counts
+
+
+def generate_values(entity_values, more_val_entities, placeholder_counts):
+    values_for_template = {}
+
+    for entity, count in placeholder_counts.items():
+        if entity not in entity_values:
+            continue
+
+        val_list = entity_values[entity]
+        if isinstance(val_list, str):
+            val_list = [val_list]
+
+        if entity in more_val_entities:
+            # Mehrfach vorkommende Entitäten → zufällige Auswahl, ggf. mit Duplikaten
+            sampled = random.choices(val_list, k=count)
+            values_for_template[entity] = sampled
+        else:
+            # Nur ein Wert benötigt → denselben zufälligen Wert mehrfach einsetzen
+            value = random.choice(val_list)
+            values_for_template[entity] = [value] * count
+
+    return values_for_template
+
+
+def __fill_template(template, values_dict):
+    pattern = r"{(\w+)}"
+    output = template
+    counters = defaultdict(int)
+
+    def replacement(match):
+        entity = match.group(1)
+        val_list = values_dict.get(entity, [""])
+        val = val_list[counters[entity]] if counters[entity] < len(val_list) else val_list[-1]
+        counters[entity] += 1
+        return val
+
+    filled = re.sub(pattern, replacement, output)
+    return filled
 
 def __generate_dataset(n_samples,save_reports):
     import os
@@ -206,22 +285,19 @@ def __generate_dataset(n_samples,save_reports):
     count_paraphrase = 0
     for i in range(n_samples):
         try:
-            template = random.choice(TEMPLATES_LIST)
-            values = __create_sample()
-            if random.random() < 0.5:            
-                text = template.format(**values)
-                # text = Template(template).safe_substitute(values) just with preformatted string f" vvava {value}"
+            if random.random() < 0.5:     
+                template = random.choice(TEMPLATES_LIST)
+                placeholder_counts = count_entity_placeholders(template)
+                values_dict = generate_values(entity_values, MORE_VAL_ENTITIES, placeholder_counts)
+                text =  __fill_template(template, values_dict)
+                entities = __extract_entities_generalized(text, values_dict)   
                 count_template +=1
             else:
-                text = __generate_paraphrase_text(values)
+                values = __create_sample_more_text()  
+                text = __generate_paraphrase_more_text(values)             
+                entities = __extract_entities_generalized(text, values)  
                 count_paraphrase += 1
-
-            entities = __extract_entities_smart(text, values)
-
-            matched_entities = {e["ENTITY"]: e["VALUE"] for e in entities}
-            # print(f"Entities:\n {entities}")
             tokens = smart_tokenize(text)
-            #tags_bio = __create_bio_tags(tokens, matched_entities, text)
             tags = __create_bio_tags_from_offsets(tokens=tokens,entities=entities, text=text)
             tag_ids = __bio_tags_to_ids(tags, LABEL2ID)
 
@@ -246,13 +322,11 @@ def __generate_dataset(n_samples,save_reports):
 
     trains, validations = train_test_split(dataset, test_size=0.1, random_state=42)
     trains, tests = train_test_split(trains, test_size=0.1, random_state=42)
+    
+    print(f"💡 From template {count_template}, 🔁 from paraphrase {count_paraphrase}")
 
-    os.makedirs("./data", exist_ok=True)
-    with open("./data/all_data.json", "w", encoding="utf-8") as f:
-        json.dump(dataset, f, indent=2, ensure_ascii=False)
-        print(f"saved all data  ./data/all_data.json ")
-
-
+    #saving the json data created
+    os.makedirs("./data", exist_ok=True)   
     with open("./data/train.json", "w", encoding="utf-8") as f:
         json.dump(trains, f, indent=2, ensure_ascii=False)
     with open("./data/val.json", "w", encoding="utf-8") as f:
@@ -264,10 +338,12 @@ def __generate_dataset(n_samples,save_reports):
     print(f"→ ./data/val.json ({len(validations)} samples)")
     print(f"→ ./data/test.json ({len(tests)} samples)")
     if save_reports:
+        with open("./data/all_data.json", "w", encoding="utf-8") as f:
+            json.dump(dataset, f, indent=2, ensure_ascii=False)
+        print(f"saved all data  ./data/all_data.json ")
         print(f"→ ./txt_reports/ ({n_samples} samples)")
 
-
-    print(f"From template {count_template}, from paraphrase {count_paraphrase}")
+   
 
 # Run as script
 if __name__ == "__main__":

@@ -559,7 +559,9 @@ def paraphrase_entity(entity_type, value):
             f"hat {value}",
             f"es wurden {value} beobachtet",
             f"{value} wurde berichtet",
-            f"leidet unter {value}"
+            f"leidet unter {value}",
+            f"stark anhaltend dumpfen {value}",
+            f"fühlt sich {value}",
             ],
 
         "TREATMENT": [
@@ -596,7 +598,8 @@ smoking_status = [
     "Nichtraucher",
     "Raucht gelegentlich",
     "Aktiver Raucher",
-    "Ex-Raucher seit 5 Jahren"
+    "Ex-Raucher seit 5 Jahren",
+    "täglich für 10 Jahren zehn Zigaretten geraucht"
 ]
 
 alcohol_consumptions = [
@@ -727,6 +730,7 @@ vitalsigns = [
 lifestyles = [
     "Nichtraucher", "Raucher (5 Zigaretten/Tag)", "gelegentlicher Alkoholgenuss",
     "regelmäßige Bewegung","Drogenmissbrauch", "trinkt Bier täglich",
+    "Keine Droge, keine Alcool"
 ]
 
 risk_factors = [
@@ -757,6 +761,7 @@ symptoms = [
     "Gedächtnisstörung",
     "Tremor",
     "Epileptischer Anfall",
+    "niedergeschlagen",
 
     #Kardiopulmonale Symptome
     "Brustschmerzen",
@@ -780,6 +785,7 @@ symptoms = [
     "Konzentrationsstörung",
     "Gliederschmerzen",
     "Unwohlsein",
+    "Kribbeln auf der linke Arm",
 
     #Gastrointestinale Symptome
     "Übelkeit",
@@ -908,7 +914,8 @@ findings =[ "Infiltrat in der rechten Lunge"  ,
 allergies = ["Penicillin", "Pollen", "Nüsse","Hausstaubmilben","Tierhaar", "Soia"]
 immunizations = ["Masern-Impfung", "Grippeimpfung", "Covid 19"]
 devices = ["Herzschrittmacher", "Insulinpumpe","Schlafmaske", "Blutdruckgerät", "Kateter"]
-family_histories = ["Mutter mit Diabetes", "Vater mit Bluthochdruck","Herzinfarkte beim Vater", "Krebs bei der Mutter", "Diabetes in der Familie"]
+family_histories = ["Mutter mit Diabetes", "Vater mit Bluthochdruck","Herzinfarkte beim Vater", "Krebs bei der Mutter",
+                    "Diabetes in der Familie", "Vater hatte einen Schlaganfall", "Bruder mit Zuckerkrakheit"]
 procedures = ["Angioplastie", "MRT-Scan", "Biopsie", "Ultraschall","CT Kopf", "Lyse-Therapie"]
 departments = ["Kardiologie", "Notaufnahme", "Onkologie", "Radiologie","Neurologie", "Innere Medizin"]
 

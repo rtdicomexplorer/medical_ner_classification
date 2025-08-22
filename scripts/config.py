@@ -55,6 +55,12 @@ ENTITY_LIST =[
 ]
 
 
+MORE_VAL_ENTITIES = {
+    "ALLERGY", "SYMPTOM", "MEDICATION", "VITALSIGNS", "TREATMENT", "FAMILYMEMBER", "FAMHIST", 
+    "PREV_DIAGNOSIS", "IMPRESSION", "LAB_RESULT", "LIFESTYLE", "RISKFAKTOR", "IMMUNIZATION"
+}
+
+
 def __generate_bio_labels_list(entity_list):
     label_list = ["O"]  # O "Outside" the first one
     for entity in entity_list:

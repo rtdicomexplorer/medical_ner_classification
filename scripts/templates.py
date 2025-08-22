@@ -1,5 +1,4 @@
 arztbrief_template = (
-    "{DOCUMENT_TYPE} vom {DATE}:\n"
     "Patient: {PERSON} ({GENDER}), geboren am {BIRTHDATE}, PID: {PID}.\n"
     "Adresse: {ADDRESS}, Telefon: {PHONE}, Familienstand: {FAMILY_STATUS}.\n"
     "Beruf: {OCCUPATION}, begleitet von: {FAMILYMEMBER}.\n"
@@ -7,12 +6,33 @@ arztbrief_template = (
     "Diagnose: {DIAGNOSIS} (ICD-10: {ICD10_CODE} – {ICD10_DESC}).\n"
     "Vorherige Diagnose: {PREV_DIAGNOSIS}.\n"
     "Familiäre Vorbelastung: {FAMHIST}.\n"
-    "Medikation: {MEDICATION}, Behandlung: {TREATMENT}, Prozedur: {PROCEDURE}.\n"
+    "Medikation: {MEDICATION}, {MEDICATION} Behandlung: {TREATMENT}, Prozedur: {PROCEDURE}.\n"
     "Labor: {LAB_RESULT}, Vitalzeichen: {VITALSIGNS}.\n"
     "Empfehlung: {FOLLOWUP_REQ} bei {FOLLOWUP_REASON}.\n"
     "Untersuchung durch {DOCTOR}, Abteilung: {DEPARTMENT}, Klinik: {ORG}.\n"
     "Adresse: {ADDRESS}, Tel: {PHONE}.\n"
-    "Impression: {IMPRESSION}."
+    "Impression: {IMPRESSION}, {IMPRESSION}"
+)
+
+arztbrief_template2 = (
+"{DOCUMENT_TYPE} vom {DATE}\n"
+"Patientenname : {PERSON}\n"
+"Geburtsdatum : {BIRTHDATE}\n"
+"Große: {GROESSE}\n"
+"Gewicht: {GEWICHT}\n"
+"Hausarzt : {DOCTOR}\n"
+"Der Patient, {PERSON} , stellte sich mit stark anhaltend dumpfen {SYMPTOM} vor, die er seit gestern habe.\n" 
+"{PERSON} sei auch {SYMPTOM}. Darüber hinaus berichte er über {SYMPTOM}.\n" 
+"Er habe auch berichtet, dass er eine {SYMPTOM} und {SYMPTOM} (Wortfindungsstörung und lallende Ansprache) entwickelt habe.\n" 
+"Eine {SYMPTOM} wurde auch berichtet.\n"
+"Vorerkrankungen : Er habe seit 20 Jahren {PREV_DIAGNOSIS}.IM Jahr 2018 habe er einen {PREV_DIAGNOSIS} gehabt, den konservativ behandelt wurde.\n"
+"Vegetative Anamnese ist bis auf eine {PREV_DIAGNOSIS}, die seit 5 jähren bestehe und mit {MEDICATION} eingestellt sei, unauffällig.\n"
+"Medikamente Anamnese : Er nehme die obergenannte {MEDICATION} bei bedarf ein und er nehme auch {MEDICATION} {FREQUENCY} ein.\n"
+"Noxen : Er habe täglich für {SMOKING_STATUS}, bevor er sich das Rauchen abgewöhnt habe. Alkohol {ALCOHOL_CONSUMPTION}.\n" 
+"Die Frage nach {LIFESTYLE} wurde verneint.\n"
+"Soziale Anamnese : Er ist {OCCUPATION} von Beruf und ist {FAMILY_STATUS}. {PERSON} lebe mit seiner {FAMILYMEMBER} und vier {FAMILYMEMBER} zusammen.\n"
+"Familiäre Anamnese : {FAMHIST} und {FAMHIST}.\n"
+"Die Anamnese, Laborwerte und eine {PROCEDURE} weisen auf einen {DIAGNOSIS} hin. {TREATMENT} wurde nach der CT begonnen.\n"
 )
 
 befundbericht_template = (
@@ -21,8 +41,8 @@ befundbericht_template = (
     "Untersuchung mittels {DEVICE} aufgrund von {SYMPTOM}.\n"
     "Befunde: {FINDING}, Diagnose: {DIAGNOSIS}.\n"
     "ICD-10-Code: {ICD10_CODE} – {ICD10_DESC}.\n"
-    "Laborwerte: {LAB_RESULT}, Vitalzeichen: {VITALSIGNS}.\n"
-    "Empfehlung: {TREATMENT}. Impression: {IMPRESSION}.\n"
+    "Laborwerte: {LAB_RESULT}, Vitalzeichens: {VITALSIGNS}, {VITALSIGNS}, {VITALSIGNS}.\n"
+    "Empfehlung: {TREATMENT}. Impressions: {IMPRESSION}, {IMPRESSION}.\n"
     "Kontakt: {PHONE}, Adresse: {ADDRESS}."
 )
 
@@ -30,11 +50,11 @@ operationsbericht_template = (
     "{DOCUMENT_TYPE}\n"
     "Datum der Operation: {DATE}, durchgeführt von {DOCTOR} im {ORG}, Abteilung: {DEPARTMENT}.\n"
     "Patient: {PERSON}, Geschlecht: {GENDER}, Geburtsdatum: {BIRTHDATE}, PID: {PID}.\n"
-    "Indikation: {DIAGNOSIS} – {SYMPTOM}.\n"
+    "Indikation: {DIAGNOSIS} – {SYMPTOM}, {SYMPTOM}.\n"
     "Durchgeführte Prozedur: {PROCEDURE} unter Einsatz von {DEVICE}.\n"
     "Anästhesieprotokoll: {VITALSIGNS}.\n"
     "Postoperativer Verlauf: {IMPRESSION}.\n"
-    "Empfohlene Medikation: {MEDICATION}, weitere Behandlung: {TREATMENT}.\n"
+    "Empfohlene Medikation: {MEDICATION} {FREQUENCY}  und {MEDICATION} {FREQUENCY} , weitere Behandlung: {TREATMENT}.\n"
     "Kontakt für Rückfragen: {DOCTOR}, Tel: {PHONE}."
 )
 
@@ -76,9 +96,9 @@ laborbericht_template = (
     "{DOCUMENT_TYPE} – erstellt am {DATE}.\n"
     "Patient: {PERSON} ({GENDER}), geboren am {BIRTHDATE}, PID: {PID}.\n"
     "Untersuchende Einrichtung: {ORG}, Abteilung: {DEPARTMENT}.\n"
-    "Laborparameter: {LAB_RESULT}.\n"
+    "Laborparameter: {LAB_RESULT}, {LAB_RESULT}, {LAB_RESULT}.\n"
     "Diagnosehinweis: {DIAGNOSIS} ({ICD10_CODE} – {ICD10_DESC}).\n"
-    "Beurteilung: {IMPRESSION}.\n"
+    "Beurteilung: {IMPRESSION}, {IMPRESSION}.\n"
     "Kontakt: {DOCTOR}, Tel: {PHONE}."
 )
 
@@ -171,8 +191,8 @@ aufnahmebogen_template = (
     "Patient: {PERSON}, {GENDER}, geboren am {BIRTHDATE}, PID: {PID}.\n"
     "Adresse: {ADDRESS}, Tel: {PHONE}, Familienstand: {FAMILY_STATUS}.\n"
     "Beschwerden: {SYMPTOM}, Vorbefunde: {PREV_DIAGNOSIS}.\n"
-    "Aktuelle Medikation: {MEDICATION}, Allergien: {ALLERGY}.\n"
-    "Größe: {GROESSE}, Gewicht: {GEWICHT}, Vitalwerte: {VITALSIGNS}.\n"
+    "Aktuelle Medikation: {MEDICATION}, Allergien: {ALLERGY}, {ALLERGY}, {ALLERGY}.\n"
+    "Größe: {GROESSE}, Gewicht: {GEWICHT}, Vitalwerte: {VITALSIGNS}, {VITALSIGNS}.\n"
     "Begleitung durch: {FAMILYMEMBER}.\n"
     "Untersuchender Arzt: {DOCTOR}.\n"
     "Verlegt auf Staion 7 Zimmer {ROOM_NUMBER}"
@@ -287,8 +307,8 @@ complete_template = (
 )
 
 
-TEMPLATES_LIST =[complete_template ,reha_gutachten_template,ct_mrt_template,roentgen_template,ekg_template,
+TEMPLATES_LIST =[complete_template ,reha_gutachten_template,pflegeueberleitung_template,ct_mrt_template,roentgen_template,ekg_template,
                  notfall_template,attest_template,hkp_template,aufnahmebogen_template,opfreigabe_template,pflegedoku_template,
                  therapieplan_template,rezept_template,impfpass_template,einwilligung_template,ueberweisung_template,patho_template,
                  radiologie_template,laborbericht_template,anamnesebogen_template,entlassungsbericht_template, operationsbericht_template,
-                 befundbericht_template,arztbrief_template]
+                 befundbericht_template,arztbrief_template,arztbrief_template2]
