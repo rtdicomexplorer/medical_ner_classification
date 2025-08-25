@@ -1,11 +1,20 @@
 import os
+import sys
+# Add project root to sys.path if needed
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from scripts.text_extractor import extract_text  # ✅ now works both ways
+
 import json
 import torch
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
-from text_extractor import extract_text   # Your custom text extractor
-from postprocess import postprocess_entities  # Your custom postprocessing
-from ner_to_fhir import map_ner_to_fhir    # Your mapping from NER to FHIR
-from config import ID2LABEL,LABEL2ID
+
+from scripts.postprocess import postprocess_entities  # Your custom postprocessing
+from scripts.ner_to_fhir import map_ner_to_fhir    # Your mapping from NER to FHIR
+from scripts.config import ID2LABEL,LABEL2ID
 from pathlib import Path
 import html
 MODEL_PATH = "./models/gbert-base"
@@ -281,6 +290,23 @@ def save_predictions(predictions, patient_id, output_dir="predictions"):
         json.dump(predictions, f, indent=2, ensure_ascii=False)
     print(f"✅ Predictions saved to {path}")
 
+
+def execute_predictions(text):
+    # MODEL_PATH = 'deepset/gbert-base'
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+    model = AutoModelForTokenClassification.from_pretrained(MODEL_PATH)
+
+    model.config.id2label = ID2LABEL
+    model.config.label2id = LABEL2ID
+    nlp = pipeline("ner", model=model, 
+                   tokenizer=tokenizer, 
+                   aggregation_strategy="simple",
+                   device=0 if torch.cuda.is_available() else -1  # 0 = CUDA, -1 = CPU
+                   )# or simple aggregation_straty=> Entity_group
+
+    return nlp(text)
+
+
 def main(file_path):
 
     _, report_file_name = os.path.split(file_path)
@@ -294,25 +320,13 @@ def main(file_path):
     print(f"\n=============================================\n")
     # text = "Patient Otto Kromberger leidet an Kopfschmerzen."
 
-    # MODEL_PATH = 'deepset/gbert-base'
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
-    model = AutoModelForTokenClassification.from_pretrained(MODEL_PATH)
-
-    model.config.id2label = ID2LABEL
-    model.config.label2id = LABEL2ID
-    nlp = pipeline("ner", model=model, 
-                   tokenizer=tokenizer, 
-                   aggregation_strategy="simple",
-                   device=0 if torch.cuda.is_available() else -1  # 0 = CUDA, -1 = CPU
-                   )# or simple aggregation_straty=> Entity_group
-
-    entities = nlp(text)
-    for ent in entities:
+    predictions = execute_predictions(text)
+    for ent in predictions:
         entity_type = ent.get("entity_group", ent.get("entity"))
         # print(ent)
         print(f"Entity: '{ent['word']}'  |  Type: {entity_type}  |  Score: {ent['score']:.3f}")
     #postprocess the entities to make them clean...
-    clean_entities = postprocess_entities(entities)
+    clean_entities = postprocess_entities(predictions)
 
     save_predictions(clean_entities,report_file_name)
 
@@ -326,14 +340,14 @@ def main(file_path):
     output_html = os.path.join(OUTPUTDIR, f"compare_postprocessing_{report_file_name}.html")  
     if os.path.exists(output_html):
         os.remove(output_html)
-    save_entity_comparison_html(entities, clean_entities,output_html)
+    save_entity_comparison_html(predictions, clean_entities,output_html)
 
 
 
 if __name__ == "__main__":
     import sys
     file_path = './documents/artz_brief.txt'
-    file_path = './txt_reports/report_7.txt'
+    #file_path = './txt_reports/report_7.txt'
     if len(sys.argv) == 2:   
         file_path = sys.argv[1]
         if not os.path.exists(file_path):

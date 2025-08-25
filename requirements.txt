@@ -17,4 +17,5 @@ seqeval
 evaluate
 tqdm
 spacy
+Flask
 #need also to 'install python -m spacy download de_core_news_md

@@ -4,7 +4,14 @@ from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForTokenClassification, TrainingArguments, Trainer, DataCollatorForTokenClassification
 import numpy as np
 from sklearn.metrics import precision_recall_fscore_support,classification_report
-from config import LABEL_LIST, ID2LABEL,LABEL2ID
+import os
+import sys
+# Add project root to sys.path if needed
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+from  scripts.config import LABEL_LIST, ID2LABEL,LABEL2ID
 import random
 
 # Config (could be moved to config.py)

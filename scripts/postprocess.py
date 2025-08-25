@@ -1,5 +1,5 @@
 
-from utils import family_members, occupations, family_status, prev_diagnoses, followup_reasons,impressions
+from scripts.utils import family_members, occupations, family_status, prev_diagnoses, followup_reasons,impressions
 import re
 import spacy
 from spacy.matcher import PhraseMatcher

@@ -3,7 +3,7 @@ import re
 import json
 import datetime
 import random
-from config import LABEL2ID, ID2LABEL
+from scripts.config import LABEL2ID, ID2LABEL
 import uuid
 
 def smart_tokenize(text):

@@ -1,6 +1,6 @@
 import uuid
 from dateutil.parser import parse
-from normalizer import search_cui
+from scripts.normalizer import search_cui
 
 CONFIDENCE_THRESHOLD = 0.5
 

@@ -1,8 +1,16 @@
+import os
+import sys
+# Add project root to sys.path if needed
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
 import random
 import json
-from utils import *
+from scripts.utils import *
 from sklearn.model_selection import train_test_split
-from config import LABEL2ID, ENTITY_LIST, MORE_VAL_ENTITIES
+from scripts.config import LABEL2ID, ENTITY_LIST, MORE_VAL_ENTITIES
 from templates import TEMPLATES_LIST
 from collections import defaultdict
 
