@@ -58,8 +58,14 @@ def generate_random_weight():
     return f"{weight} kg"
 
 def generate_random_height():
-    height = random.randint(120, 210)
-    return f"{height} cm"
+    height_cm = random.randint(120, 210)   
+    # Randomly choose format: cm or m
+    if random.choice([True, False]):
+        return f"{height_cm} cm"
+    else:
+        height_m = height_cm / 100
+        # Format with comma as decimal separator
+        return f"{height_m:.2f}".replace('.', ',') + " m"
 
 def generate_random_weights(count = 10):
     result = []
