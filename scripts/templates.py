@@ -26,13 +26,13 @@ arztbrief_template2 = (
 "Er habe auch berichtet, dass er eine {SYMPTOM} und {SYMPTOM} (Wortfindungsstörung und lallende Ansprache) entwickelt habe.\n" 
 "Eine {SYMPTOM} wurde auch berichtet.\n"
 "Vorerkrankungen : Er habe seit 20 Jahren {PREV_DIAGNOSIS}.IM Jahr 2018 habe er einen {PREV_DIAGNOSIS} gehabt, den konservativ behandelt wurde.\n"
-"Vegetative Anamnese ist bis auf eine {PREV_DIAGNOSIS}, die seit 5 jähren bestehe und mit {MEDICATION} eingestellt sei, unauffällig.\n"
-"Medikamente Anamnese : Er nehme die obergenannte {MEDICATION} bei bedarf ein und er nehme auch {MEDICATION} {FREQUENCY} ein.\n"
+"Vegetative Anamnese {ANAMNESE} ist bis auf eine {PREV_DIAGNOSIS}, die seit 5 jähren bestehe und mit {MEDICATION} eingestellt sei, unauffällig.\n"
+"Medikamente Anamnese : {ANAMNESE} Er nehme die obergenannte {MEDICATION} bei bedarf ein und er nehme auch {MEDICATION} {FREQUENCY} ein.\n"
 "Noxen : Er habe täglich für {SMOKING_STATUS}, bevor er sich das Rauchen abgewöhnt habe. Alkohol {ALCOHOL_CONSUMPTION}.\n" 
 "Die Frage nach {LIFESTYLE} wurde verneint.\n"
 "Soziale Anamnese : Er ist {OCCUPATION} von Beruf und ist {FAMILY_STATUS}. {PERSON} lebe mit seiner {FAMILYMEMBER} und vier {FAMILYMEMBER} zusammen.\n"
-"Familiäre Anamnese : {FAMHIST} und {FAMHIST}.\n"
-"Die Anamnese, Laborwerte und eine {PROCEDURE} weisen auf einen {DIAGNOSIS} hin. {TREATMENT} wurde nach der CT begonnen.\n"
+"Familiäre Anamnese : {ANAMNESE} {FAMHIST} und {FAMHIST}.\n"
+"Die Anamnese,{ANAMNESE} Laborwerte und eine {PROCEDURE} weisen auf einen {DIAGNOSIS} hin. {TREATMENT} wurde nach der CT begonnen.\n"
 )
 
 befundbericht_template = (
@@ -80,6 +80,9 @@ anamnesebogen_template = (
     "Vorerkrankungen: {PREV_DIAGNOSIS}, Medikamente: {MEDICATION}.\n"
     "Aktuelle Beschwerden: {SYMPTOM}.\n"
     "Körperdaten: Größe {GROESSE}, Gewicht {GEWICHT}."
+    "Vegetative Anamnese: {ANAMNESE}.\n"
+    "Soziale Anamnese: {ANAMNESE}.\n"
+
 )
 
 radiologie_template = (
@@ -96,6 +99,7 @@ laborbericht_template = (
     "{DOCUMENT_TYPE} – erstellt am {DATE}.\n"
     "Patient: {PERSON} ({GENDER}), geboren am {BIRTHDATE}, PID: {PID}.\n"
     "Untersuchende Einrichtung: {ORG}, Abteilung: {DEPARTMENT}.\n"
+    "Soziale Anamnese: {ANAMNESE}.\n"
     "Laborparameter: {LAB_RESULT}, {LAB_RESULT}, {LAB_RESULT}.\n"
     "Diagnosehinweis: {DIAGNOSIS} ({ICD10_CODE} – {ICD10_DESC}).\n"
     "Beurteilung: {IMPRESSION}, {IMPRESSION}.\n"
@@ -105,6 +109,7 @@ laborbericht_template = (
 patho_template = (
     "{DOCUMENT_TYPE} – Befunddatum: {DATE}, Pathologieabteilung: {DEPARTMENT}, Klinik: {ORG}.\n"
     "Patient: {PERSON}, {GENDER}, geb. {BIRTHDATE}, PID: {PID}.\n"
+    "Anamnese: {ANAMNESE}.\n"
     "Material: {PROCEDURE}.\n"
     "Makroskopie: {FINDING}.\n"
     "Mikroskopie: {DIAGNOSIS}, ICD-10: {ICD10_CODE} – {ICD10_DESC}.\n"
@@ -116,9 +121,11 @@ patho_template = (
 ueberweisung_template = (
     "{DOCUMENT_TYPE} – Ausgestellt am {DATE} von {DOCTOR}, {DEPARTMENT}, {ORG}.\n"
     "Patient: {PERSON}, geb. {BIRTHDATE}, PID: {PID}.\n"
+    "So {PREV_DIAGNOSIS}"
     "Zielabteilung: {DEPARTMENT}.\n"
     "Grund der Überweisung: {FOLLOWUP_REASON}.\n"
     "Vorbefunde: {PREV_DIAGNOSIS}, aktuelle Beschwerden: {SYMPTOM}.\n"
+    "Medikamente Anamnese : {ANAMNESE}\n"
     "Aktuelle Medikation: {MEDICATION}.\n"
     "Telefon: {PHONE}, Adresse: {ADDRESS}."
 )
@@ -191,6 +198,7 @@ aufnahmebogen_template = (
     "Patient: {PERSON}, {GENDER}, geboren am {BIRTHDATE}, PID: {PID}.\n"
     "Adresse: {ADDRESS}, Tel: {PHONE}, Familienstand: {FAMILY_STATUS}.\n"
     "Beschwerden: {SYMPTOM}, Vorbefunde: {PREV_DIAGNOSIS}.\n"
+    "Soziale Ananmnese: {ANAMNESE}\n"
     "Aktuelle Medikation: {MEDICATION}, Allergien: {ALLERGY}, {ALLERGY}, {ALLERGY}.\n"
     "Größe: {GROESSE}, Gewicht: {GEWICHT}, Vitalwerte: {VITALSIGNS}, {VITALSIGNS}.\n"
     "Begleitung durch: {FAMILYMEMBER}.\n"
@@ -269,27 +277,27 @@ reha_gutachten_template = (
     "{DOCUMENT_TYPE} – Antrag vom {DATE}.\n"
     "Patient: {PERSON}, geb. am {BIRTHDATE}, PID: {PID}, Beruf: {OCCUPATION}.\n"
     "Erkrankung: {DIAGNOSIS} ({ICD10_CODE} – {ICD10_DESC}), Symptome: {SYMPTOM}.\n"
+    "Familiäre Anamnese: {ANAMNESE}\n"
     "Behandlung bisher: {TREATMENT}, Medikamente: {MEDICATION}.\n"
     "Familiäre Vorbelastung: {FAMHIST}.\n"
     "Sozialmedizinische Bewertung: {IMPRESSION}.\n"
     "Empfohlene Maßnahmen: {FOLLOWUP_REQ}, Grund: {FOLLOWUP_REASON}.\n"
     "Kontaktarzt: {DOCTOR}, Klinik: {ORG}, Tel: {PHONE}. \n"
-    "Stationäre befindet sich der Patient im Zimmer {ROOM_NUMBER}."
+    "Stationäre befindet sich der Patient im Zimmer {ROOM_NUMBER}.\n"
 )
 
 complete_template = (
 
-    "{DOCUMENT_TYPE}:\n Am {DATE} stellte sich der Patient {PERSON} ({GENDER}), {GROESSE} per {GEWICHT} geboren am {BIRTHDATE}\n"
-    "Familienstand: {FAMILY_STATUS}, Symptome: {SYMPTOM}, Diagnose: {DIAGNOSIS}\n "
+    "{DOCUMENT_TYPE}:\n Am {DATE} stellte sich der Patient {PERSON} ({GENDER}), {GROESSE} per {GEWICHT} geboren am {BIRTHDATE},PID: {PID}.\n"
+    "Symptome: {SYMPTOM}, Diagnose: {DIAGNOSIS}\n "
     "Beruf: {OCCUPATION}, Medikament: {MEDICATION}, Behandlung: {TREATMENT}, "
     "Durchgeführt von {DOCTOR} in der Abteilung {DEPARTMENT}  zimmer {ROOM_NUMBER}.\n"
     "Krankenhaus: {ORG}, {ADDRESS}, Tel: {PHONE}.\n"
-    "{DOCUMENT_TYPE} vom {DATE}:\n"
-    "Patient: {PERSON} ({GENDER}), geboren am {BIRTHDATE}, PID: {PID}.\n"
     "Adresse: {ADDRESS}, Telefon: {PHONE}.\n"
     "Familienstand: {FAMILY_STATUS}, Familienmitglied: {FAMILYMEMBER}, familiäre Vorgeschichte: {FAMHIST}.\n"
+    "Vegetatite Anamnese: {ANAMNESE}\n"
     "Abteilung: {DEPARTMENT}, Krankenhaus: {ORG}.\n"
-    "Untersuchung durchgeführt von {DOCTOR} mit {DEVICE}.\n"
+    "Untersuchung durchgeführt mit {DEVICE}.\n"
     "Diagnose: {DIAGNOSIS} (ICD-10: {ICD10_CODE} - {ICD10_DESC}).\n"
     "Vorherige Diagnose: {PREV_DIAGNOSIS}.\n"
     "Symptome: {SYMPTOM}.\n"

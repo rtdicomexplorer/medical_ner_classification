@@ -1,8 +1,9 @@
 let allSamples = [];
 const ENTITY_COLORS = {
-    ALCOHOL_CONSUMPTION: "#b1a3dfff",
+    ANAMNESE:"#d1cdbdff",
     ADDRESS: "#bdd1c2ff",
     ADMISSION_DATE: "#c0c70a",
+    ALCOHOL_CONSUMPTION: "#b1a3dfff",
     ALLERGY: "#b5c4ecff",
     BIRTHDATE: "#c359cc",
     BLOOD_TYPE: "#d029a4",

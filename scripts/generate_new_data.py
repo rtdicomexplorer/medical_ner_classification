@@ -16,10 +16,11 @@ from collections import defaultdict
 
 
 entity_values = {                       
-    "ALCOHOL_CONSUMPTION": 	alcohol_consumptions,	
     "ADDRESS": 				hospital_addresses,	
     "ADMISSION_DATE": 		generate_dates(), 	
-    "ALLERGY": 				allergies,           
+    "ALCOHOL_CONSUMPTION": 	alcohol_consumptions,	
+    "ALLERGY": 				allergies, 
+    "ANAMNESE":             anamneses,          
     "BIRTHDATE":           	generate_dates(start_year=1900,end_year=2024),	
     "BLOOD_TYPE" :         	blood_types,	
     "BODY_PART":           	body_parts,	

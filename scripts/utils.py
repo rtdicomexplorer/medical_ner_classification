@@ -185,6 +185,22 @@ def paraphrase_medication_combination(entities):
 
 def paraphrase_entity(entity_type, value):
     variations = {
+        
+        "ADDRESS": [
+            f"wohnhaft in {value}",
+            f"Adresse: {value}",
+            f"anschriftlich erreichbar unter {value}",
+            f"Wohnadresse: {value}",
+            f"zu finden in {value}",
+            f"gemeldet unter {value}"
+            ],
+
+        "ADMISSION_DATE": [
+            f"Aufnahme am {value}",
+            f"Patient wurde aufgenommen am {value}",
+            f"Datum der Einweisung: {value}"
+            ],
+
         "ALCOHOL_CONSUMPTION": [
             f"Alkoholkonsum: {value}",
             f"er/sie konsumiert {value}",
@@ -200,20 +216,22 @@ def paraphrase_entity(entity_type, value):
             f"Allergische Reaktion auf {value} dokumentiert"
             ],
 
-        "ADDRESS": [
-            f"wohnhaft in {value}",
-            f"Adresse: {value}",
-            f"anschriftlich erreichbar unter {value}",
-            f"Wohnadresse: {value}",
-            f"zu finden in {value}",
-            f"gemeldet unter {value}"
+        "ANAMNESE": [
+                f"Anamnese: {value}",
+                f"Vegetative Anamnese zeigt: {value}",
+                f"Aus der Anamnese geht hervor: {value}",
+                f"Der Patient berichtet über {value}",
+                f"Vorgeschichte des Patienten: {value}",
+                f"Anamnestisch auffällig: {value}",
+                f"In der medizinischen Anamnese: {value}",
+                f"{value} wurde anamnestisch erhoben",
+                f"Anamnestisch wurden {value} beschrieben",
+                f"Anamnestisch relevante Angabe: {value}",
+                f"Medikamente Anamnese : {value}",
+                f"Soziale Anamnese: {value}",
+                f"Familiäre Anamnese: {value}"
             ],
 
-        "ADMISSION_DATE": [
-            f"Aufnahme am {value}",
-            f"Patient wurde aufgenommen am {value}",
-            f"Datum der Einweisung: {value}"
-            ],
 
         "BIRTHDATE":[
              f"geboren am: {value}",
@@ -511,7 +529,8 @@ def paraphrase_entity(entity_type, value):
             f"bekannte Vorerkrankung: {value}",
             f"bisherige Diagnose: {value}",
             f"medizinische Vorgeschichte zeigt {value}",
-            f"diagnostiziert in der Vergangenheit: {value}"
+            f"diagnostiziert in der Vergangenheit: {value}",
+            f"Vorerkrankungen: {value}"
             ],
 
         "PROCEDURE": [
@@ -591,6 +610,38 @@ def paraphrase_entity(entity_type, value):
     if entity_type in variations:
         return random.choice(variations[entity_type])
     return f"{entity_type}: {value}"
+
+
+anamneses = [
+    "nächtliche Schweißausbrüche",
+    "Schlafstörungen",
+    "verminderter Appetit",
+    "gesteigerter Appetit",
+    "vermehrter Durst",
+    "unfreiwilliger Gewichtsverlust",
+    "regelmäßige Übelkeit am Morgen",
+    "Erbrechen nach Mahlzeiten",
+    "Fieber seit drei Tagen",
+    "Schüttelfrost in der Nacht",
+    "häufiger Harndrang",
+    "Schmerzen beim Wasserlassen",
+    "Verstopfung",
+    "Durchfall",
+    "Kurzatmigkeit beim Treppensteigen",
+    "anhaltender Husten",
+    "nächtliche Atemnot",
+    "unerklärliche Hitzegefühle",
+    "regelmäßiger Schwindel",
+    "Kältegefühl in den Extremitäten",
+    "Blähungen und Völlegefühl",
+    "nächtliches Wasserlassen",
+    "Unruhe während der Nacht",
+    "plötzlicher Appetitverlust",
+    "kein Durstgefühl",
+    "unregelmäßiger Stuhlgang",
+    "nächtlicher Harndrang",
+    "unruhiger Schlaf mit häufigem Erwachen"
+]
 
 
 courses = [
@@ -768,6 +819,7 @@ symptoms = [
     "Tremor",
     "Epileptischer Anfall",
     "niedergeschlagen",
+    "Bluthochdruck"
 
     #Kardiopulmonale Symptome
     "Brustschmerzen",
@@ -1238,8 +1290,8 @@ def main():
     print(f"✔ Bereinigt und gespeichert unter: {output_path}")
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
 
 
    

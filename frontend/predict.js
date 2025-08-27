@@ -52,6 +52,29 @@
       VITALSIGNS: "#24d332"
     };
 
+
+    document.getElementById("file-input").addEventListener("change", async function() {
+      const file = this.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      // POST file to backend
+      const response = await fetch("/upload", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await response.json();
+      if(data.text){
+        document.getElementById("input-text").innerText = data.text;
+      } else {
+        alert("Failed to extract text");
+      }
+    });
+
+
     async function submitText() {
       const inputDiv = document.getElementById("input-text");
       const rawText = inputDiv.innerText;
