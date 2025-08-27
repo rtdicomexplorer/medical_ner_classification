@@ -239,3 +239,14 @@ Compare model output against labeled data
 Use seqeval, classification_report, etc.
 
 
+
+
+root-| scripts      (__init__.py,predictions.py, training.py, utils.py, config.py)
+     | backend      (__init__.py, app.py)    
+     | frontend     (index.html, predict.css, predict.js)    
+     | models       (gbert-base)    
+
+                        toolbar
+
+     column1           | column 2               | column 3
+     (input text area) |Annotated text          | Entities

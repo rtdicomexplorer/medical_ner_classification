@@ -3,7 +3,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from flask import Flask, request, jsonify, send_from_directory,send_file
-from scripts.predictions_ner import execute_predictions
+from scripts.predictions_ner import execute_predictions, ner_model
 from scripts.text_extractor import extract_text
 
 # Use absolute path for frontend directory
@@ -11,20 +11,24 @@ FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../front
 
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 
+
 @app.route("/")
 def index():
     return send_file(os.path.join(FRONTEND_DIR, "index.html"))
 
+@app.route("/load_model", methods=["POST"])
+def load_model_route():   
+    if not ner_model.is_ready():
+        ner_model.load()
+        return jsonify({"status": "Model loaded"}), 200
+    return jsonify({"status": "Model already loaded"}), 200
 
-import os
 
 @app.route("/upload", methods=["POST"])
 def upload_file():
-    print('upload called')
     uploaded_file = request.files.get("file")
     if not uploaded_file:
         return jsonify({"error": "No file uploaded"}), 400
-
     # Ensure local ./tmp folder exists
     os.makedirs("tmp", exist_ok=True)
 
@@ -48,8 +52,9 @@ def predict():
     if not text:
         return jsonify({"error": "No text provided"}), 400
 
-    raw_predictions = execute_predictions(text)
-    # Convert numpy types to Python types for JSON
+    raw_predictions =  ner_model.predict(text)
+
+
     for ent in raw_predictions:
         ent['score'] = float(ent['score'])
 

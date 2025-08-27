@@ -20,6 +20,36 @@ import html
 MODEL_PATH = "./models/gbert-base"
 OUTPUTDIR = "output"
 
+class NERModel:
+    def __init__(self):
+        self.pipeline = None
+
+    def load(self):
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+        model = AutoModelForTokenClassification.from_pretrained(MODEL_PATH)
+
+        model.config.id2label = ID2LABEL
+        model.config.label2id = LABEL2ID
+
+        self.pipeline = pipeline(
+            "ner",
+            model=model,
+            tokenizer=tokenizer,
+            aggregation_strategy="simple",
+            device=0 if torch.cuda.is_available() else -1
+        )
+
+    def predict(self, text):
+        if not self.pipeline:
+            raise RuntimeError("Model not loaded.")
+        return self.pipeline(text)
+
+    def is_ready(self):
+        return self.pipeline is not None
+
+
+ner_model = NERModel()
+
 def save_entity_comparison_html_(raw_entities, post_entities, filename="ner_comparison.html"):
     # Build lookup by span
     raw_by_span = {(e["start"], e["end"]): e for e in raw_entities}
@@ -293,18 +323,10 @@ def save_predictions(predictions, patient_id, output_dir="predictions"):
 
 def execute_predictions(text):
     # MODEL_PATH = 'deepset/gbert-base'
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
-    model = AutoModelForTokenClassification.from_pretrained(MODEL_PATH)
+    if not  ner_model.is_ready():
+        ner_model.load()
 
-    model.config.id2label = ID2LABEL
-    model.config.label2id = LABEL2ID
-    nlp = pipeline("ner", model=model, 
-                   tokenizer=tokenizer, 
-                   aggregation_strategy="simple",
-                   device=0 if torch.cuda.is_available() else -1  # 0 = CUDA, -1 = CPU
-                   )# or simple aggregation_straty=> Entity_group
-
-    return nlp(text)
+    return ner_model.predict(text)
 
 
 def main(file_path):
