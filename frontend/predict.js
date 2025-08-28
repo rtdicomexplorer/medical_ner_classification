@@ -2,8 +2,8 @@ const ENTITY_COLORS = {
   ALCOHOL_CONSUMPTION: "#b1a3df",
   ADDRESS: "#bdd1c2",
   ADMISSION_DATE: "#c0c70a",
-  ANAMNESE: "#d1cdbdff",
   ALLERGY: "#b5c4ec",
+  ANAMNESE: "#d1cdbdff",
   BIRTHDATE: "#c359cc",
   BLOOD_TYPE: "#d029a4",
   BODY_PART: "#add0e7",
@@ -57,8 +57,14 @@ const loadBtn = document.getElementById("load-btn");
 const predictBtn = document.getElementById("predict-btn");
 const clearBtn = document.getElementById("clear-btn");
 const fileInput = document.getElementById("fileInput");
+const fileUpload = document.getElementById("file-upload");
 const fileNameDisplay = document.getElementById("fileNameDisplay");
+const annotatedText = document.getElementById("annotated-text")
+const labelLegend = document.getElementById("labelLegend");
+const mainPanel =  document.getElementById("mainPanel");
 
+
+// ============ load model ============
 loadBtn.addEventListener("click", async () => {
   loadBtn.disabled = true;
   loadBtn.innerText = "Loading...";
@@ -73,7 +79,7 @@ loadBtn.addEventListener("click", async () => {
       loadBtn.innerText = "Model Loaded";
       loadBtn.disabled = true;
       predictBtn.disabled = true;
-
+      fileUpload.style.display= "block";
 
     }
   } catch (err) {
@@ -84,51 +90,8 @@ loadBtn.addEventListener("click", async () => {
   }
 });
 
-// ============ Predict ============
-predictBtn.addEventListener("click", async () => {
-  const inputText = document.getElementById("input-text").innerText;
 
-  if (!inputText.trim()) {
-    alert("Bitte Text eingeben oder hochladen.");
-    return;
-  }
-
-  predictBtn.innerText = "Predicting...";
-  predictBtn.disabled = true;
-
-  const response = await fetch("/predict", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text: inputText })
-  });
-
-  const data = await response.json();
-  const entities = data.entities || [];
-
-  renderHighlights(inputText, entities);
-  renderTable(entities);
-
-  // Nach Prediction → Clear-Button anzeigen
-  clearBtn.style.display = "inline-block";
-
-  predictBtn.innerText = "Predicted";
-  
-});
-
-// ============ Clear ============
-clearBtn.addEventListener("click", () => {
-  document.getElementById("input-text").innerText = "";
-  document.getElementById("annotated-text").innerHTML = "";
-  document.querySelector("#results-table tbody").innerHTML = "";
-
-  clearBtn.style.display = "none";
-});
-
-
-
-
-
-
+// ============ upload file ============
 fileInput.addEventListener('change', async function () {
   const file = this.files[0];
   fileNameDisplay.textContent = file ? file.name : "No file selected";
@@ -144,8 +107,7 @@ fileInput.addEventListener('change', async function () {
 
   const data = await response.json();
   if (data.text) {
-    document.getElementById('input-text').innerText = data.text;
-
+    annotatedText.innerText = data.text;
     predictBtn.disabled = false
     predictBtn.innerText = "Predict"
   } else {
@@ -153,7 +115,86 @@ fileInput.addEventListener('change', async function () {
   }
 });
 
+// ============ Predict ============
+predictBtn.addEventListener("click", async () => {
+  const text = annotatedText.innerText;
 
+  if (!text.trim()) {
+    alert("Please load a report or insert a text!");
+    return;
+  }
+
+  predictBtn.innerText = "Predicting...";
+  predictBtn.disabled = true;
+
+  const response = await fetch("/predict", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: text })
+  });
+
+  const data = await response.json();
+  const entities = data.entities || [];
+
+  
+  renderHighlights(text, entities);
+  activeEntities = entities.map(ele=>ele.entity_group);
+  renderLegend(activeEntities);
+  renderTable(entities);
+  clearBtn.style.display = "inline-block";
+  predictBtn.innerText = "Predicted";
+  
+});
+
+
+function extractEntityTypes(labelMap) {
+    const types = new Set();
+    Object.values(labelMap).forEach((label) => {
+        if (label.startsWith("B-") || label.startsWith("I-")) {
+            types.add(label.slice(2));
+        }
+    });
+    return Array.from(types).sort();
+}
+
+
+
+
+function renderHighlights_(text, entities) {
+  // Sort entities by start to process in order
+  entities.sort((a, b) => a.start - b.start);
+  let currentIndex = 0;
+
+  for (const ent of entities) {
+
+    const entityType = ent.entity_group
+       const entityText = escapeHTML(text.slice(ent.start, ent.end));
+            const span = document.createElement("span");
+            span.className = "entity";
+            span.textContent = entityText;
+            span.style.background = ENTITY_COLORS[entityType] || "#d3d3d3";
+
+     const tooltip = document.createElement("span");
+            tooltip.className = "tooltip-text";
+            tooltip.textContent = `${entityType}`;
+
+    const wrapper = document.createElement("span");
+            wrapper.className = "tooltip";
+            wrapper.style.position = "relative";
+            wrapper.style.display = "inline-block";
+
+            wrapper.appendChild(span);
+            wrapper.appendChild(tooltip);
+
+            annotatedText.append(wrapper, " ");
+
+      currentIndex = ent.end;       
+    // Append plain text before the entity
+
+  }
+
+
+}
 
 function renderHighlights(text, entities) {
   // Sort entities by start to process in order
@@ -168,18 +209,21 @@ function renderHighlights(text, entities) {
 
     const color = ENTITY_COLORS[ent.entity_group] || "#ccc";
     const entityText = escapeHTML(text.slice(ent.start, ent.end));
+    result += `   <span class="tooltip" style="position: relative; display: inline-block">`;
+    result += `   <span class="entity" style="background-color: ${color}">${entityText}</span>`;
 
-    result += `<span class="highlight" style="background-color: ${color}" title="${ent.entity_group}">${entityText}</span>`;
+    result += `<span class="tooltip-text">${ent.entity_group}</span>`;
+    result += `</span>`;
 
     currentIndex = ent.end;
   }
 
   // Add remaining text after last entity
   result += escapeHTML(text.slice(currentIndex));
-
-  //document.getElementById("input-text").innerHTML = result;
-  document.getElementById("annotated-text").innerHTML = result;
+  annotatedText.innerHTML = result;
 }
+
+
 
 function renderTable(entities) {
   const tbody = document.getElementById("results-table").querySelector("tbody");
@@ -187,7 +231,6 @@ function renderTable(entities) {
 
   entities.forEach(ent => {
     const color = ENTITY_COLORS[ent.entity_group] || "#ccc";
-
     const row = document.createElement("tr");
     row.style.backgroundColor = color;
     const cellGroup = document.createElement("td");
@@ -207,3 +250,61 @@ function escapeHTML(text) {
   div.textContent = text;
   return div.innerHTML;
 }
+
+// ============ Clear ============
+clearBtn.addEventListener("click", () => {
+  annotatedText.innerHTML = "";
+  document.querySelector("#results-table tbody").innerHTML = "";
+  labelLegend.innerHTML = "";
+  clearBtn.style.display = "none";
+});
+
+
+
+function renderLegend(activeEntityTypes = []) {
+    const types = extractEntityTypes(ID2LABEL);
+    labelLegend.innerHTML = "";
+
+    const h2= document.createElement("h2");
+    h2.innerText ="Entity types";
+
+    labelLegend.appendChild(h2);
+
+    types.forEach((type) => {
+        const color = ENTITY_COLORS[type] || "#ddd";
+        const label = document.createElement("span");
+
+        label.textContent = type;
+        label.style.background = color;
+        label.style.padding = "4px 8px";
+        label.style.borderRadius = "4px";
+        label.style.fontSize = "0.9rem";
+        label.style.color = "#333";
+        label.style.border = "1px solid #ccc";
+        label.style.marginRight = "6px";
+        label.style.display = "inline-block";
+
+        if (activeEntityTypes.includes(type)) {
+            label.style.fontWeight = "bold";
+            label.style.border = "2px solid black";  // oder z. B. "#444"
+        }
+
+        labelLegend.appendChild(label);
+    });
+}
+
+
+// Tab functionality
+document.querySelectorAll(".tab-button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+        document
+            .querySelectorAll(".tab-button")
+            .forEach((b) => b.classList.remove("active"));
+        document
+            .querySelectorAll(".tab-content")
+            .forEach((tab) => (tab.style.display = "none"));
+
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.tab).style.display = "block";
+    });
+});

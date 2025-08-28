@@ -13,8 +13,20 @@ app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 
 
 @app.route("/")
-def index():
-    return send_file(os.path.join(FRONTEND_DIR, "index.html"))
+def home_page():
+    return send_file(os.path.join(FRONTEND_DIR, "home.html"))
+
+
+
+@app.route("/predictor")
+def predictor_page():
+    return send_file(os.path.join(FRONTEND_DIR, "predictor.html"))
+
+@app.route("/editor")
+def editor_page():
+    return send_file(os.path.join(FRONTEND_DIR, "editor.html"))
+
+
 
 @app.route("/load_model", methods=["POST"])
 def load_model_route():   
