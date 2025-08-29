@@ -298,7 +298,7 @@ def __generate_dataset(n_samples,save_reports):
     count_paraphrase = 0
     for i in range(n_samples):
         try:
-            if random.random() < 0.00000001:     
+            if random.random() < 0.5:     
                 template = random.choice(TEMPLATES_LIST)
                 placeholder_counts = count_entity_placeholders(template)
                 values_dict = generate_values(entity_values, MORE_VAL_ENTITIES, placeholder_counts)
@@ -310,8 +310,8 @@ def __generate_dataset(n_samples,save_reports):
                 text = __generate_paraphrase_more_text(values)             
                 entities = __extract_entities_generalized(text, values)  
                 count_paraphrase += 1
-            tokens = smart_tokenize(text)
-            tags = __create_bio_tags_from_offsets(tokens=tokens,entities=entities, text=text)
+            tokens, offsets = smart_tokenize_with_offsets(text)  #smart_tokenize(text)           
+            tags =  create_bio_tags_from_offsets(tokens=tokens,offsets=offsets,entities= entities)# __create_bio_tags_from_offsets(tokens=tokens,entities=entities, text=text)
             tag_ids = __bio_tags_to_ids(tags, LABEL2ID)
 
             if save_reports:

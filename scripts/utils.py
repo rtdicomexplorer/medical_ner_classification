@@ -5,6 +5,52 @@ import datetime
 import random
 from scripts.config import LABEL2ID, ID2LABEL
 import uuid
+from typing import List, Tuple, Dict
+def smart_tokenize_with_offsets(text: str) -> Tuple[List[str], List[Tuple[int, int]]]:
+    pattern = r"""
+        \b\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}\b      # Dates
+        |\b\d+\.\d+\b                            # Decimal numbers
+        |\b\w+\b                                 # Words
+        |[^\w\s]                                 # Punctuation
+    """
+    tokens = []
+    offsets = []
+    for match in re.finditer(pattern, text, re.UNICODE | re.VERBOSE):
+        tokens.append(match.group())
+        offsets.append((match.start(), match.end()))
+    return tokens, offsets
+
+def create_bio_tags_from_offsets(tokens: List[str], offsets: List[Tuple[int, int]], entities: List[Dict]) -> List[str]:
+    tags = ["O"] * len(tokens)
+
+    # Entities nach Länge sortieren (längste zuerst)
+    entities = sorted(entities, key=lambda x: -(x["END"] - x["START"]))
+
+    for ent in entities:
+        ent_start = ent["START"]
+        ent_end = ent["END"]
+        ent_label = ent["ENTITY"]
+
+        matched_indices = []
+
+        for i, (tok_start, tok_end) in enumerate(offsets):
+            if tok_start >= ent_end:
+                break
+            if tok_end <= ent_start:
+                continue
+            if tok_start < ent_end and tok_end > ent_start:
+                # Nur markieren, wenn noch nicht markiert
+                if tags[i] == "O":
+                    matched_indices.append(i)
+
+        if not matched_indices:
+            continue
+
+        tags[matched_indices[0]] = f"B-{ent_label}"
+        for i in matched_indices[1:]:
+            tags[i] = f"I-{ent_label}"
+
+    return tags
 
 def smart_tokenize(text):
     # Regex to match:
@@ -19,6 +65,36 @@ def smart_tokenize(text):
         |[^\w\s]                                 # Punctuation
     """
     return re.findall(pattern, text, re.UNICODE | re.VERBOSE)
+
+def validate_ner_sample_smart(tokens, ner_tags):
+    issues = []
+
+    if len(tokens) != len(ner_tags):
+        issues.append(f"Length mismatch: {len(tokens)} tokens vs {len(ner_tags)} tags")
+        return issues  
+
+    prev_tag = "O"
+
+    for i, tag_id in enumerate(ner_tags):
+        tag = ID2LABEL.get(tag_id, "O")
+
+        if tag.startswith("I-"):
+            label = tag[2:]
+
+            if not prev_tag.endswith(label) or prev_tag.startswith("O"):
+                issues.append(f"Inconsistent I- tag at position {i}: {tag} without preceding B- or I- of same entity")
+
+        elif tag.startswith("B-") or tag == "O":
+            pass  # allowed
+
+        else:
+            issues.append(f"Invalid tag at position {i}: {tag}")
+
+        prev_tag = tag
+
+    return issues
+
+
 
 def generate_patint_id():
     return str(uuid.uuid4())[:8]
