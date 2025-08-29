@@ -4,7 +4,7 @@ const ENTITY_COLORS = {
     ADMISSION_DATE: "#c0c70a",
     ALCOHOL_CONSUMPTION: "#b1a3dfff",
     ALLERGY: "#b5c4ecff",
-    ANAMNESE:"#d1cdbdff",
+    ANAMNESE: "#d1cdbdff",
     BIRTHDATE: "#c359cc",
     BLOOD_TYPE: "#d029a4",
     BODY_PART: "#add0e7",
@@ -70,11 +70,42 @@ const labelLegend = document.getElementById("labelLegend");
 const fileNameDisplay = document.getElementById("fileNameDisplay");
 
 
+const saveAllBtn = document.getElementById("saveFile")
+const validateBtn = document.getElementById("validateButton");
+
+
+validateBtn.addEventListener("click", async () => {
+
+
+    const index = parseInt(sampleSelector.value, 10);
+    const sample = allSamples[index];
+
+    const response = await fetch("/validate_sample", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(sample),
+    });
+
+    const result = await response.json();
+    const resultSpan = document.getElementById("validationResult");
+
+    if (response.ok && result.valid) {
+        resultSpan.textContent = "✅ Sample is valid!";
+        resultSpan.style.color = "green";
+    } else {
+        resultSpan.textContent = "❌ " + (result.errors || []).join(" | ");
+        resultSpan.style.color = "red";
+    }
+
+});
+
 fileInput.addEventListener("change", async (e) => {
     const file = e.target.files[0];
     fileNameDisplay.textContent = file ? file.name : "No file selected";
     if (!file) return;
-  
+
     const text = await file.text();
     try {
         allSamples = JSON.parse(text);
@@ -103,7 +134,9 @@ fileInput.addEventListener("change", async (e) => {
         option.textContent = `Sample ${i + 1}`;
         sampleSelector.appendChild(option);
     });
-    console.log("change event")
+
+
+    saveAllBtn.style.display = "block";
     displaySample(0);
 });
 
@@ -154,6 +187,14 @@ function extractEntityTypes(labelMap) {
 
 
 function displaySample(index) {
+
+    // Reset validation output
+    const resultSpan = document.getElementById("validationResult");
+    if (resultSpan) {
+        resultSpan.textContent = "🧪 validation state";
+        //resultSpan.className = "";
+        resultSpan.style.color = "gray";
+    }
     const data = allSamples[index];
     const { tokens, ner_tags } = data;
     const activeTypes = new Set();
@@ -165,8 +206,7 @@ function displaySample(index) {
     });
     renderLegend(Array.from(activeTypes));
 
-    jsonPreview.textContent = JSON.stringify(data, null, 2);
-
+    updateJsonPreview(data);
     entityViewer.innerHTML = "";
 
     const labelData = ner_tags.map((id) => ID2LABEL[id] || "O");
@@ -234,7 +274,7 @@ function displaySample(index) {
         const tr = document.createElement("tr");
 
         const tdIndex = document.createElement("td");
-        tdIndex.textContent = ''+i;
+        tdIndex.textContent = '' + i;
 
         const tdToken = document.createElement("td");
         tdToken.textContent = token;
@@ -357,4 +397,40 @@ document.querySelectorAll(".tab-button").forEach((btn) => {
         btn.classList.add("active");
         document.getElementById(btn.dataset.tab).style.display = "block";
     });
+});
+
+
+
+function downloadCurrentSample() {
+    const selectedIndex = parseInt(sampleSelector.value, 10);
+    const sample = allSamples[selectedIndex];
+
+    const blob = new Blob([JSON.stringify(sample, null, 2)], {
+        type: "application/json",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `sample_${selectedIndex + 1}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+
+
+function updateJsonPreview(data) {
+    const formatted = JSON.stringify(data, null, 2);
+    const lines = formatted.split("\n");
+
+    const preview = document.getElementById("jsonPreview");
+    const lineNumbers = document.getElementById("jsonLineNumbers");
+
+    preview.textContent = formatted;
+    lineNumbers.textContent = lines.map((_, i) => (i + 1)).join("\n");
+}
+
+
+document.getElementById("jsonPreview").addEventListener("scroll", (e) => {
+    document.getElementById("jsonLineNumbers").scrollTop = e.target.scrollTop;
 });

@@ -3,8 +3,10 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from flask import Flask, request, jsonify, send_from_directory,send_file
-from scripts.predictions_ner import execute_predictions, ner_model
+from scripts.predictions_ner import ner_model
 from scripts.text_extractor import extract_text
+
+from scripts.utils import validate_ner_sample_smart
 
 # Use absolute path for frontend directory
 FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../frontend"))
@@ -16,15 +18,27 @@ app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 def home_page():
     return send_file(os.path.join(FRONTEND_DIR, "home.html"))
 
+#editor
+
+@app.route("/editor")
+def editor_page():
+    return send_file(os.path.join(FRONTEND_DIR, "editor.html"))
+
+@app.route("/validate_sample", methods=["POST"])
+def validate_sample():
+    data = request.get_json()
+    tokens = data.get("tokens", [])
+    ner_tags = data.get("ner_tags", [])
+
+    errors = validate_ner_sample_smart(tokens, ner_tags)
+
+    return jsonify({"valid": len(errors) == 0, "errors": errors})
 
 
 @app.route("/predictor")
 def predictor_page():
     return send_file(os.path.join(FRONTEND_DIR, "predictor.html"))
 
-@app.route("/editor")
-def editor_page():
-    return send_file(os.path.join(FRONTEND_DIR, "editor.html"))
 
 
 
