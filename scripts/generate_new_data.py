@@ -44,7 +44,7 @@ entity_values = {
     "GENDER":              	["männlich", "weiblich", "divers"],	
     "GEWICHT":             	generate_random_weights(),	
     "GROESSE":             	generate_random_heights(),	
-    "HOSPITAL_STAY":		["1","5","10","20","30"],		
+    "HOSPITAL_STAY":		generate_random_hospital_stay(),		
     "ICD10_CODE":          	list(diagnosis_icd10_map.keys()),	
     "ICD10_DESC":          	list(diagnosis_icd10_map.values()),	
     "IMMUNIZATION":        	immunizations,	
@@ -228,13 +228,17 @@ def __generate_paraphrase_more_text(values):
         if ent in values:
             # values[ent] ist Liste → paraphrasiere alle und füge hinzu
             for val in values[ent]:
-                phrases.append(paraphrase_entity(ent, val))
+                paraphrase = paraphrase_entity(ent, val)
+                #paraphrase = f"{paraphrase} {random.choice(' ', '\n')}"
+                phrases.append(paraphrase)
 
     # Paraphrase für Einmal-Entities
     for ent in ENTITY_LIST:
         if ent in values and ent not in MORE_VAL_ENTITIES:
-            phrases.append(paraphrase_entity(ent, values[ent]))
-
+            paraphrase = paraphrase_entity(ent, values[ent])
+            #paraphrase = f"{paraphrase} {random.choice(' ', '\n')}"
+            phrases.append(paraphrase)
+    
     random.shuffle(phrases)
     return " ".join(phrases)
 
@@ -294,7 +298,7 @@ def __generate_dataset(n_samples,save_reports):
     count_paraphrase = 0
     for i in range(n_samples):
         try:
-            if random.random() < 0.5:     
+            if random.random() < 0.00000001:     
                 template = random.choice(TEMPLATES_LIST)
                 placeholder_counts = count_entity_placeholders(template)
                 values_dict = generate_values(entity_values, MORE_VAL_ENTITIES, placeholder_counts)

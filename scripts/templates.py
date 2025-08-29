@@ -1,5 +1,6 @@
 arztbrief_template = (
     "Patient: {PERSON} ({GENDER}), geboren am {BIRTHDATE}, PID: {PID}.\n"
+    "Gewicht: {GEWICHT}. Große : {GROESSE}\n"
     "Adresse: {ADDRESS}, Telefon: {PHONE}, Familienstand: {FAMILY_STATUS}.\n"
     "Beruf: {OCCUPATION}, begleitet von: {FAMILYMEMBER}.\n"
     "Vorstellung wegen: {SYMPTOM}.\n"
@@ -79,7 +80,7 @@ anamnesebogen_template = (
     "Familiäre Erkrankungen: {FAMHIST}.\n"
     "Vorerkrankungen: {PREV_DIAGNOSIS}, Medikamente: {MEDICATION}.\n"
     "Aktuelle Beschwerden: {SYMPTOM}.\n"
-    "Körperdaten: Größe {GROESSE}, Gewicht {GEWICHT}."
+    "Körperdaten: Größe {GROESSE}, Gewicht: {GEWICHT}.\n"
     "Vegetative Anamnese: {ANAMNESE}.\n"
     "Soziale Anamnese: {ANAMNESE}.\n"
 
@@ -311,7 +312,7 @@ complete_template = (
     "Lebensstil: {LIFESTYLE}.\n"
     "Vitalparameter: {VITALSIGNS}.\n"
     "Folgegrund: {FOLLOWUP_REASON}, Folgeanforderung: {FOLLOWUP_REQ}.\n"
-    "Gewicht: {GEWICHT}, Größe: {GROESSE}.\n"
+    "Gewicht : {GEWICHT}, Größe: {GROESSE}.\n"
 )
 
 

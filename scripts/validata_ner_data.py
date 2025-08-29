@@ -38,13 +38,13 @@ def run_validation(json_path, max_errors=5):
         if issues:
             total_errors += 1
             print(f"\n❌ Sample #{idx} has issues:")
-            for i, (t, tag_id) in enumerate(zip(tokens, ner_tags)):
-                print(f"{i:>2}: {t:15} → {ID2LABEL.get(tag_id, '?')}")
+            # for i, (t, tag_id) in enumerate(zip(tokens, ner_tags)):
+            #     print(f"{i:>2}: {t:15} → {ID2LABEL.get(tag_id, '?')}")
             print("⚠️  Problems:", issues)
 
-            if total_errors >= max_errors:
-                print(f"\n⚠️ Stopping early after {max_errors} problematic samples.")
-                break
+            # if total_errors >= max_errors:
+            #     print(f"\n⚠️ Stopping early after {max_errors} problematic samples.")
+            #     break
 
     if total_errors == 0:
         print("✅ No label alignment issues found!")
@@ -53,4 +53,4 @@ def run_validation(json_path, max_errors=5):
 
 
 if __name__ == "__main__":
-    run_validation("./data/test.json")
+    run_validation("./data/all_data.json")

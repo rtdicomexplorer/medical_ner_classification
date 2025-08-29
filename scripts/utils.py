@@ -51,7 +51,13 @@ def generate_dates(count=10,start_year=2015, end_year=2024):
     return result
 
 
-
+def generate_random_hospital_stay(count = 20):
+    result = []
+    for _ in range(count):
+        num = random.randint(2,30)
+        typ = random.choice([ f"für {num} Tage", f" bis {num} Woche", f"max {num} Monate", f"{num} Tage", f" {num} Woche", f"{num} Monate"])    
+        result.append(f"{typ}")
+    return result
 
 def generate_random_weight():
     weight = round(random.uniform(19, 150), 1)
@@ -402,11 +408,13 @@ def paraphrase_entity(entity_type, value):
             f"er/sie wiegt {value}",
             f"das Gewicht beträgt {value}",
             f"das Körpergewicht liegt bei {value}",
-            f"Gewicht: {value}"
+            f"Gewicht: {value}",
+            f"Gewicht : {value}"
             ],
 
         "GROESSE":[
             f"Größe: {value}",
+            f"Größe : {value}",
             f"er/sie ist {value} groß",
             f"die Körpergröße beträgt {value}",
             f"die Größe ist {value}",
@@ -819,7 +827,7 @@ symptoms = [
     "Tremor",
     "Epileptischer Anfall",
     "niedergeschlagen",
-    "Bluthochdruck"
+    "Bluthochdruck",
 
     #Kardiopulmonale Symptome
     "Brustschmerzen",

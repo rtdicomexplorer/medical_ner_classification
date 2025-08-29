@@ -233,6 +233,9 @@ function displaySample(index) {
     tokens.forEach((token, i) => {
         const tr = document.createElement("tr");
 
+        const tdIndex = document.createElement("td");
+        tdIndex.textContent = ''+i;
+
         const tdToken = document.createElement("td");
         tdToken.textContent = token;
 
@@ -320,7 +323,7 @@ function displaySample(index) {
         });
         tdDelete.appendChild(btnDelete);
 
-        tr.append(tdToken, tdId, tdLabel, tdDelete);
+        tr.append(tdIndex, tdToken, tdId, tdLabel, tdDelete);
         tokenTableBody.appendChild(tr);
     });
 }
