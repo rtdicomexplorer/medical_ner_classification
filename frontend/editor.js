@@ -1,3 +1,5 @@
+
+let currentlyHighlightedType = null;
 let allSamples = [];
 const ENTITY_COLORS = {
     ADDRESS: "#bdd1c2ff",
@@ -70,8 +72,33 @@ const labelLegend = document.getElementById("labelLegend");
 const fileNameDisplay = document.getElementById("fileNameDisplay");
 
 
-const saveAllBtn = document.getElementById("saveFile")
+const saveAllBtn = document.getElementById("saveFile");
 const validateBtn = document.getElementById("validateButton");
+
+const saveSampleAsTextBtn = document.getElementById("save-sample-text")
+
+saveSampleAsTextBtn.addEventListener("click", async () => {
+
+
+    if (currentSampleAsText !== '') {
+        const blob = new Blob([currentSampleAsText], { type: "text/plain" });
+
+        // Create a temporary link element
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "sample.txt"; // File name
+
+        // Trigger the download
+        document.body.appendChild(link);
+        link.click();
+
+        // Cleanup
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+    }
+
+
+});
 
 
 validateBtn.addEventListener("click", async () => {
@@ -144,7 +171,23 @@ sampleSelector.addEventListener("change", () => {
     const idx = parseInt(sampleSelector.value, 10);
     displaySample(idx);
 });
+function removeEntityHighlights() {
+    console.log('removeEntityHighlights')
+    document.querySelectorAll(".entity").forEach((el) => {
+        el.classList.remove("highlighted-entity");
+    });
+}
 
+function highlightEntitiesOfType(type) {
+    console.log('highlightEntitiesOfType', type)
+    removeEntityHighlights(); // Clear previous highlights
+
+    document.querySelectorAll(".entity").forEach((el) => {
+        if (el.dataset.entityType === type) {
+            el.classList.add("highlighted-entity");
+        }
+    });
+}
 
 function renderLegend(activeEntityTypes = []) {
     const types = extractEntityTypes(ID2LABEL);
@@ -163,16 +206,44 @@ function renderLegend(activeEntityTypes = []) {
         label.style.border = "1px solid #ccc";
         label.style.marginRight = "6px";
         label.style.display = "inline-block";
-
         if (activeEntityTypes.includes(type)) {
-            label.style.fontWeight = "bold";
-            label.style.border = "2px solid black";  // oder z. B. "#444"
+            label.classList.add("active-legend");
+            //label.style.fontWeight = "bold";
+            label.style.border = "2px solid black";
+
+            label.addEventListener("click", () => {
+                if (currentlyHighlightedType === type) {
+                    // Unselect if already selected
+                    removeEntityHighlights();
+                    label.style.fontWeight = "";
+                    currentlyHighlightedType = null;
+                } else {
+                    // Highlight new type
+                    highlightEntitiesOfType(type);
+                    currentlyHighlightedType = type;
+                    label.classList.add("active-legend");
+                    label.style.fontWeight = "bold";
+                }
+            });
+
+        } else {
+            label.classList.add("inactive-legend");
         }
 
         labelLegend.appendChild(label);
     });
 }
 
+function highlightEntitiesByType(entityType) {
+    document.querySelectorAll(".entity").forEach(span => {
+        const type = span.getAttribute("data-entity");
+        if (!entityType || type === entityType) {
+            span.classList.add("highlighted");
+        } else {
+            span.classList.remove("highlighted");
+        }
+    });
+}
 
 
 function extractEntityTypes(labelMap) {
@@ -188,6 +259,8 @@ function extractEntityTypes(labelMap) {
 
 function displaySample(index) {
 
+    var text = [];
+    currentSampleAsText = "";
     // Reset validation output
     const resultSpan = document.getElementById("validationResult");
     if (resultSpan) {
@@ -215,7 +288,6 @@ function displaySample(index) {
     let i = 0;
     while (i < tokens.length) {
         const label = labelData[i];
-
         if (label === "O") {
             container.append(document.createTextNode(tokens[i] + " "));
             i++;
@@ -237,9 +309,11 @@ function displaySample(index) {
             // Sichtbarer Text
             // ... im while-Block, wenn ein Entity erkannt wird
             const span = document.createElement("span");
+            span.dataset.entityType = entityType;
             span.className = "entity";
             span.textContent = phrase;
             span.style.background = ENTITY_COLORS[entityType] || "#d3d3d3";
+            span.setAttribute("data-entity", entityType);
 
             // Tooltip Text (Option 2)
             const tooltip = document.createElement("span");
@@ -267,10 +341,12 @@ function displaySample(index) {
 
     entityViewer.appendChild(container);
 
+
     const tokenTableBody = document.getElementById("tokenTableBody");
     tokenTableBody.innerHTML = "";
 
     tokens.forEach((token, i) => {
+        text.push(tokens[i]);
         const tr = document.createElement("tr");
 
         const tdIndex = document.createElement("td");
@@ -287,13 +363,18 @@ function displaySample(index) {
 
         const currentLabel = ID2LABEL[ner_tags[i]] || "O";
 
+
         Object.entries(ID2LABEL).forEach(([id, label]) => {
             const option = document.createElement("option");
             option.value = id;
             option.textContent = label;
+            const type = label.split('-')[1];
             if (label === currentLabel) option.selected = true;
+            option.style.backgroundColor = ENTITY_COLORS[type] || "#ddd";
             select.appendChild(option);
         });
+        const selectedOption = select.options[select.selectedIndex];
+        select.style.backgroundColor = selectedOption.style.backgroundColor;
 
         select.addEventListener("change", () => {
             const oldTag = data.ner_tags[i];
@@ -345,7 +426,8 @@ function displaySample(index) {
                     j++;
                 }
             }
-
+            const selectedOption = select.options[select.selectedIndex];
+            select.style.backgroundColor = selectedOption.style.backgroundColor;
             displaySample(index);
         });
 
@@ -366,7 +448,15 @@ function displaySample(index) {
         tr.append(tdIndex, tdToken, tdId, tdLabel, tdDelete);
         tokenTableBody.appendChild(tr);
     });
+    currentSampleAsText = text.join(' ');
+    console.log(currentSampleAsText);
+    currentlyHighlightedType = null;
+    removeEntityHighlights();
+
 }
+
+let currentSampleAsText = "";
+
 
 function getKeyByValue(obj, value) {
     return Object.keys(obj).find((key) => obj[key] === value);
