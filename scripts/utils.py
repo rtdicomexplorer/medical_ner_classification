@@ -6,6 +6,22 @@ import random
 from scripts.config import LABEL2ID, ID2LABEL
 import uuid
 from typing import List, Tuple, Dict
+
+
+def generate_ner_data(text,entities):
+    tokens, offsets = smart_tokenize_with_offsets(text)  #smart_tokenize(text)           
+    tags =  create_bio_tags_from_offsets(tokens=tokens,offsets=offsets,entities= entities)# __create_bio_tags_from_offsets(tokens=tokens,entities=entities, text=text)
+    tag_ids = bio_tags_to_ids(tags, LABEL2ID)
+    dataset = {
+        "tokens": tokens,
+        "ner_tags": tag_ids
+    }
+    return dataset
+
+
+def bio_tags_to_ids(tags, label2id):
+    return [label2id.get(tag, 0) for tag in tags]
+
 def smart_tokenize_with_offsets(text: str) -> Tuple[List[str], List[Tuple[int, int]]]:
     pattern = r"""
         \b\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}\b      # Dates
@@ -24,12 +40,12 @@ def create_bio_tags_from_offsets(tokens: List[str], offsets: List[Tuple[int, int
     tags = ["O"] * len(tokens)
 
     # Entities nach Länge sortieren (längste zuerst)
-    entities = sorted(entities, key=lambda x: -(x["END"] - x["START"]))
+    entities = sorted(entities, key=lambda x: -(x["end"] - x["start"]))
 
     for ent in entities:
-        ent_start = ent["START"]
-        ent_end = ent["END"]
-        ent_label = ent["ENTITY"]
+        ent_start = ent["start"]
+        ent_end = ent["end"]
+        ent_label = ent["entity_group"]
 
         matched_indices = []
 
@@ -1031,7 +1047,7 @@ medications = [
     "Infliximab"
 ]
 
-treatments = ["Sauerstofftherapie", "Operation", "Chemotherapie", "Physiotherapie"]
+treatments = ["Sauerstofftherapie", "Operation", "Chemotherapie", "Physiotherapie", "Schlafmedikamente"]
 lab_results = ["Hb 13.5 g/dL", "Blutzucker 110 mg/dL", "Cholesterin 200 mg/dL","Glukose: 110 mg/dL"]
 findings =[ "Infiltrat in der rechten Lunge"  , 
             "Herzvergrößerung", 
@@ -1089,8 +1105,6 @@ occupations = [
   "Lehrer", "Ärztin", "Ingenieur", "Friseur", "Journalist", "Sekretärin",
   "Arzt", "Ingenieur", "Polizist", "Koch", "Pfleger", "Krankenschwester", 
   "Techniker", "Elektriker", "Kaufmann","Kauffrau", "Projektmanager"
-
-
 ]
 
 family_members = [
@@ -1154,7 +1168,6 @@ document_types = [
 
 family_status = ["verheiratet", "geschieden", "verwitwet", "ledig", "getrennt", "in einer Beziehung", "alleinstehend"]
 
-
 def normalize_token(token):
     return unicodedata.normalize("NFKC", token.lower())
 
@@ -1163,7 +1176,6 @@ def __merge_date_tokens(tokens, tags):
     merged_tags = []
     i = 0
     while i < len(tokens):
-        # Datum: 18 . 10 . 2007
         if (
             i + 4 < len(tokens)
             and re.fullmatch(r"\d{1,2}", tokens[i])
@@ -1200,12 +1212,10 @@ def __merge_date_tokens(tokens, tags):
                 merged_tags.append(tags[i])
                 i += 3
                 continue
-
         # Kein spezielles Format → Standard übernehmen
         merged_tokens.append(tokens[i])
         merged_tags.append(tags[i])
         i += 1
-
     return merged_tokens, merged_tags
 
 def is_numeric_or_code(token):
@@ -1315,19 +1325,14 @@ def __generate_filtered_stopwords(data, id2label, threshold=0.95):
 
 def __clean_ner_tags(oldtokens, ner_tags, stop_words):
     #clean_tags = ner_tags.copy()
-
     tokens, clean_tags = __merge_date_tokens(oldtokens, ner_tags)
-
     n = len(tokens)
 
     for i in range(n):
         label_id = clean_tags[i]
         label = ID2LABEL[label_id]
         token = normalize_token(tokens[i])  # <- normalize hier auch
-
-   
        
-
         if token in stop_words:
             clean_tags[i] = LABEL2ID["O"]
             continue
@@ -1344,7 +1349,6 @@ def __clean_ner_tags(oldtokens, ner_tags, stop_words):
             prev_label = ID2LABEL[clean_tags[i - 1]]
             if prev_label.startswith(("B-", "I-")) and prev_label.endswith(entity):
                 clean_tags[i] = LABEL2ID.get("I-" + entity, label_id)
-
     return tokens,clean_tags
 
 
@@ -1364,13 +1368,11 @@ def main():
     # Lade Daten
     data_path = "./data/train.json"
     output_path = "dein_datensatz_cleaned2.json"
-
     with open(data_path, "r", encoding="utf-8") as f:
         data = json.load(f)
     cleardata = refresh_and_clean_ner_labels(data,ID2LABEL, 0.95)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(cleardata, f, indent=2, ensure_ascii=False)
-
     print(f"✔ Bereinigt und gespeichert unter: {output_path}")
 
 

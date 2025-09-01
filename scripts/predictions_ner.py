@@ -1,25 +1,23 @@
 import os
 import sys
+import json
+import torch
+from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
+
 # Add project root to sys.path if needed
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from scripts.text_extractor import extract_text  # ✅ now works both ways
-
-import json
-import torch
-from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
+from scripts.text_extractor import extract_text 
+from scripts.utils import generate_ner_data
 
 from scripts.postprocess import postprocess_entities  # Your custom postprocessing
 from scripts.ner_to_fhir import map_ner_to_fhir    # Your mapping from NER to FHIR
 from scripts.config import ID2LABEL,LABEL2ID
-from pathlib import Path
-import html
 MODEL_PATH = "./models/gbert-base"
 OUTPUTDIR = "output"
-
 class NERModel:
     def __init__(self):
         self.pipeline = None
@@ -35,7 +33,7 @@ class NERModel:
             "ner",
             model=model,
             tokenizer=tokenizer,
-            aggregation_strategy="simple",
+            aggregation_strategy="first",
             device=0 if torch.cuda.is_available() else -1
         )
 
@@ -47,157 +45,9 @@ class NERModel:
     def is_ready(self):
         return self.pipeline is not None
 
-
 ner_model = NERModel()
 
-def save_entity_comparison_html_(raw_entities, post_entities, filename="ner_comparison.html"):
-    # Build lookup by span
-    raw_by_span = {(e["start"], e["end"]): e for e in raw_entities}
-    post_by_span = {(e["start"], e["end"]): e for e in post_entities}
-
-    all_spans = sorted(set(raw_by_span.keys()).union(post_by_span.keys()))
-
-    def render_table(entities_by_span, compare_to, direction):
-        rows = ""
-        for span in all_spans:
-            ent = entities_by_span.get(span)
-            other = compare_to.get(span)
-
-            if not ent:
-                # Entity missing in this version = added/removed
-                continue
-
-            word = html.escape(ent["word"])
-            label = html.escape(ent["entity_group"])
-            score = f'{ent["score"]:.3f}'
-            span_str = f'{span[0]}, {span[1]}'
-
-            # Defaults
-            word_class = label_class = score_class = row_class = ""
-
-            if not other:
-                row_class = "added" if direction == "post" else "removed"
-            else:
-                # Compare fields
-                if ent["word"] != other["word"]:
-                    word_class = "changed"
-                if ent["entity_group"] != other["entity_group"]:
-                    label_class = "changed"
-                if round(ent["score"], 3) != round(other["score"], 3):
-                    score_class = "changed"
-
-            rows += (
-                f"<tr class='{row_class}'>"
-                f"<td class='{word_class}'>{word}</td>"
-                f"<td class='{label_class}'>{label}</td>"
-                f"<td class='{score_class}'>{score}</td>"
-                f"<td>{span_str}</td>"
-                f"</tr>\n"
-            )
-        return rows
-
-    html_content = f"""
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <title>NER Vergleich</title>
-    <style>
-        body {{
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f9f9f9;
-            color: #333;
-        }}
-        h1 {{
-            text-align: center;
-            margin-bottom: 40px;
-        }}
-        .container {{
-            display: flex;
-            gap: 2%;
-            justify-content: space-between;
-        }}
-        .table-wrapper {{
-            width: 48%;
-            background: #fff;
-            padding: 15px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            border-radius: 8px;
-            overflow-x: auto;
-        }}
-        table {{
-            border-collapse: collapse;
-            width: 100%;
-        }}
-        th, td {{
-            border: 1px solid #ccc;
-            padding: 8px 12px;
-            text-align: left;
-            white-space: nowrap;
-        }}
-        th {{
-            background-color: #eaeaea;
-            position: sticky;
-            top: 0;
-            z-index: 1;
-        }}
-        tr:hover {{
-            background-color: #f1f1f1;
-        }}
-        h2 {{
-            margin-top: 0;
-            font-size: 1.2em;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 5px;
-        }}
-        .changed {{
-            background-color: #ffe0e0;
-            font-weight: bold;
-        }}
-        .added {{
-            background-color: #e0ffe0;
-            font-style: italic;
-        }}
-        .removed {{
-            background-color: #fce5cd;
-            font-style: italic;
-        }}
-    </style>
-</head>
-<body>
-    <h1>NER Entity Vergleich</h1>
-    <div class="container">
-        <div class="table-wrapper">
-            <h2>Raw Entities</h2>
-            <table>
-                <thead>
-                    <tr><th>Text</th><th>Label</th><th>Score</th><th>Span</th></tr>
-                </thead>
-                <tbody>
-                    {render_table(raw_by_span, post_by_span, direction="raw")}
-                </tbody>
-            </table>
-        </div>
-        <div class="table-wrapper">
-            <h2>Postprozessierte Entities</h2>
-            <table>
-                <thead>
-                    <tr><th>Text</th><th>Label</th><th>Score</th><th>Span</th></tr>
-                </thead>
-                <tbody>
-                    {render_table(post_by_span, raw_by_span, direction="post")}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</body>
-</html>
-"""
-    Path(filename).write_text(html_content, encoding="utf-8")
-    print(f"\nHTML compare saved to {filename}")
-
-def save_entity_comparison_html(raw_entities, post_entities, filename="ner_comparison.html"):
+def __save_entity_comparison_html(raw_entities, post_entities, filename="ner_comparison.html"):
     from pathlib import Path
     import html
 
@@ -312,21 +162,20 @@ def save_entity_comparison_html(raw_entities, post_entities, filename="ner_compa
     print(f"\nHTML merged comparison saved to {filename}")
 
 
-
-def save_predictions(predictions, patient_id, output_dir="predictions"):
+def __save_predictions(predictions, file_name, output_dir="predictions"):
     os.makedirs(output_dir, exist_ok=True)
-    path = os.path.join(output_dir, f"{patient_id}.json")
+    path = os.path.join(output_dir, f"{file_name}.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(predictions, f, indent=2, ensure_ascii=False)
     print(f"✅ Predictions saved to {path}")
 
 
-def execute_predictions(text):
+def __execute_predictions(text):
     # MODEL_PATH = 'deepset/gbert-base'
     if not  ner_model.is_ready():
         ner_model.load()
-
     return ner_model.predict(text)
+
 
 
 def main(file_path):
@@ -335,35 +184,32 @@ def main(file_path):
     
     report_file_name, _ = os.path.splitext(report_file_name) 
 
-    print (report_file_name)
     print(f"Extracting text from {file_path} ...")
     text = extract_text(file_path)
-    print(f"Text extracted (first 500 chars):\n{text[:500]}")
-    print(f"\n=============================================\n")
-    # text = "Patient Otto Kromberger leidet an Kopfschmerzen."
+    predictions = __execute_predictions(text)
+    ner_data = generate_ner_data(text, predictions)
+    dataset = []   
+    dataset.append(ner_data)
 
-    predictions = execute_predictions(text)
     for ent in predictions:
         entity_type = ent.get("entity_group", ent.get("entity"))
         # print(ent)
         print(f"Entity: '{ent['word']}'  |  Type: {entity_type}  |  Score: {ent['score']:.3f}")
     #postprocess the entities to make them clean...
-    clean_entities = postprocess_entities(predictions)
+    cleaned_entities = postprocess_entities(predictions)
 
-    save_predictions(clean_entities,report_file_name)
-
-    print("\n--- After postprocessing ---")
-    for ent in clean_entities:
-        entity_type = ent.get("entity_group", ent.get("entity"))
-        print(f"Entity: '{ent['word']}'  |  Type: {entity_type}  |  Score: {ent['score']:.3f}  |  Span: ({ent['start']}, {ent['end']})")
+    __save_predictions(cleaned_entities,report_file_name)
 
     os.makedirs(OUTPUTDIR, exist_ok=True)
     
     output_html = os.path.join(OUTPUTDIR, f"compare_postprocessing_{report_file_name}.html")  
     if os.path.exists(output_html):
         os.remove(output_html)
-    save_entity_comparison_html(predictions, clean_entities,output_html)
+    __save_entity_comparison_html(predictions, cleaned_entities,output_html)
 
+    output_ner_file = os.path.join(OUTPUTDIR,f"ner_{report_file_name}.json")
+    with open(output_ner_file, "w", encoding="utf-8") as f:
+        json.dump(dataset, f, indent=2, ensure_ascii=False)
 
 
 if __name__ == "__main__":

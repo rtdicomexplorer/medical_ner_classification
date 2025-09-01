@@ -96,8 +96,6 @@ def __set_seed(seed=42):
 
 def main():
     datasets = load_dataset("json", data_files=DATA_FILES)
-
-
     batch_size = 4
     learning_rate = 3e-5
     device = "cuda" if torch.cuda.is_available() else "cpu"

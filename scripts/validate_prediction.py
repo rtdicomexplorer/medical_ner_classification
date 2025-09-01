@@ -1,19 +1,22 @@
-# evaluate_ner.py
-
-
-
-# run:  python evaluate_ner.py
 
 import json
+import os
+import sys
 from sklearn.metrics import classification_report
 from seqeval.metrics import precision_score, recall_score, f1_score, classification_report as seqeval_classification_report
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
-from postprocess import postprocess_entities  # import your function here
-from config import LABEL_LIST
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import confusion_matrix
+from typing import List, Dict, Tuple
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+from scripts.postprocess import postprocess_entities  # import your function here
+from scripts.config import LABEL_LIST
 MODEL_PATH = "./models/clinicalbert-ner"
+
 def plot_confusion_matrix(y_true, y_pred, labels=None, ignore_label="O"):
     # Flatten sequences
     y_true_flat = [label for seq in y_true for label in seq]
@@ -41,7 +44,7 @@ def plot_confusion_matrix(y_true, y_pred, labels=None, ignore_label="O"):
 def load_pipeline():
     tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
     model = AutoModelForTokenClassification.from_pretrained(MODEL_PATH)
-    return pipeline("ner", model=model, tokenizer=tokenizer, aggregation_strategy="simple")
+    return pipeline("ner", model=model, tokenizer=tokenizer, aggregation_strategy="first")
 
 def align_labels(tokens, true_tags, pred_entities):
     """
@@ -101,8 +104,6 @@ def evaluate_ner(dataset_path, confidence_threshold=0.6):
     print(f"F1-score:  {f1_score(all_true, all_pred):.3f}")
     plot_confusion_matrix(all_true, all_pred, labels=LABEL_LIST, ignore_label="O")
 
-
-from typing import List, Dict, Tuple
 
 def load_entities(file_path: str) -> List[Dict]:
     with open(file_path, "r", encoding="utf-8") as f:

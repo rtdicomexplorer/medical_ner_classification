@@ -11,25 +11,6 @@ if PROJECT_ROOT not in sys.path:
 
 from utils import validate_ner_sample_smart
 
-def __validate_ner_sample(tokens, ner_tags):
-    problems = []
-
-    if len(tokens) != len(ner_tags):
-        problems.append(f"Length mismatch: {len(tokens)} tokens vs {len(ner_tags)} tags")
-
-    # Check for BIO format consistency
-    for i, tag_id in enumerate(ner_tags):
-        tag = ID2LABEL.get(tag_id, "O")
-
-        if tag.startswith("I-"):
-            if i == 0 or ID2LABEL.get(ner_tags[i - 1], "O")[2:] != tag[2:]:
-                problems.append(f"Inconsistent I- tag at position {i}: {tag} without preceding B-")
-
-        if tag_id < 0 or tag_id >= len(ID2LABEL):
-            problems.append(f"Invalid label ID at position {i}: {tag_id}")
-
-    return problems
-
 
 def run_validation(json_path, max_errors=5, show_tokens=False):
     with open(json_path, "r", encoding="utf-8") as f:
@@ -60,8 +41,6 @@ def run_validation(json_path, max_errors=5, show_tokens=False):
         print("✅ No label alignment issues found!")
     else:
         print(f"\n🚨 Found {total_errors} samples with alignment problems.")
-
-
 
 
 if __name__ == "__main__":

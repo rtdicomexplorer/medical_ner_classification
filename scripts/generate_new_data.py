@@ -69,41 +69,6 @@ entity_values = {
     "TREATMENT":			treatments,		        
     "VITALSIGNS":          	vitalsigns
 }
-
-def __create_bio_tags_from_offsets(tokens, entities, text):
-    tags = ["O"] * len(tokens)
-
-    # Baue eine Zuordnung von Zeichen-Offsets zu Token-Indices
-    char_to_token = {}
-    current_char = 0
-    for idx, token in enumerate(tokens):
-        while current_char < len(text) and text[current_char].isspace():
-            current_char += 1  # Leerzeichen überspringen
-        for _ in token:
-            char_to_token[current_char] = idx
-            current_char += 1
-
-    for ent in entities:
-        ent_start = ent["START"]
-        ent_end = ent["END"]
-        ent_label = ent["ENTITY"]
-
-        # Finde die Token-Indices für Start und Ende
-        token_indices = set()
-        for i in range(ent_start, ent_end):
-            if i in char_to_token:
-                token_indices.add(char_to_token[i])
-
-        if not token_indices:
-            continue  # keine Token gefunden → skip
-
-        token_indices = sorted(token_indices)
-        tags[token_indices[0]] = f"B-{ent_label}"
-        for idx in token_indices[1:]:
-            tags[idx] = f"I-{ent_label}"
-
-    return tags
-
 def __extract_entities__(text, values):
     ents = []
     for label, value in values.items():
@@ -113,14 +78,13 @@ def __extract_entities__(text, values):
             ents.append({"ENTITY": label,"START":start, "END":end, "VALUE":value})
     return ents
 
-
 def __create_sample_more_text():
     sample = {}
-    # Einmalige Entities - wähle einen Wert
+    # once Entities - random a value
     for ent in ENTITY_LIST:
         if ent in entity_values:
             sample[ent] = random.choice(entity_values[ent])
-    # Mehrfachwerte Entities - wähle eine Liste von Werten
+    # more time Entities - random value list
     for ent in MORE_VAL_ENTITIES:
         if ent in entity_values:
             sample[ent] = random.sample(entity_values[ent], 
@@ -178,10 +142,10 @@ def __extract_entities_generalized(text, values):
                     
                     if (span_start, span_end) not in used_spans:
                         ents.append({
-                            "ENTITY": label,
-                            "START": span_start,
-                            "END": span_end,
-                            "VALUE": val_str
+                            "entity_group": label,
+                            "start": span_start,
+                            "end": span_end,
+                            "word": val_str
                         })
                         used_spans.add((span_start, span_end))
                         found = True
@@ -189,36 +153,6 @@ def __extract_entities_generalized(text, values):
                 if found:
                     break  # gehe zur nächsten Value
     return ents
-
-
-def __extract_entities_smart(text, values):
-    ents = []
-    used_spans = set()
-
-    for label, value in values.items():
-        value_list = value if isinstance(value, list) else [value]
-
-        for val in value_list:
-            val_str = str(val).strip()
-            if not val_str:
-                continue
-
-            for match in re.finditer(re.escape(val_str), text):
-                start, end = match.span()
-                if (start, end) not in used_spans:
-                    ents.append({
-                        "ENTITY": label,
-                        "START": start,
-                        "END": end,
-                        "VALUE": val_str
-                    })
-                    used_spans.add((start, end))
-                    break  # Nur das erste Vorkommen pro Wert
-    return ents
-
-
-def __bio_tags_to_ids(tags, label2id):
-    return [label2id.get(tag, 0) for tag in tags]
 
 def __generate_paraphrase_more_text(values):
     phrases = []
@@ -242,9 +176,7 @@ def __generate_paraphrase_more_text(values):
     random.shuffle(phrases)
     return " ".join(phrases)
 
-
-
-def count_entity_placeholders(template):
+def __count_entity_placeholders(template):
    
     pattern = r"{(\w+)}"
     counts = defaultdict(int)
@@ -252,8 +184,7 @@ def count_entity_placeholders(template):
         counts[match] += 1
     return counts
 
-
-def generate_values(entity_values, more_val_entities, placeholder_counts):
+def __generate_values(entity_values, more_val_entities, placeholder_counts):
     values_for_template = {}
 
     for entity, count in placeholder_counts.items():
@@ -292,7 +223,6 @@ def __fill_template(template, values_dict):
     return filled
 
 def __generate_dataset(n_samples,save_reports):
-    import os
     dataset = []
     count_template = 0
     count_paraphrase = 0
@@ -300,8 +230,8 @@ def __generate_dataset(n_samples,save_reports):
         try:
             if random.random() < 0.5:     
                 template = random.choice(TEMPLATES_LIST)
-                placeholder_counts = count_entity_placeholders(template)
-                values_dict = generate_values(entity_values, MORE_VAL_ENTITIES, placeholder_counts)
+                placeholder_counts = __count_entity_placeholders(template)
+                values_dict = __generate_values(entity_values, MORE_VAL_ENTITIES, placeholder_counts)
                 text =  __fill_template(template, values_dict)
                 entities = __extract_entities_generalized(text, values_dict)   
                 count_template +=1
@@ -310,9 +240,9 @@ def __generate_dataset(n_samples,save_reports):
                 text = __generate_paraphrase_more_text(values)             
                 entities = __extract_entities_generalized(text, values)  
                 count_paraphrase += 1
-            tokens, offsets = smart_tokenize_with_offsets(text)  #smart_tokenize(text)           
-            tags =  create_bio_tags_from_offsets(tokens=tokens,offsets=offsets,entities= entities)# __create_bio_tags_from_offsets(tokens=tokens,entities=entities, text=text)
-            tag_ids = __bio_tags_to_ids(tags, LABEL2ID)
+            # tokens, offsets = smart_tokenize_with_offsets(text)  #smart_tokenize(text)           
+            # tags =  create_bio_tags_from_offsets(tokens=tokens,offsets=offsets,entities= entities)# __create_bio_tags_from_offsets(tokens=tokens,entities=entities, text=text)
+            # tag_ids = bio_tags_to_ids(tags, LABEL2ID)
 
             if save_reports:
                 filename = f"./txt_reports/report_{i+1}.txt"
@@ -320,16 +250,13 @@ def __generate_dataset(n_samples,save_reports):
                 with open(filename, "w", encoding="utf-8") as f:
                     f.write(text)
 
-
                 entity_filename = f"./entities/entity_{i+1}.json"
                 os.makedirs(os.path.dirname(entity_filename), exist_ok=True)
                 with open(entity_filename, 'w',encoding="utf-8") as f:
                     json.dump(entities, f,ensure_ascii=False, indent=4) 
 
-            dataset.append( {
-                "tokens": tokens,
-                "ner_tags": tag_ids
-            })
+            ner_data = generate_ner_data(text, entities)
+            dataset.append( ner_data)
         except Exception as e:
             print(f"{e}" , {i})
 
@@ -357,7 +284,6 @@ def __generate_dataset(n_samples,save_reports):
         print(f"→ ./txt_reports/ ({n_samples} samples)")
 
    
-
 # Run as script
 if __name__ == "__main__":
     import sys
