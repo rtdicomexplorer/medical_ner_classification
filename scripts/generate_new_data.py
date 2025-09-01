@@ -286,7 +286,6 @@ def __generate_dataset(n_samples,save_reports):
    
 # Run as script
 if __name__ == "__main__":
-    import sys
     n_samples = 100
     save_reports = False
     clean_data = False

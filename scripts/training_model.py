@@ -94,7 +94,8 @@ def __set_seed(seed=42):
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
-def main():
+def main(print_examples= False):
+    print(f"Starting  print example options is: {print_examples} !")
     datasets = load_dataset("json", data_files=DATA_FILES)
     batch_size = 4
     learning_rate = 3e-5
@@ -143,28 +144,35 @@ def main():
     )
     trainer.train()
     trainer.save_model(OUTPUT_DIR)
-    # === Evaluation on test dataset ===
-    print("\n🔎 Running evaluation on test set:")
-    metrics = trainer.evaluate(eval_dataset=tokenized_datasets["test"])
-    print(f"Evaluation results: {metrics}")
 
-    # === Generate predictions on test set ===
-    print("\n📝 Generating predictions on test set:")
-    test_predictions, test_labels, _ = trainer.predict(tokenized_datasets["test"])
-    preds = np.argmax(test_predictions, axis=2)
+    if print_examples: 
+        # === Evaluation on test dataset ===
+        print("\n🔎 Running evaluation on test set:")
+        metrics = trainer.evaluate(eval_dataset=tokenized_datasets["test"])
+        print(f"Evaluation results: {metrics}")
 
-    # Convert preds and labels back to tag strings
-    true_labels = [[ID2LABEL[l] for l in label if l != -100] for label in test_labels]
-    true_preds = [[ID2LABEL[p] for (p, l) in zip(pred, lab) if l != -100] for pred, lab in zip(preds, test_labels)]
+        # === Generate predictions on test set ===
+        print("\n📝 Generating predictions on test set:")
+        test_predictions, test_labels, _ = trainer.predict(tokenized_datasets["test"])
+        preds = np.argmax(test_predictions, axis=2)
 
-    # Example: print first 3 samples with tokens, true tags, predicted tags
-    n_samples = min(3, len(tokenized_datasets["test"]))
-    for i in range(n_samples):
-        print(f"\nSample {i + 1}:")
-        print("\nTrue tags:  ", true_labels[i])
-        print("\nPred tags:  ", true_preds[i])
+        # Convert preds and labels back to tag strings
+        true_labels = [[ID2LABEL[l] for l in label if l != -100] for label in test_labels]
+        true_preds = [[ID2LABEL[p] for (p, l) in zip(pred, lab) if l != -100] for pred, lab in zip(preds, test_labels)]
+
+        # Example: print first 3 samples with tokens, true tags, predicted tags
+        n_samples = min(3, len(tokenized_datasets["test"]))
+        for i in range(n_samples):
+            print(f"\nSample {i + 1}:")
+            print("\nTrue tags:  ", true_labels[i])
+            print("\nPred tags:  ", true_preds[i])
   
 
 if __name__ == "__main__":
     __set_seed(42)
-    main()
+    print_examples = False
+    if len(sys.argv) > 1:
+         print_examples = sys.argv[1].lower() == 'true'
+    
+    main(print_examples)
+
