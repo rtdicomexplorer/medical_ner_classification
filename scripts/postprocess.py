@@ -168,25 +168,24 @@ def extract_name_spacy(text):
 
 def normalize_dates(text):
     # Replace 'dd. mm. yyyy' or 'dd. mm.yyyy' with 'dd.mm.yyyy'
-    normalized_text = re.sub(r"(\d{2})\.\s*(\d{2})\.\s*(\d{4})", r"\1.\2.\3", text)
+    normalized_text = text.replace(' ', '')
+    normalized_text = re.sub(r"(\d{2})\.\s*(\d{2})\.\s*(\d{4})", r"\1.\2.\3", normalized_text)
     return normalized_text
 
 def extract_date_spacy(text):
     normalized_text = normalize_dates(text)
     doc = nlp(normalized_text)
-
     spacy_dates = [ent.text for ent in doc.ents if ent.label_ == "DATE"]
     if spacy_dates:
         return max(spacy_dates, key=len).strip()
-
     # fallback regex for dd.mm.yyyy
     match = re.search(r"\b\d{2}\.\d{2}\.\d{4}\b", normalized_text)
     if match:
         return match.group(0)
-    return None
+    print(f'Date does not parsed, return {normalized_text}')
+    return normalized_text
     
-    # Kein Datum gefunden
-    return None
+
 def extract_phrases(text, matcher):
     doc = nlp(text)
     result =  [doc[start:end].text for _, start, end in matcher(doc)]

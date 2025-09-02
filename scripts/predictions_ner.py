@@ -39,13 +39,13 @@ class NERModel:
 
     def predict(self, text, max_chars=1500):
         if not self.pipeline:
-            raise RuntimeError("Model not loaded.")
-        
+            raise RuntimeError("Model not loaded.")             
         if len(text) <= max_chars:
+            print(f"Simple prediction {len(text)} ")
             return self.pipeline(text)
         else:
+            print(f"Long text prediction {len(text)} ")
             return self.__predict_long_text(text, max_chars=max_chars)
-
     
 
     def __predict_long_text(self, text, max_chars=1500):
@@ -79,24 +79,49 @@ def smart_chunk_text(text, max_chars=1500, allowed_breaks={'\n', ';', ' '}):
     """
     Splits text into chunks of roughly max_chars, extending to the next allowed character if needed.
     """
+
+    return my_chunk_text(text,)
+
+def my_chunk_text(text, max_chars=1500):
     chunks = []
-    start = 0
-    length = len(text)
-
-    while start < length:
-        end = min(start + max_chars, length)
-
-        # Extend to next good breaking point if needed
-        while end < length and text[end] not in allowed_breaks:
-            end += 1
-
-        chunk = text[start:end].strip()
-        if chunk:
+    elements = text.splitlines(keepends=True)  # Keeps '\n' in each element!
+    chunk = ''
+    
+    for element in elements:
+        if len(chunk) + len(element) <= max_chars:
+            chunk += element
+        else:
             chunks.append(chunk)
+            chunk = element  # Start new chunk with this line
 
-        start = end
+    if chunk:
+        chunks.append(chunk)  # Add the last chunk
 
+    print(len(''.join(chunks)), len(text))  # Should now match exactly
     return chunks
+
+
+def my_chunk_text_(text, max_chars=1500):
+    chunks = []
+    elements = text.split('\n')
+    chunk = ''
+    
+    for element in elements:
+        # Re-add the newline that was removed by split('\n')
+        line = element + '\n'
+        
+        if len(chunk) + len(line) < max_chars:
+            chunk += line
+        else:
+            chunks.append(chunk)
+            chunk = line  # Start new chunk with this line
+    
+    if chunk:
+        chunks.append(chunk)  # Add the last chunk
+
+    print(len(''.join(chunks)), len(text))  # Should be equal
+    return chunks
+
 
 
 
@@ -270,6 +295,7 @@ def main(file_path):
 if __name__ == "__main__":
     import sys
     file_path = './documents/artz_brief.txt'
+    file_path = './txt_reports/report_30.txt'
    # file_path = './documents/sample_adult_history_de.txt'
     if len(sys.argv) == 2:   
         file_path = sys.argv[1]
