@@ -3,7 +3,6 @@ import sys
 import json
 import torch
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
-
 # Add project root to sys.path if needed
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
@@ -21,9 +20,10 @@ OUTPUTDIR = "output"
 class NERModel:
     def __init__(self):
         self.pipeline = None
+        self.tokenizer = None  # Add this line
 
     def load(self):
-        tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+        self.tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
         model = AutoModelForTokenClassification.from_pretrained(MODEL_PATH)
 
         model.config.id2label = ID2LABEL
@@ -32,18 +32,73 @@ class NERModel:
         self.pipeline = pipeline(
             "ner",
             model=model,
-            tokenizer=tokenizer,
+            tokenizer=self.tokenizer,
             aggregation_strategy="first",
             device=0 if torch.cuda.is_available() else -1
         )
 
-    def predict(self, text):
+    def predict(self, text, max_chars=1500):
         if not self.pipeline:
             raise RuntimeError("Model not loaded.")
-        return self.pipeline(text)
+        
+        if len(text) <= max_chars:
+            return self.pipeline(text)
+        else:
+            return self.__predict_long_text(text, max_chars=max_chars)
+
+    
+
+    def __predict_long_text(self, text, max_chars=1500):
+        if not self.pipeline:
+            raise RuntimeError("Model not loaded.")
+
+        chunks = smart_chunk_text(text, max_chars=max_chars)
+
+        all_entities = []
+        offset = 0
+
+        for chunk in chunks:
+            entities = self.pipeline(chunk)
+
+            for entity in entities:
+                # Adjust start and end character positions to global text
+                entity["start"] += offset
+                entity["end"] += offset
+
+            all_entities.extend(entities)
+
+            offset += len(chunk)  # Move offset for next chunk
+
+        return all_entities
+
 
     def is_ready(self):
         return self.pipeline is not None
+
+def smart_chunk_text(text, max_chars=1500, allowed_breaks={'\n', ';', ' '}):
+    """
+    Splits text into chunks of roughly max_chars, extending to the next allowed character if needed.
+    """
+    chunks = []
+    start = 0
+    length = len(text)
+
+    while start < length:
+        end = min(start + max_chars, length)
+
+        # Extend to next good breaking point if needed
+        while end < length and text[end] not in allowed_breaks:
+            end += 1
+
+        chunk = text[start:end].strip()
+        if chunk:
+            chunks.append(chunk)
+
+        start = end
+
+    return chunks
+
+
 
 ner_model = NERModel()
 
@@ -215,7 +270,7 @@ def main(file_path):
 if __name__ == "__main__":
     import sys
     file_path = './documents/artz_brief.txt'
-    #file_path = './txt_reports/report_7.txt'
+   # file_path = './documents/sample_adult_history_de.txt'
     if len(sys.argv) == 2:   
         file_path = sys.argv[1]
         if not os.path.exists(file_path):

@@ -63,6 +63,8 @@ const annotatedText = document.getElementById("annotated-text")
 const labelLegend = document.getElementById("labelLegend");
 const mainPanel =  document.getElementById("mainPanel");
 
+const modelStatus = document.getElementById("load-model-status");
+
 
 // ============ load model ============
 loadBtn.addEventListener("click", async () => {
@@ -81,11 +83,14 @@ loadBtn.addEventListener("click", async () => {
       predictBtn.disabled = true;
       fileUpload.style.display= "block";
 
+      modelStatus.innerText = "✅"
+
     }
   } catch (err) {
     alert("Fehler beim Laden des Modells");
     loadBtn.disabled = false;
     loadBtn.innerText = "Load Model";
+    modelStatus.innerText = "❌"
 
   }
 });
@@ -94,7 +99,7 @@ loadBtn.addEventListener("click", async () => {
 // ============ upload file ============
 fileInput.addEventListener('change', async function () {
   const file = this.files[0];
-  fileNameDisplay.textContent = file ? file.name : "No file selected";
+  fileNameDisplay.textContent = file ? file.name : "no file selected";
   if (!file) return;
 
   const formData = new FormData();
@@ -107,6 +112,7 @@ fileInput.addEventListener('change', async function () {
 
   const data = await response.json();
   if (data.text) {
+    clean();
     annotatedText.innerText = data.text;
     predictBtn.disabled = false
     predictBtn.innerText = "Predict"
@@ -157,45 +163,6 @@ function extractEntityTypes(labelMap) {
     return Array.from(types).sort();
 }
 
-
-
-
-function renderHighlights_(text, entities) {
-  // Sort entities by start to process in order
-  entities.sort((a, b) => a.start - b.start);
-  let currentIndex = 0;
-
-  for (const ent of entities) {
-
-    const entityType = ent.entity_group
-       const entityText = escapeHTML(text.slice(ent.start, ent.end));
-            const span = document.createElement("span");
-            span.className = "entity";
-            span.textContent = entityText;
-            span.style.background = ENTITY_COLORS[entityType] || "#d3d3d3";
-
-     const tooltip = document.createElement("span");
-            tooltip.className = "tooltip-text";
-            tooltip.textContent = `${entityType}`;
-
-    const wrapper = document.createElement("span");
-            wrapper.className = "tooltip";
-            wrapper.style.position = "relative";
-            wrapper.style.display = "inline-block";
-
-            wrapper.appendChild(span);
-            wrapper.appendChild(tooltip);
-
-            annotatedText.append(wrapper, " ");
-
-      currentIndex = ent.end;       
-    // Append plain text before the entity
-
-  }
-
-
-}
-
 function renderHighlights(text, entities) {
   // Sort entities by start to process in order
   entities.sort((a, b) => a.start - b.start);
@@ -224,7 +191,6 @@ function renderHighlights(text, entities) {
 }
 
 
-
 function renderTable(entities) {
   const tbody = document.getElementById("results-table").querySelector("tbody");
   tbody.innerHTML = "";
@@ -251,12 +217,19 @@ function escapeHTML(text) {
   return div.innerHTML;
 }
 
-// ============ Clear ============
-clearBtn.addEventListener("click", () => {
+
+
+function clean(){
   annotatedText.innerHTML = "";
   document.querySelector("#results-table tbody").innerHTML = "";
   labelLegend.innerHTML = "";
   clearBtn.style.display = "none";
+  fileNameDisplay.textContent = "no file selected";
+}
+
+// ============ Clear ============
+clearBtn.addEventListener("click", () => {
+clean()
 });
 
 

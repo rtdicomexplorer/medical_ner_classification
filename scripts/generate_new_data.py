@@ -240,10 +240,6 @@ def __generate_dataset(n_samples,save_reports):
                 text = __generate_paraphrase_more_text(values)             
                 entities = __extract_entities_generalized(text, values)  
                 count_paraphrase += 1
-            # tokens, offsets = smart_tokenize_with_offsets(text)  #smart_tokenize(text)           
-            # tags =  create_bio_tags_from_offsets(tokens=tokens,offsets=offsets,entities= entities)# __create_bio_tags_from_offsets(tokens=tokens,entities=entities, text=text)
-            # tag_ids = bio_tags_to_ids(tags, LABEL2ID)
-
             if save_reports:
                 filename = f"./txt_reports/report_{i+1}.txt"
                 os.makedirs(os.path.dirname(filename), exist_ok=True)

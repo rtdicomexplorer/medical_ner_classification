@@ -113,7 +113,8 @@ def validate_ner_sample_smart(tokens, ner_tags):
 
 
 def generate_patint_id():
-    return str(uuid.uuid4())[:8]
+    import string
+    return  f"{random.choice(string.ascii_uppercase)}{str(uuid.uuid4())[:8]}"
 
 def generate_patint_ids(count=10):
     result = []
