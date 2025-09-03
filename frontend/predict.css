@@ -302,3 +302,45 @@ ul.horz-list {
   visibility: visible;
   opacity: 1;
 }
+
+
+
+#labelLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+#labelLegend span {
+  cursor: pointer; 
+}
+
+#labelLegend span:hover {
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+  background-color: #e6f2ff;
+}
+
+
+/* Active (clickable) legend item */
+#labelLegend .active-legend {
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+#labelLegend .active-legend:hover {
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+  background-color: #e6f2ff;
+}
+
+/* Inactive (non-clickable) legend item */
+#labelLegend .inactive-legend {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.highlighted-entity {
+    outline: 2px solid black;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
+    font-weight: bold;
+}

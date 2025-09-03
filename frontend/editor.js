@@ -171,17 +171,15 @@ sampleSelector.addEventListener("change", () => {
     const idx = parseInt(sampleSelector.value, 10);
     displaySample(idx);
 });
+
 function removeEntityHighlights() {
-    console.log('removeEntityHighlights')
     document.querySelectorAll(".entity").forEach((el) => {
         el.classList.remove("highlighted-entity");
     });
 }
 
 function highlightEntitiesOfType(type) {
-    console.log('highlightEntitiesOfType', type)
     removeEntityHighlights(); // Clear previous highlights
-
     document.querySelectorAll(".entity").forEach((el) => {
         if (el.dataset.entityType === type) {
             el.classList.add("highlighted-entity");
@@ -207,6 +205,9 @@ function renderLegend(activeEntityTypes = []) {
         label.style.marginRight = "6px";
         label.style.display = "inline-block";
         if (activeEntityTypes.includes(type)) {
+
+            const nrEntitesType = activeEntityTypes.filter(ent=>ent === type).length;
+            label.textContent = type +' (#'+nrEntitesType+')';
             label.classList.add("active-legend");
             //label.style.fontWeight = "bold";
             label.style.border = "2px solid black";

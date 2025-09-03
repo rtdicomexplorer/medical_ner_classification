@@ -1,3 +1,4 @@
+let currentlyHighlightedType = null;
 const ENTITY_COLORS = {
   ALCOHOL_CONSUMPTION: "#b1a3df",
   ADDRESS: "#bdd1c2",
@@ -61,7 +62,7 @@ const fileUpload = document.getElementById("file-upload");
 const fileNameDisplay = document.getElementById("fileNameDisplay");
 const annotatedText = document.getElementById("annotated-text")
 const labelLegend = document.getElementById("labelLegend");
-const mainPanel =  document.getElementById("mainPanel");
+const mainPanel = document.getElementById("mainPanel");
 
 const modelStatus = document.getElementById("load-model-status");
 
@@ -81,7 +82,7 @@ loadBtn.addEventListener("click", async () => {
       loadBtn.innerText = "Model Loaded";
       loadBtn.disabled = true;
       predictBtn.disabled = true;
-      fileUpload.style.display= "block";
+      fileUpload.style.display = "block";
 
       modelStatus.innerText = "✅"
 
@@ -99,7 +100,7 @@ loadBtn.addEventListener("click", async () => {
 // ============ upload file ============
 fileInput.addEventListener('change', async function () {
   const file = this.files[0];
-  fileNameDisplay.textContent = file ? file.name : "no file selected";
+
   if (!file) return;
 
   const formData = new FormData();
@@ -116,6 +117,7 @@ fileInput.addEventListener('change', async function () {
     annotatedText.innerText = data.text;
     predictBtn.disabled = false
     predictBtn.innerText = "Predict"
+    fileNameDisplay.textContent = file ? file.name : "no file selected";
   } else {
     alert("Failed to extract text");
   }
@@ -142,53 +144,76 @@ predictBtn.addEventListener("click", async () => {
   const data = await response.json();
   const entities = data.entities || [];
 
-  
+
   renderHighlights(text, entities);
-  activeEntities = entities.map(ele=>ele.entity_group);
+  activeEntities = entities.map(ele => ele.entity_group);
   renderLegend(activeEntities);
   renderTable(entities);
   clearBtn.style.display = "inline-block";
   predictBtn.innerText = "Predicted";
-  
+
 });
 
 
 function extractEntityTypes(labelMap) {
-    const types = new Set();
-    Object.values(labelMap).forEach((label) => {
-        if (label.startsWith("B-") || label.startsWith("I-")) {
-            types.add(label.slice(2));
-        }
-    });
-    return Array.from(types).sort();
+  const types = new Set();
+  Object.values(labelMap).forEach((label) => {
+    if (label.startsWith("B-") || label.startsWith("I-")) {
+      types.add(label.slice(2));
+    }
+  });
+  return Array.from(types).sort();
 }
 
 function renderHighlights(text, entities) {
   // Sort entities by start to process in order
   entities.sort((a, b) => a.start - b.start);
-
-  let result = "";
   let currentIndex = 0;
-
+  const container = document.createElement("span");
   for (const ent of entities) {
     // Append plain text before the entity
-    result += escapeHTML(text.slice(currentIndex, ent.start));
+    const noentity_text = text.slice(currentIndex, ent.start);
+    if (noentity_text !== '') {
+      container.append(document.createTextNode(noentity_text));
+    }
+    const entity_text = text.slice(ent.start, ent.end);
+    if (entity_text != '') {
+      const span = document.createElement("span");
+      span.dataset.entityType = ent.entity_group;
+      span.className = "entity";
+      span.textContent = entity_text;
+      span.style.background = ENTITY_COLORS[ent.entity_group] || "#d3d3d3";
+      span.setAttribute("data-entity", ent.entity_group);
 
-    const color = ENTITY_COLORS[ent.entity_group] || "#ccc";
-    const entityText = escapeHTML(text.slice(ent.start, ent.end));
-    result += `   <span class="tooltip" style="position: relative; display: inline-block">`;
-    result += `   <span class="entity" style="background-color: ${color}">${entityText}</span>`;
+  // Tooltip Text (Option 2)
+      const tooltip = document.createElement("span");
+      tooltip.className = "tooltip-text";
+      tooltip.textContent = `${ent.entity_group}`;
 
-    result += `<span class="tooltip-text">${ent.entity_group}</span>`;
-    result += `</span>`;
+
+      const wrapper = document.createElement("span");
+      wrapper.className = "tooltip";
+      wrapper.style.position = "relative";
+      wrapper.style.display = "inline-block";
+
+      wrapper.appendChild(span);
+      wrapper.appendChild(tooltip);
+
+
+      container.append(wrapper);
+    }
+
 
     currentIndex = ent.end;
   }
 
   // Add remaining text after last entity
-  result += escapeHTML(text.slice(currentIndex));
-  annotatedText.innerHTML = result;
+  container.append(document.createTextNode(text.slice(currentIndex)));
+  annotatedText.innerHTML = '';
+  annotatedText.appendChild(container);
 }
+
+
 
 
 function renderTable(entities) {
@@ -219,7 +244,7 @@ function escapeHTML(text) {
 
 
 
-function clean(){
+function clean() {
   annotatedText.innerHTML = "";
   document.querySelector("#results-table tbody").innerHTML = "";
   labelLegend.innerHTML = "";
@@ -229,55 +254,83 @@ function clean(){
 
 // ============ Clear ============
 clearBtn.addEventListener("click", () => {
-clean()
+  clean()
 });
 
-
-
-function renderLegend(activeEntityTypes = []) {
-    const types = extractEntityTypes(ID2LABEL);
-    labelLegend.innerHTML = "";
-
-    const h2= document.createElement("h2");
-    h2.innerText ="Entity types";
-
-    labelLegend.appendChild(h2);
-
-    types.forEach((type) => {
-        const color = ENTITY_COLORS[type] || "#ddd";
-        const label = document.createElement("span");
-
-        label.textContent = type;
-        label.style.background = color;
-        label.style.padding = "4px 8px";
-        label.style.borderRadius = "4px";
-        label.style.fontSize = "0.9rem";
-        label.style.color = "#333";
-        label.style.border = "1px solid #ccc";
-        label.style.marginRight = "6px";
-        label.style.display = "inline-block";
-
-        if (activeEntityTypes.includes(type)) {
-            label.style.fontWeight = "bold";
-            label.style.border = "2px solid black";  // oder z. B. "#444"
-        }
-
-        labelLegend.appendChild(label);
-    });
+function removeEntityHighlights() {
+  document.querySelectorAll(".entity").forEach((el) => {
+    el.classList.remove("highlighted-entity");
+  });
 }
 
+function highlightEntitiesOfType(type) {
+  removeEntityHighlights(); // Clear previous highlights
+  document.querySelectorAll(".entity").forEach((el) => {
+    if (el.dataset.entityType === type) {
+      el.classList.add("highlighted-entity");
+    }
+  });
+}
+
+function renderLegend(activeEntityTypes = []) {
+  const types = extractEntityTypes(ID2LABEL);
+  labelLegend.innerHTML = "";
+
+  types.forEach((type) => {
+    const color = ENTITY_COLORS[type] || "#ddd";
+    const label = document.createElement("span");
+
+    label.textContent = type;
+    label.style.background = color;
+    label.style.padding = "4px 8px";
+    label.style.borderRadius = "4px";
+    label.style.fontSize = "0.9rem";
+    label.style.color = "#333";
+    label.style.border = "1px solid #ccc";
+    label.style.marginRight = "6px";
+    label.style.display = "inline-block";
+    if (activeEntityTypes.includes(type)) {
+
+      const nrEntitesType = activeEntityTypes.filter(ent=>ent === type).length;
+      label.textContent = type +' (#'+nrEntitesType+')';
+      label.classList.add("active-legend");
+      //label.style.fontWeight = "bold";
+      label.style.border = "2px solid black";
+      label.title = 'found:'+nrEntitesType;
+      label.addEventListener("click", () => {
+        if (currentlyHighlightedType === type) {
+          // Unselect if already selected
+          removeEntityHighlights();
+          label.style.fontWeight = "";
+          currentlyHighlightedType = null;
+        } else {
+          // Highlight new type
+          highlightEntitiesOfType(type);
+          currentlyHighlightedType = type;
+          label.classList.add("active-legend");
+          label.style.fontWeight = "bold";
+        }
+      });
+
+    } else {
+      label.classList.add("inactive-legend");
+    }
+
+    labelLegend.appendChild(label);
+  });
+}
 
 // Tab functionality
 document.querySelectorAll(".tab-button").forEach((btn) => {
-    btn.addEventListener("click", () => {
-        document
-            .querySelectorAll(".tab-button")
-            .forEach((b) => b.classList.remove("active"));
-        document
-            .querySelectorAll(".tab-content")
-            .forEach((tab) => (tab.style.display = "none"));
+  btn.addEventListener("click", () => {
+    document
+      .querySelectorAll(".tab-button")
+      .forEach((b) => b.classList.remove("active"));
+    document
+      .querySelectorAll(".tab-content")
+      .forEach((tab) => (tab.style.display = "none"));
 
-        btn.classList.add("active");
-        document.getElementById(btn.dataset.tab).style.display = "block";
-    });
+    btn.classList.add("active");
+    document.getElementById(btn.dataset.tab).style.display = "block";
+  });
 });
