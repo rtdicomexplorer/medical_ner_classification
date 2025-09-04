@@ -11,12 +11,13 @@ import json
 from scripts.utils import *
 from sklearn.model_selection import train_test_split
 from scripts.config import LABEL2ID, ENTITY_LIST, MORE_VAL_ENTITIES
-from templates import TEMPLATES_LIST
+from templates import TEMPLATES_LIST, muster_template
 from collections import defaultdict
 
 
 entity_values = {                       
     "ADDRESS": 				hospital_addresses,	
+    "ADDRESS_PATIENT":      patient_addresses,
     "ADMISSION_DATE": 		generate_dates(), 	
     "ALCOHOL_CONSUMPTION": 	alcohol_consumptions,	
     "ALLERGY": 				allergies, 
@@ -55,8 +56,9 @@ entity_values = {
     "MEDICATION":          	medications,	
     "OCCUPATION":          	occupations,	
     "ORG":                 	hospital_names,	
-    "PERSON":              	names,	
-    "PHONE":               	hospital_phones,	
+    "PATIENT":              names,	
+    "PHONE":               	hospital_phones,
+    "PATIENT_PHONE":        patient_phones,	
     "PID":                 	generate_patint_ids(),	
     "PREV_DIAGNOSIS":      	prev_diagnoses,	
     "PROCEDURE":           	procedures,	
@@ -228,8 +230,8 @@ def __generate_dataset(n_samples,save_reports):
     count_paraphrase = 0
     for i in range(n_samples):
         try:
-            if random.random() < 0.5:     
-                template = random.choice(TEMPLATES_LIST)
+            if random.random() < 0.9999999999:     
+                template =  muster_template #   random.choice(TEMPLATES_LIST)
                 placeholder_counts = __count_entity_placeholders(template)
                 values_dict = __generate_values(entity_values, MORE_VAL_ENTITIES, placeholder_counts)
                 text =  __fill_template(template, values_dict)
@@ -282,7 +284,7 @@ def __generate_dataset(n_samples,save_reports):
    
 # Run as script
 if __name__ == "__main__":
-    n_samples = 100
+    n_samples = 10
     save_reports = False
     clean_data = False
     if len(sys.argv) > 1:

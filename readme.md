@@ -125,6 +125,16 @@ report_xxx.json         compare_postprocessing_report_xxx.html
 python -m venv venv
 - venv\Scripts\activate (win)
 - source venv/bin/activate  (linux)
+install tesseract: 
+ Windows: 
+ download https://github.com/UB-Mannheim/tesseract/wiki (also GERMAN Language)
+
+ UBUNTU:  
+> sudo apt update
+> sudo apt install tesseract-ocr
+> sudo apt install tesseract-ocr-deu
+
+
 
 pip install -r requirements.txt
 

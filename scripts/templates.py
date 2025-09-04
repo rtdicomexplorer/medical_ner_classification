@@ -1,7 +1,83 @@
+muster_template =(
+"        {ORG}                                                                            "
+"                                                                                         "
+"                        ZENTRUM FÜR INNERE MEDIZIN                                       "
+"                                                                                         "
+"                         Internistische Abteilung                                        "
+"                                                                                         "
+"        {ORG}                                                                            "
+"        {ADDRESSE}                              ID: {PID}                                "
+"                                                Krbl.-Nr.: {INSURANCE_ID}                "
+"                                                {DEPARTMENT} {PHONE}                     "
+"                                                       {DATE}                                      "
+"                                                                                         "
+"        Sehr geehrte Frau Kollegin, sehr geehrter Herr Kollege,                          "
+"                                                                                         "
+"        wir berichten Ihnen über den Patienten                                           "
+"           {PATIENT}, geboren am {BIRTHDATE}                                             "
+"           wohnhaft in {ADDRESS_PATIENT}                                                 "
+"        der sich vom {ADMISSION_DATE} bis {DISCHARGE_DATE} in unserer stationären        "
+"        Behandlung befand.                                                               "
+"                                                                                         "
+"        {DIAGNOSIS}:                                                                     "
+"         - {DIAGNOSIS} ({DATE})                                                          "
+"           Lokalisation: {BODY_PART} ({ICD10_CODE})                                      "
+"           Klassifikation nach Ann Arbor: 3B                                             "
+"         - {PROCEDURE} ({DATE})                                                          "
+"         - {TREATMENT} ({DATE})                                                          "
+"         - {TREATMENT} ({DATE})                                                          "
+"        Begleiterkrankungen:                                                             "
+"         - {PREV_DIAGNOSIS} ({ICD10_CODE}) (gebessert)                                   "
+"                                                                                         "
+"        Folgende wichtige {FINDING} wurden während des                                   "
+"        {HOSPITAL_STAY} erhoben:                                                         "
+"        BSG (1-Stunden-Wert): {LAB_RESULT}                                               "
+"        Körpertemperatur: {VITALSIGNS}                                                   "
+"        Becken-Übersichtsaufnahme: {FINDING}                                             "
+"                                                                                         "
+"        Tumorcharakteristika und Verschlüsselung:                                        "
+"        Tumorlokalisation:                                                               "
+"         - {BODY_PART} ({ICD10_CODE}), Hauptlokalisation                                 "
+"         - {BODY_PART} ({ICD10_CODE})                                                    "
+"         - {BODY_PART} ({ICD10_CODE})                                                    "
+"        Histologie:                                                                      "
+"         - {DIAGNOSIS}, NODULÄR-SKLEROSIERENDE FORM, ({ICD10_CODE})                      "
+"                                                                                         "
+"        Klassifikation nach Ann Arbor: Stadium 3 Kategorie B                             "
+"        (mit {SYMPTOM}),                                                                 "
+"        {BODY_PART} Organ nicht befallen, klinische                                      "
+"        {FINDING}, {BODY_PART} Organbefall, mikroskopisch bestaetigt,                    "
+"        {BODY_PART} Organ nicht befallen, mikroskopisch untersucht,                      "
+"        {BODY_PART} Organ nicht befallen, mikroskopisch                                  "
+"        untersucht, {BODY_PART} Organ nicht befallen, mikroskopisch                      "
+"        untersucht, {BODY_PART} Organ nicht befallen, mikroskopisch                      "
+"        untersucht, {BODY_PART} Organ nicht befallen,                                    "
+"        mikroskopisch untersucht, {BODY_PART} Organ nicht befallen,                      "
+"        mikroskopisch untersucht, Andere Organe Organ nicht                              "
+"        befallen, mikroskopisch untersucht                                               "
+"                                                                                         "
+"        Besonderheiten des Verlaufes waren:                                              "
+"        Die Aufnahme des Patienten erfolgte zur {STAY_REASON}. Anlaß der                 "
+"        aktuellen Betreuung war die {STAY_REASON}.                                       "
+"                                                                                         "
+"        Beurteilung des Tumorgeschehens:                                                 "
+"        Leistungszustand nach ECOG: {FINDING}                                            "
+"        {FINDING} über {DIAGNOSIS}:                                                      "
+"        Die Angehörigen des Patienten sind aufgeklärt                                    "
+"        Der Patient ist voll aufgeklärt                                                  "
+"                                                                                         "
+"        Mit kollegialer Hochachtung                                                      "
+"                                                                                         "
+"                                 {DOCTOR}                                                "
+"                                     Chefarzt                                            "
+"                                                                                         "
+)
+
+
 arztbrief_template = (
-    "Patient: {PERSON} ({GENDER}), geboren am {BIRTHDATE}, PID: {PID}.\n"
+    "Patient: {PATIENT} ({GENDER}), geboren am {BIRTHDATE}, PID: {PID}.\n"
     "Gewicht: {GEWICHT}. Große : {GROESSE}\n"
-    "Adresse: {ADDRESS}, Telefon: {PHONE}, Familienstand: {FAMILY_STATUS}.\n"
+    "Adresse: {ADDRESS_PATIENT}, Telefon: {PHONE_PATIENT}, Familienstand: {FAMILY_STATUS}.\n"
     "Beruf: {OCCUPATION}, begleitet von: {FAMILYMEMBER}.\n"
     "Vorstellung wegen: {SYMPTOM}.\n"
     "Diagnose: {DIAGNOSIS} (ICD-10: {ICD10_CODE} – {ICD10_DESC}).\n"
@@ -17,13 +93,13 @@ arztbrief_template = (
 
 arztbrief_template2 = (
 "{DOCUMENT_TYPE} vom {DATE}\n"
-"Patientenname : {PERSON}\n"
+"Patientenname : {PATIENT}\n"
 "Geburtsdatum : {BIRTHDATE}\n"
 "Große: {GROESSE}\n"
 "Gewicht: {GEWICHT}\n"
 "Hausarzt : {DOCTOR}\n"
-"Der Patient, {PERSON} , stellte sich mit stark anhaltend dumpfen {SYMPTOM} vor, die er seit gestern habe.\n" 
-"{PERSON} sei auch {SYMPTOM}. Darüber hinaus berichte er über {SYMPTOM}.\n" 
+"Der Patient, {PATIENT} , stellte sich mit stark anhaltend dumpfen {SYMPTOM} vor, die er seit gestern habe.\n" 
+"{PATIENT} sei auch {SYMPTOM}. Darüber hinaus berichte er über {SYMPTOM}.\n" 
 "Er habe auch berichtet, dass er eine {SYMPTOM} und {SYMPTOM} (Wortfindungsstörung und lallende Ansprache) entwickelt habe.\n" 
 "Eine {SYMPTOM} wurde auch berichtet.\n"
 "Vorerkrankungen : Er habe seit 20 Jahren {PREV_DIAGNOSIS}.IM Jahr 2018 habe er einen {PREV_DIAGNOSIS} gehabt, den konservativ behandelt wurde.\n"
@@ -31,14 +107,14 @@ arztbrief_template2 = (
 "Medikamente Anamnese : {ANAMNESE} Er nehme die obergenannte {MEDICATION} bei bedarf ein und er nehme auch {MEDICATION} {FREQUENCY} ein.\n"
 "Noxen : Er habe täglich für {SMOKING_STATUS}, bevor er sich das Rauchen abgewöhnt habe. Alkohol {ALCOHOL_CONSUMPTION}.\n" 
 "Die Frage nach {LIFESTYLE} wurde verneint.\n"
-"Soziale Anamnese : Er ist {OCCUPATION} von Beruf und ist {FAMILY_STATUS}. {PERSON} lebe mit seiner {FAMILYMEMBER} und vier {FAMILYMEMBER} zusammen.\n"
+"Soziale Anamnese : Er ist {OCCUPATION} von Beruf und ist {FAMILY_STATUS}. {PATIENT} lebe mit seiner {FAMILYMEMBER} und vier {FAMILYMEMBER} zusammen.\n"
 "Familiäre Anamnese : {ANAMNESE} {FAMHIST} und {FAMHIST}.\n"
 "Die Anamnese,{ANAMNESE} Laborwerte und eine {PROCEDURE} weisen auf einen {DIAGNOSIS} hin. {TREATMENT} wurde nach der CT begonnen.\n"
 )
 
 befundbericht_template = (
     "{DOCUMENT_TYPE} erstellt am {DATE} durch {DOCTOR} in der Abteilung {DEPARTMENT} des {ORG}.\n"
-    "Patient: {PERSON}, {GENDER}, geb. {BIRTHDATE}, PID: {PID}.\n"
+    "Patient: {PATIENT}, {GENDER}, geb. {BIRTHDATE}, PID: {PID}.\n"
     "Untersuchung mittels {DEVICE} aufgrund von {SYMPTOM}.\n"
     "Befunde: {FINDING}, Diagnose: {DIAGNOSIS}.\n"
     "ICD-10-Code: {ICD10_CODE} – {ICD10_DESC}.\n"
@@ -50,7 +126,7 @@ befundbericht_template = (
 operationsbericht_template = (
     "{DOCUMENT_TYPE}\n"
     "Datum der Operation: {DATE}, durchgeführt von {DOCTOR} im {ORG}, Abteilung: {DEPARTMENT}.\n"
-    "Patient: {PERSON}, Geschlecht: {GENDER}, Geburtsdatum: {BIRTHDATE}, PID: {PID}.\n"
+    "Patient: {PATIENT}, Geschlecht: {GENDER}, Geburtsdatum: {BIRTHDATE}, PID: {PID}.\n"
     "Indikation: {DIAGNOSIS} – {SYMPTOM}, {SYMPTOM}.\n"
     "Durchgeführte Prozedur: {PROCEDURE} unter Einsatz von {DEVICE}.\n"
     "Anästhesieprotokoll: {VITALSIGNS}.\n"
@@ -61,20 +137,20 @@ operationsbericht_template = (
 
 entlassungsbericht_template = (
     "{DOCUMENT_TYPE} – Entlassung am {DISCHARGE_DATE} aus der Klinik {ORG}, Abteilung: {DEPARTMENT}.\n"
-    "Patient: {PERSON} ({GENDER}), geb. {BIRTHDATE}, PID: {PID}.\n"
+    "Patient: {PATIENT} ({GENDER}), geb. {BIRTHDATE}, PID: {PID}.\n"
     "Aufnahmediagnose: {DIAGNOSIS}, am {ADMISSION_DATE} Symptome: {SYMPTOM}, Risikofaktoren: {RISKFACTOR}.\n"
     "Behandlung: {TREATMENT}, Medikation: {MEDICATION}, Prozedur: {PROCEDURE}.\n"
     "Befunde: {FINDING}, Labordaten: {LAB_RESULT}.\n"
     "Entlassungsdiagnose: {DIAGNOSIS} ({ICD10_CODE} – {ICD10_DESC}).\n"
     "Empfohlene Nachsorge: {FOLLOWUP_REQ}, Grund: {FOLLOWUP_REASON}.\n"
     "Impression: {IMPRESSION}.\n"
-    "Kontaktperson: {DOCTOR}, Tel: {PHONE}."
+    "KontaktPATIENT: {DOCTOR}, Tel: {PHONE}."
 )
 
 anamnesebogen_template = (
     "{DOCUMENT_TYPE} – Erfasst am {DATE} durch {DOCTOR}.\n"
-    "Patient: {PERSON}, Geschlecht: {GENDER}, Geburtsdatum: {BIRTHDATE}, PID: {PID}.\n"
-    "Adresse: {ADDRESS}, Telefon: {PHONE}, Familienstand: {FAMILY_STATUS}.\n"
+    "Patient: {PATIENT}, Geschlecht: {GENDER}, Geburtsdatum: {BIRTHDATE}, PID: {PID}.\n"
+    "Adresse: {ADDRESS_PATIENT}, Telefon: {PHONE_PATIENT}, Familienstand: {FAMILY_STATUS}.\n"
     "Beruf: {OCCUPATION}, Lebensstil: {LIFESTYLE}, Impfstatus: {IMMUNIZATION}.\n"
     "Allergien: {ALLERGY}.\n"
     "Familiäre Erkrankungen: {FAMHIST}.\n"
@@ -88,7 +164,7 @@ anamnesebogen_template = (
 
 radiologie_template = (
     "{DOCUMENT_TYPE} – Untersuchung vom {DATE} durchgeführt durch {DOCTOR} in der Abteilung {DEPARTMENT}, {ORG}.\n"
-    "Patient: {PERSON}, {GENDER}, geb. am {BIRTHDATE}, PID: {PID}.\n"
+    "Patient: {PATIENT}, {GENDER}, geb. am {BIRTHDATE}, PID: {PID}.\n"
     "Indikation: {SYMPTOM}, Fragestellung: {FINDING}.\n"
     "Durchgeführte Bildgebung: {PROCEDURE} mit {DEVICE}.\n"
     "Befund: {FINDING}.\n"
@@ -98,7 +174,7 @@ radiologie_template = (
 
 laborbericht_template = (
     "{DOCUMENT_TYPE} – erstellt am {DATE}.\n"
-    "Patient: {PERSON} ({GENDER}), geboren am {BIRTHDATE}, PID: {PID}.\n"
+    "Patient: {PATIENT} ({GENDER}), geboren am {BIRTHDATE}, PID: {PID}.\n"
     "Untersuchende Einrichtung: {ORG}, Abteilung: {DEPARTMENT}.\n"
     "Soziale Anamnese: {ANAMNESE}.\n"
     "Laborparameter: {LAB_RESULT}, {LAB_RESULT}, {LAB_RESULT}.\n"
@@ -109,7 +185,7 @@ laborbericht_template = (
 
 patho_template = (
     "{DOCUMENT_TYPE} – Befunddatum: {DATE}, Pathologieabteilung: {DEPARTMENT}, Klinik: {ORG}.\n"
-    "Patient: {PERSON}, {GENDER}, geb. {BIRTHDATE}, PID: {PID}.\n"
+    "Patient: {PATIENT}, {GENDER}, geb. {BIRTHDATE}, PID: {PID}.\n"
     "Anamnese: {ANAMNESE}.\n"
     "Material: {PROCEDURE}.\n"
     "Makroskopie: {FINDING}.\n"
@@ -121,7 +197,7 @@ patho_template = (
 
 ueberweisung_template = (
     "{DOCUMENT_TYPE} – Ausgestellt am {DATE} von {DOCTOR}, {DEPARTMENT}, {ORG}.\n"
-    "Patient: {PERSON}, geb. {BIRTHDATE}, PID: {PID}.\n"
+    "Patient: {PATIENT}, geb. {BIRTHDATE}, PID: {PID}.\n"
     "So {PREV_DIAGNOSIS}"
     "Zielabteilung: {DEPARTMENT}.\n"
     "Grund der Überweisung: {FOLLOWUP_REASON}.\n"
@@ -133,7 +209,7 @@ ueberweisung_template = (
 
 einwilligung_template = (
     "{DOCUMENT_TYPE} – Ausgefüllt am {DATE}.\n"
-    "Patient: {PERSON} ({GENDER}), geb. am {BIRTHDATE}, PID: {PID}.\n"
+    "Patient: {PATIENT} ({GENDER}), geb. am {BIRTHDATE}, PID: {PID}.\n"
     "Für das folgende Verfahren: {PROCEDURE}.\n"
     "Behandelnder Arzt: {DOCTOR}, Abteilung: {DEPARTMENT}, Klinik: {ORG}.\n"
     "Risiken und Alternativen wurden erklärt.\n"
@@ -144,7 +220,7 @@ einwilligung_template = (
 
 impfpass_template = (
     "{DOCUMENT_TYPE} – Stand: {DATE}.\n"
-    "Patient: {PERSON}, geboren am {BIRTHDATE}, Geschlecht: {GENDER}, PID: {PID}.\n"
+    "Patient: {PATIENT}, geboren am {BIRTHDATE}, Geschlecht: {GENDER}, PID: {PID}.\n"
     "Erfasste Impfungen: {IMMUNIZATION}.\n"
     "Hausarzt: {DOCTOR}, Einrichtung: {ORG}, Abteilung: {DEPARTMENT}.\n"
     "Bemerkung: {IMPRESSION}.\n"
@@ -153,7 +229,7 @@ impfpass_template = (
 
 rezept_template = (
     "{DOCUMENT_TYPE} – Ausgestellt am {DATE} durch {DOCTOR} ({DEPARTMENT}, {ORG}).\n"
-    "Patient: {PERSON}, geboren am {BIRTHDATE}, PID: {PID}.\n"
+    "Patient: {PATIENT}, geboren am {BIRTHDATE}, PID: {PID}.\n"
     "Verschriebene Medikation: {MEDICATION}.\n"
     "Diagnosebezug: {DIAGNOSIS} ({ICD10_CODE} – {ICD10_DESC}).\n"
     "Bemerkung: {IMPRESSION}.\n"
@@ -162,7 +238,7 @@ rezept_template = (
 
 therapieplan_template = (
     "{DOCUMENT_TYPE} – Erstellt am {DATE} durch {DOCTOR} in der Abteilung {DEPARTMENT}, Klinik: {ORG}.\n"
-    "Patient: {PERSON}, {GENDER}, geb. {BIRTHDATE}, PID: {PID}.\n"
+    "Patient: {PATIENT}, {GENDER}, geb. {BIRTHDATE}, PID: {PID}.\n"
     "Diagnose: {DIAGNOSIS} ({ICD10_CODE} – {ICD10_DESC}).\n"
     "Ziel der Therapie: {FOLLOWUP_REASON}.\n"
     "Empfohlene Maßnahmen:\n"
@@ -175,7 +251,7 @@ therapieplan_template = (
 
 pflegedoku_template = (
     "{DOCUMENT_TYPE} – Eintrag vom {DATE}.\n"
-    "Patient: {PERSON}, geboren am {BIRTHDATE}, Geschlecht: {GENDER}, PID: {PID}.\n"
+    "Patient: {PATIENT}, geboren am {BIRTHDATE}, Geschlecht: {GENDER}, PID: {PID}.\n"
     "Aktueller Zustand: {FINDING}, Vitalwerte: {VITALSIGNS}.\n"
     "Pflegemaßnahmen: {TREATMENT}, Medikation: {MEDICATION}.\n"
     "Auffälligkeiten: {SYMPTOM}, Allergien: {ALLERGY}.\n"
@@ -185,7 +261,7 @@ pflegedoku_template = (
 
 opfreigabe_template = (
     "{DOCUMENT_TYPE} – Freigegeben am {DATE} durch {DOCTOR}, Abteilung: {DEPARTMENT}.\n"
-    "Patient: {PERSON}, geb. am {BIRTHDATE}, PID: {PID}, {GENDER}.\n"
+    "Patient: {PATIENT}, geb. am {BIRTHDATE}, PID: {PID}, {GENDER}.\n"
     "Geplante Prozedur: {PROCEDURE}.\n"
     "Indikation: {DIAGNOSIS}, Symptome: {SYMPTOM}.\n"
     "Vitalzeichen stabil: {VITALSIGNS}.\n"
@@ -196,8 +272,8 @@ opfreigabe_template = (
 
 aufnahmebogen_template = (
     "{DOCUMENT_TYPE} – Aufnahme am {ADMISSION_DATE} in {ORG}, Abteilung: {DEPARTMENT}.\n"
-    "Patient: {PERSON}, {GENDER}, geboren am {BIRTHDATE}, PID: {PID}.\n"
-    "Adresse: {ADDRESS}, Tel: {PHONE}, Familienstand: {FAMILY_STATUS}.\n"
+    "Patient: {PATIENT}, {GENDER}, geboren am {BIRTHDATE}, PID: {PID}.\n"
+    "Adresse: {ADDRESS_PATIENT}, Tel: {PHONE_PATIENT}, Familienstand: {FAMILY_STATUS}.\n"
     "Beschwerden: {SYMPTOM}, Vorbefunde: {PREV_DIAGNOSIS}.\n"
     "Soziale Ananmnese: {ANAMNESE}\n"
     "Aktuelle Medikation: {MEDICATION}, Allergien: {ALLERGY}, {ALLERGY}, {ALLERGY}.\n"
@@ -209,7 +285,7 @@ aufnahmebogen_template = (
 
 hkp_template = (
     "{DOCUMENT_TYPE} – Erstellt am {DATE} durch {DOCTOR}, {ORG}.\n"
-    "Patient: {PERSON}, PID: {PID}, geboren am {BIRTHDATE}.\n"
+    "Patient: {PATIENT}, PID: {PID}, geboren am {BIRTHDATE}.\n"
     "Diagnose: {DIAGNOSIS} ({ICD10_CODE} – {ICD10_DESC}).\n"
     "Geplante Behandlung: {TREATMENT}, Prozeduren: {PROCEDURE}.\n"
     "Medikamente: {MEDICATION}.\n"
@@ -219,7 +295,7 @@ hkp_template = (
 
 attest_template = (
     "{DOCUMENT_TYPE} – Ausgestellt am {DATE}.\n"
-    "Patient: {PERSON}, geb. am {BIRTHDATE}, PID: {PID}, Beruf: {OCCUPATION}.\n"
+    "Patient: {PATIENT}, geb. am {BIRTHDATE}, PID: {PID}, Beruf: {OCCUPATION}.\n"
     "Diagnose: {DIAGNOSIS}, Beschwerden: {SYMPTOM}.\n"
     "Der Patient ist derzeit {FOLLOWUP_REASON}.\n"
     "Dauer der Arbeitsunfähigkeit: {FOLLOWUP_REQ}.\n"
@@ -228,8 +304,8 @@ attest_template = (
 
 notfall_template = (
     "{DOCUMENT_TYPE} – Datum: {ADMISSION_DATE}, ausgestellt durch {DOCTOR}, Klinik: {ORG}.\n"
-    "Patient: {PERSON}, {GENDER}, geb. am {BIRTHDATE}, PID: {PID}.\n"
-    "Telefon: {PHONE}, Adresse: {ADDRESS}.\n"
+    "Patient: {PATIENT}, {GENDER}, geb. am {BIRTHDATE}, PID: {PID}.\n"
+    "Telefon: {PHONE_PATIENT}, Adresse: {ADDRESS_PATIENT}.\n"
     "Begleitet von {FAMILYMEMBER}.\n"
     "Symptome: {SYMPTOM}, Vitalwerte: {VITALSIGNS}, Risikofaktoren: {RISKFACTOR}.\n"
     "Durchgeführte Maßnahmen: {TREATMENT}, verabreichte Medikation: {MEDICATION}.\n"
@@ -240,7 +316,7 @@ notfall_template = (
 
 ekg_template = (
     "{DOCUMENT_TYPE} – Befunddatum: {DATE}, erstellt durch {DOCTOR}, Abteilung: {DEPARTMENT}, {ORG}.\n"
-    "Patient: {PERSON}, geb. am {BIRTHDATE}, PID: {PID}.\n"
+    "Patient: {PATIENT}, geb. am {BIRTHDATE}, PID: {PID}.\n"
     "Indikation: {SYMPTOM}.\n"
     "Ergebnisse: {FINDING}, Vitalzeichen: {VITALSIGNS}.\n"
     "Diagnose: {DIAGNOSIS}, Beurteilung: {IMPRESSION}.\n"
@@ -249,7 +325,7 @@ ekg_template = (
 
 roentgen_template = (
     "{DOCUMENT_TYPE} – Untersuchung am {DATE}, Klinik: {ORG}, Abteilung: {DEPARTMENT}.\n"
-    "Patient: {PERSON}, PID: {PID}, geboren am {BIRTHDATE}.\n"
+    "Patient: {PATIENT}, PID: {PID}, geboren am {BIRTHDATE}.\n"
     "Bildgebung mittels {DEVICE} bei {SYMPTOM}.\n"
     "Befunde: {FINDING}, Impression: {IMPRESSION}.\n"
     "Diagnose: {DIAGNOSIS}.\n"
@@ -258,7 +334,7 @@ roentgen_template = (
 
 ct_mrt_template = (
     "{DOCUMENT_TYPE} – {DATE}, erstellt durch {DOCTOR}, {ORG}, Abteilung: {DEPARTMENT}.\n"
-    "Patient: {PERSON}, geb. {BIRTHDATE}, PID: {PID}.\n"
+    "Patient: {PATIENT}, geb. {BIRTHDATE}, PID: {PID}.\n"
     "Verfahren: {PROCEDURE} mit {DEVICE}.\n"
     "Indikation: {SYMPTOM}, Befunde: {FINDING}.\n"
     "Diagnose: {DIAGNOSIS} ({ICD10_CODE} – {ICD10_DESC}), Impression: {IMPRESSION}.\n"
@@ -267,7 +343,7 @@ ct_mrt_template = (
 
 pflegeueberleitung_template = (
     "{DOCUMENT_TYPE} – Erstellt am {DATE} durch {DOCTOR}, {ORG}, Abteilung: {DEPARTMENT}.\n"
-    "Patient: {PERSON}, geboren am {BIRTHDATE}, PID: {PID}.\n"
+    "Patient: {PATIENT}, geboren am {BIRTHDATE}, PID: {PID}.\n"
     "Pflegebedürfnisse: {TREATMENT}, Medikation: {MEDICATION}, Vitalzeichen: {VITALSIGNS}.\n"
     "Diagnose: {DIAGNOSIS}, Vorerkrankungen: {PREV_DIAGNOSIS}.\n"
     "Pflegehinweise: {IMPRESSION}.\n"
@@ -276,7 +352,7 @@ pflegeueberleitung_template = (
 
 reha_gutachten_template = (
     "{DOCUMENT_TYPE} – Antrag vom {DATE}.\n"
-    "Patient: {PERSON}, geb. am {BIRTHDATE}, PID: {PID}, Beruf: {OCCUPATION}.\n"
+    "Patient: {PATIENT}, geb. am {BIRTHDATE}, PID: {PID}, Beruf: {OCCUPATION}.\n"
     "Erkrankung: {DIAGNOSIS} ({ICD10_CODE} – {ICD10_DESC}), Symptome: {SYMPTOM}.\n"
     "Familiäre Anamnese: {ANAMNESE}\n"
     "Behandlung bisher: {TREATMENT}, Medikamente: {MEDICATION}.\n"
@@ -289,12 +365,12 @@ reha_gutachten_template = (
 
 complete_template = (
 
-    "{DOCUMENT_TYPE}:\n Am {DATE} stellte sich der Patient {PERSON} ({GENDER}), {GROESSE} per {GEWICHT} geboren am {BIRTHDATE},PID: {PID}.\n"
+    "{DOCUMENT_TYPE}:\n Am {DATE} stellte sich der Patient {PATIENT} ({GENDER}), {GROESSE} per {GEWICHT} geboren am {BIRTHDATE},PID: {PID}.\n"
     "Symptome: {SYMPTOM}, Diagnose: {DIAGNOSIS}\n "
     "Beruf: {OCCUPATION}, Medikament: {MEDICATION}, Behandlung: {TREATMENT}, "
     "Durchgeführt von {DOCTOR} in der Abteilung {DEPARTMENT}  zimmer {ROOM_NUMBER}.\n"
     "Krankenhaus: {ORG}, {ADDRESS}, Tel: {PHONE}.\n"
-    "Adresse: {ADDRESS}, Telefon: {PHONE}.\n"
+    "Adresse: {ADDRESS_PATIENT}, Telefon: {PHONE_PATIENT}.\n"
     "Familienstand: {FAMILY_STATUS}, Familienmitglied: {FAMILYMEMBER}, familiäre Vorgeschichte: {FAMHIST}.\n"
     "Vegetatite Anamnese: {ANAMNESE}\n"
     "Abteilung: {DEPARTMENT}, Krankenhaus: {ORG}.\n"
@@ -320,4 +396,4 @@ TEMPLATES_LIST =[complete_template ,reha_gutachten_template,pflegeueberleitung_t
                  notfall_template,attest_template,hkp_template,aufnahmebogen_template,opfreigabe_template,pflegedoku_template,
                  therapieplan_template,rezept_template,impfpass_template,einwilligung_template,ueberweisung_template,patho_template,
                  radiologie_template,laborbericht_template,anamnesebogen_template,entlassungsbericht_template, operationsbericht_template,
-                 befundbericht_template,arztbrief_template,arztbrief_template2]
+                 befundbericht_template,arztbrief_template,arztbrief_template2, muster_template]

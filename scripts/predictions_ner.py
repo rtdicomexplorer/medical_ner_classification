@@ -10,7 +10,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from scripts.text_extractor import extract_text 
-from scripts.utils import generate_ner_data
+from scripts.utils import generate_ner_data, init_tesseract
 
 from scripts.postprocess import postprocess_entities  # Your custom postprocessing
 from scripts.ner_to_fhir import map_ner_to_fhir    # Your mapping from NER to FHIR
@@ -126,6 +126,8 @@ def my_chunk_text_(text, max_chars=1500):
 
 
 ner_model = NERModel()
+
+init_tesseract()
 
 def __save_entity_comparison_html(raw_entities, post_entities, filename="ner_comparison.html"):
     from pathlib import Path
@@ -260,6 +262,8 @@ def __execute_predictions(text):
 
 def main(file_path):
 
+
+
     _, report_file_name = os.path.split(file_path)
     
     report_file_name, _ = os.path.splitext(report_file_name) 
@@ -295,7 +299,8 @@ def main(file_path):
 if __name__ == "__main__":
     import sys
     file_path = './documents/artz_brief.txt'
-    file_path = './txt_reports/report_30.txt'
+    file_path = './documents/pers_report.pdf'
+    #file_path = './txt_reports/report_30.txt'
    # file_path = './documents/sample_adult_history_de.txt'
     if len(sys.argv) == 2:   
         file_path = sys.argv[1]

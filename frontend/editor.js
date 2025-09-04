@@ -2,11 +2,12 @@
 let currentlyHighlightedType = null;
 let allSamples = [];
 const ENTITY_COLORS = {
+    ANAMNESE:"#d1cdbdff",
     ADDRESS: "#bdd1c2ff",
+    ADDRESS_PATIENT: "#bdd1c2ff",
     ADMISSION_DATE: "#c0c70a",
     ALCOHOL_CONSUMPTION: "#b1a3dfff",
     ALLERGY: "#b5c4ecff",
-    ANAMNESE: "#d1cdbdff",
     BIRTHDATE: "#c359cc",
     BLOOD_TYPE: "#d029a4",
     BODY_PART: "#add0e7",
@@ -43,6 +44,7 @@ const ENTITY_COLORS = {
     ORG: "#f52243",
     PERSON: "#b1de4c",
     PHONE: "#dab744ff",
+    PHONE_PATIENT: "#dab744ff",
     PID: "#9da5b2",
     PREV_DIAGNOSIS: "#09f5eb",
     PROCEDURE: "#c1defa",
@@ -55,6 +57,7 @@ const ENTITY_COLORS = {
     TREATMENT: "#c1d89aff",
     VITALSIGNS: "#24d332",
 };
+
 
 function RgbToHex(r, g, b) {
     return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
@@ -188,6 +191,7 @@ function highlightEntitiesOfType(type) {
 }
 
 function renderLegend(activeEntityTypes = []) {
+
     const types = extractEntityTypes(ID2LABEL);
     labelLegend.innerHTML = "";
 
@@ -207,6 +211,7 @@ function renderLegend(activeEntityTypes = []) {
         if (activeEntityTypes.includes(type)) {
 
             const nrEntitesType = activeEntityTypes.filter(ent=>ent === type).length;
+            console.log(type, nrEntitesType);
             label.textContent = type +' (#'+nrEntitesType+')';
             label.classList.add("active-legend");
             //label.style.fontWeight = "bold";
@@ -271,14 +276,25 @@ function displaySample(index) {
     }
     const data = allSamples[index];
     const { tokens, ner_tags } = data;
-    const activeTypes = new Set();
+    // const activeTypes = new Set();
+    const activeTypes = [];
+    // const labelCounts = {}; 
+
     ner_tags.forEach((id) => {
         const label = ID2LABEL[id];
-        if (label && (label.startsWith("B-") || label.startsWith("I-"))) {
-            activeTypes.add(label.slice(2));
+        if (label && (label.startsWith("B-"))) {
+            const cleanLabel = label.slice(2);
+            activeTypes.push(cleanLabel)
+        //     activeTypes.add(cleanLabel);
+        //       if (labelCounts[cleanLabel]) {
+        //     labelCounts[cleanLabel] += 1;
+        // } else {
+        //     labelCounts[cleanLabel] = 1;
+        // }
         }
     });
-    renderLegend(Array.from(activeTypes));
+
+    renderLegend(activeTypes);
 
     updateJsonPreview(data);
     entityViewer.innerHTML = "";
@@ -450,7 +466,6 @@ function displaySample(index) {
         tokenTableBody.appendChild(tr);
     });
     currentSampleAsText = text.join(' ');
-    console.log(currentSampleAsText);
     currentlyHighlightedType = null;
     removeEntityHighlights();
 

@@ -6,6 +6,37 @@ import random
 from scripts.config import LABEL2ID, ID2LABEL
 import uuid
 from typing import List, Tuple, Dict
+import pytesseract
+import platform
+from pathlib import Path
+
+def init_tesseract():
+    system = platform.system()
+
+    if system == "Windows":
+        # Standardpfad unter Windows
+        tesseract_path = Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe")
+        if tesseract_path.exists():
+            pytesseract.pytesseract.tesseract_cmd = str(tesseract_path)
+            print("✅ Tesseract unter Windows initialisiert.")
+        else:
+            raise FileNotFoundError(f"❌ Tesseract wurde unter folgendem Pfad nicht gefunden: {tesseract_path}")
+    
+    elif system == "Linux":
+        print("✅ Linux erkannt – kein spezieller Pfad nötig, sofern Tesseract installiert ist.")
+        # Optional: prüfen, ob Tesseract installiert ist
+        from shutil import which
+        if which("tesseract") is None:
+            raise EnvironmentError("❌ Tesseract ist nicht installiert. Bitte installiere es mit: sudo apt install tesseract-ocr")
+
+    elif system == "Darwin":  # macOS
+        print("✅ macOS erkannt – kein spezieller Pfad nötig, sofern Tesseract installiert ist.")
+        from shutil import which
+        if which("tesseract") is None:
+            raise EnvironmentError("❌ Tesseract ist nicht installiert. Bitte installiere es mit: brew install tesseract")
+    
+    else:
+        raise EnvironmentError(f"❌ Unbekanntes Betriebssystem: {system}")
 
 
 def generate_ner_data(text,entities):
@@ -286,6 +317,11 @@ def paraphrase_entity(entity_type, value):
     variations = {
         
         "ADDRESS": [
+            f"Standort: {value}",
+            f"Adresse: {value}",
+            ],
+
+       "ADDRESS_PATIENT": [
             f"wohnhaft in {value}",
             f"Adresse: {value}",
             f"anschriftlich erreichbar unter {value}",
@@ -293,6 +329,7 @@ def paraphrase_entity(entity_type, value):
             f"zu finden in {value}",
             f"gemeldet unter {value}"
             ],
+
 
         "ADMISSION_DATE": [
             f"Aufnahme am {value}",
@@ -596,7 +633,7 @@ def paraphrase_entity(entity_type, value):
                 f"Arbeitsort: {value}"
             ],
 
-        "PERSON": [
+        "PATIENT": [
                 f"Patient: {value}",
                 f"Name: {value}",
                 f"{value} stellte sich vor",
@@ -613,6 +650,14 @@ def paraphrase_entity(entity_type, value):
             f"erreichbar unter: {value}",
             f"Rufnummer: {value}"
             ],
+
+        "PHONE_PATIENT": [
+                f"Telefonnummer: {value}",
+                f"Kontakt: {value}",
+                f"Telefon: {value}",
+                f"erreichbar unter: {value}",
+                f"Rufnummer: {value}"
+                ],
 
         "PID":[
             f"patient-id {value}",
@@ -897,10 +942,10 @@ risk_factors = [
 ]
 
 # Names and other data
-names = ["Herr. Max Müller", "Patientin: Anna Schmidt", "L. Weber", "Frau Sophie Fischer","Otto Kromberger",
+names = ["Herr. Max Müller", "Patientin: Anna Schmidt", "L. Weber", "Frau Sophie Fischer","Otto Kromberger","Irina, Klose"
          "John Smith", "Mary Jones", "Robert Lee", "Emily Davis"]
 doctors = ["Dr. Müller", "Dr. Schneider", "Dr. Becker", "Dr. Weber","Dr. Suhle Nikolas", "Dr. Lehmann", "Dr. Fischer", "Dr. Weber",
-           "Dr. Adams", "Dr. Lee", "Dr. Patel", "Dr. Chen"]
+           "Dr. Adams", "Dr. Lee", "Dr. Patel", "Dr. Chen", "Prof. A. Passero" ]
 
 
 symptoms = [
@@ -1081,9 +1126,12 @@ departments = ["Kardiologie", "Notaufnahme", "Onkologie", "Radiologie","Neurolog
 hospital_names = ["St. Marien Krankenhaus", "Allgemeine Gesundheitsklinik",
                   "Städtisches Medizinzentrum", "Universitätsklinikum München", "Kinderklinik Freiburg"]
 hospital_addresses = ["Hauptstraße 12, 80331 München", "Berliner Allee 45, 40212 Düsseldorf","Lindenstraße 8, 10115 Berlin", "Goetheplatz 9, 50674 Köln",
-                      "Hugstetterstr. 7 79106 Freiburg"]
+                      "Hugstetterstr. 7 79106 Freiburg", "Kamphausenstr. 23, 79666 Reute"]
 hospital_phones = ["089 123456", "0211 987654", "030 234567", "0221 456789", "0761 2720298"]
+patient_phones = ["089 123456", "0211 987654", "030 234567", "0221 456789", "0761 2720298"]
 
+patient_addresses = ["Hauptstraße 12, 80331 München", "Berliner Allee 45, 40212 Düsseldorf","Lindenstraße 8, 10115 Berlin", "Goetheplatz 9, 50674 Köln",
+                      "Hugstetterstr. 7 79106 Freiburg", "Kamphausenstr. 23, 79666 Reute"]
 followup_reasons = [
     "zur Blutdruckkontrolle", "wegen anhaltender Schmerzen", "zur Verlaufskontrolle",
     "zur weiteren Abklärung", "zur Nachsorge", "zur Wundkontrolle", "zur Laborüberprüfung"
