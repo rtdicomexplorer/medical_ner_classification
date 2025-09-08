@@ -108,7 +108,7 @@ fileInput.addEventListener('change', async function () {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch("/upload", {
+  const response = await fetch("/upload-text", {
     method: "POST",
     body: formData
   });

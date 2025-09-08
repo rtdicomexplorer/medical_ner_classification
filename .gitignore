@@ -11,4 +11,5 @@ finetuner/
 expected/
 predictions/
 temp/
+tmp/
 entities

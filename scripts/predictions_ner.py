@@ -36,6 +36,7 @@ class NERModel:
             aggregation_strategy="first",
             device=0 if torch.cuda.is_available() else -1
         )
+        print(f"Loaded model {MODEL_PATH}")
 
     def predict(self, text, max_chars=1500):
         if not self.pipeline:
