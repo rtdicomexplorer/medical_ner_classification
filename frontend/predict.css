@@ -1,9 +1,4 @@
 
-
-
-
-
-
 table {
   width: 100%;
   border-collapse: collapse;
@@ -53,41 +48,10 @@ th {
   }
 }
 
-
 .entity:hover {
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.2);
   cursor: help;
 }
-.tooltip {
-  position: relative;
-  display: inline-block;
-}
-
-.tooltip .tooltip-text {
-  visibility: hidden;
-  width: auto;
-  background-color: rgba(0, 0, 0, 0.8);
-  color: #fff;
-  text-align: center;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  position: absolute;
-  z-index: 10;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  opacity: 0;
-  transition: opacity 0.2s ease-in-out;
-}
-
-.tooltip:hover .tooltip-text {
-  visibility: visible;
-  opacity: 1;
-}
-
-
 
 #labelLegend {
   display: flex;

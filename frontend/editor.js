@@ -2,7 +2,7 @@
 let currentlyHighlightedType = null;
 let allSamples = [];
 const ENTITY_COLORS = {
-    ANAMNESE:"#d1cdbdff",
+    ANAMNESE: "#d1cdbdff",
     ADDRESS: "#bdd1c2ff",
     ADDRESS_PATIENT: "#bdd1c2ff",
     ADMISSION_DATE: "#c0c70a",
@@ -210,9 +210,9 @@ function renderLegend(activeEntityTypes = []) {
         label.style.display = "inline-block";
         if (activeEntityTypes.includes(type)) {
 
-            const nrEntitesType = activeEntityTypes.filter(ent=>ent === type).length;
+            const nrEntitesType = activeEntityTypes.filter(ent => ent === type).length;
             console.log(type, nrEntitesType);
-            label.textContent = type +' (#'+nrEntitesType+')';
+            label.textContent = type + ' (#' + nrEntitesType + ')';
             label.classList.add("active-legend");
             //label.style.fontWeight = "bold";
             label.style.border = "2px solid black";
@@ -285,12 +285,12 @@ function displaySample(index) {
         if (label && (label.startsWith("B-"))) {
             const cleanLabel = label.slice(2);
             activeTypes.push(cleanLabel)
-        //     activeTypes.add(cleanLabel);
-        //       if (labelCounts[cleanLabel]) {
-        //     labelCounts[cleanLabel] += 1;
-        // } else {
-        //     labelCounts[cleanLabel] = 1;
-        // }
+            //     activeTypes.add(cleanLabel);
+            //       if (labelCounts[cleanLabel]) {
+            //     labelCounts[cleanLabel] += 1;
+            // } else {
+            //     labelCounts[cleanLabel] = 1;
+            // }
         }
     });
 
