@@ -1,59 +1,59 @@
 let currentlyHighlightedType = null;
 const ENTITY_COLORS = {
-    ANAMNESE:"#d1cdbdff",
-    ADDRESS: "#bdd1c2ff",
-    ADDRESS_PATIENT: "#bdd1c2ff",
-    ADMISSION_DATE: "#c0c70a",
-    ALCOHOL_CONSUMPTION: "#b1a3dfff",
-    ALLERGY: "#b5c4ecff",
-    BIRTHDATE: "#c359cc",
-    BLOOD_TYPE: "#d029a4",
-    BODY_PART: "#add0e7",
-    COURSE: "#e98788",
-    DATE: "#ca143a",
-    DEPARTMENT: "#199aef",
-    DEVICE: "#d2231e",
-    DIAGNOSIS: "#911593",
-    DISCHARGE_DATE: "#9fe7e4ff",
-    DOCTOR: "#57e665",
-    DOCUMENT_TYPE: "#f5716f",
-    DOSAGE: "#f6bf96",
-    DURATION: "#269323",
-    FAMILY_STATUS: "#03d080",
-    FAMILYMEMBER: "#8facdfff",
-    FAMHIST: "#1ca2fcff",
-    FINDING: "#e5a6b4ff",
-    FOLLOWUP_REASON: "#f556ad",
-    FOLLOWUP_REQ: "#56cb78",
-    FREQUENCY: "#e31919",
-    GENDER: "#d0d17e",
-    GEWICHT: "#519451",
-    GROESSE: "#40bb55",
-    HOSPITAL_STAY: "#5a8b08",
-    ICD10_CODE: "#c76f07",
-    ICD10_DESC: "#d381c2ff",
-    IMMUNIZATION: "#3066ed",
-    IMPRESSION: "#d44cbe",
-    INSURANCE_ID: "#b46e98",
-    LAB_RESULT: "#466af6",
-    LIFESTYLE: "#7882b6",
-    MEDICATION: "#e2ec82ff",
-    OCCUPATION: "#c0a0db",
-    ORG: "#f52243",
-    PERSON: "#b1de4c",
-    PHONE: "#dab744ff",
-    PHONE_PATIENT: "#dab744ff",
-    PID: "#9da5b2",
-    PREV_DIAGNOSIS: "#09f5eb",
-    PROCEDURE: "#c1defa",
-    RISKFACTOR: "#d3d678ff",
-    ROOM_NUMBER: "#b52f3d",
-    ROUTE: "#b390c7ff",
-    SMOKING_STATUS: "#9182fa",
-    STAY_REASON: "#adec71ff",
-    SYMPTOM: "#08e843",
-    TREATMENT: "#c1d89aff",
-    VITALSIGNS: "#24d332",
+  ANAMNESE: "#d1cdbdff",
+  ADDRESS: "#bdd1c2ff",
+  ADDRESS_PATIENT: "#bdd1c2ff",
+  ADMISSION_DATE: "#c0c70a",
+  ALCOHOL_CONSUMPTION: "#b1a3dfff",
+  ALLERGY: "#b5c4ecff",
+  BIRTHDATE: "#c359cc",
+  BLOOD_TYPE: "#d029a4",
+  BODY_PART: "#add0e7",
+  COURSE: "#e98788",
+  DATE: "#ca143a",
+  DEPARTMENT: "#199aef",
+  DEVICE: "#d2231e",
+  DIAGNOSIS: "#911593",
+  DISCHARGE_DATE: "#9fe7e4ff",
+  DOCTOR: "#57e665",
+  DOCUMENT_TYPE: "#f5716f",
+  DOSAGE: "#f6bf96",
+  DURATION: "#269323",
+  FAMILY_STATUS: "#03d080",
+  FAMILYMEMBER: "#8facdfff",
+  FAMHIST: "#1ca2fcff",
+  FINDING: "#e5a6b4ff",
+  FOLLOWUP_REASON: "#f556ad",
+  FOLLOWUP_REQ: "#56cb78",
+  FREQUENCY: "#e31919",
+  GENDER: "#d0d17e",
+  GEWICHT: "#519451",
+  GROESSE: "#40bb55",
+  HOSPITAL_STAY: "#5a8b08",
+  ICD10_CODE: "#c76f07",
+  ICD10_DESC: "#d381c2ff",
+  IMMUNIZATION: "#3066ed",
+  IMPRESSION: "#d44cbe",
+  INSURANCE_ID: "#b46e98",
+  LAB_RESULT: "#466af6",
+  LIFESTYLE: "#7882b6",
+  MEDICATION: "#e2ec82ff",
+  OCCUPATION: "#c0a0db",
+  ORG: "#f52243",
+  PERSON: "#b1de4c",
+  PHONE: "#dab744ff",
+  PHONE_PATIENT: "#dab744ff",
+  PID: "#9da5b2",
+  PREV_DIAGNOSIS: "#09f5eb",
+  PROCEDURE: "#c1defa",
+  RISKFACTOR: "#d3d678ff",
+  ROOM_NUMBER: "#b52f3d",
+  ROUTE: "#b390c7ff",
+  SMOKING_STATUS: "#9182fa",
+  STAY_REASON: "#adec71ff",
+  SYMPTOM: "#08e843",
+  TREATMENT: "#c1d89aff",
+  VITALSIGNS: "#24d332",
 };
 
 const loadBtn = document.getElementById("load-btn");
@@ -67,6 +67,7 @@ const labelLegend = document.getElementById("labelLegend");
 const mainPanel = document.getElementById("mainPanel");
 
 const modelStatus = document.getElementById("load-model-status");
+const spinnerOverlay =  document.getElementById("loadingOverlay");
 
 
 // ============ load model ============
@@ -108,21 +109,31 @@ fileInput.addEventListener('change', async function () {
   const formData = new FormData();
   formData.append("file", file);
 
+   spinnerOverlay.style.display = "flex";
   const response = await fetch("/upload-text", {
     method: "POST",
     body: formData
   });
 
+
   const data = await response.json();
   if (data.text) {
+    // Extracted text → continue as usual
     clean();
     annotatedText.innerText = data.text;
-    predictBtn.disabled = false
-    predictBtn.innerText = "Predict"
+    predictBtn.disabled = false;
+    predictBtn.innerText = "Predict";
     fileNameDisplay.textContent = file ? file.name : "no file selected";
+  } else if (data.fallback && data.image_urls) {
+    // It's an image/PDF without text → fallback to layout editor
+    sessionStorage.setItem("image_urls", JSON.stringify(data.image_urls));
+    sessionStorage.setItem("file_name", file.name);
+    window.location.href = "/layout_editor";
   } else {
-    alert("Failed to extract text");
+
+    alert("Unsupported or corrupt file. No text or image could be extracted.");
   }
+     spinnerOverlay.style.display = "none";
 });
 
 // ============ Predict ============
@@ -187,7 +198,7 @@ function renderHighlights(text, entities) {
       span.style.background = ENTITY_COLORS[ent.entity_group] || "#d3d3d3";
       span.setAttribute("data-entity", ent.entity_group);
 
-  // Tooltip Text (Option 2)
+      // Tooltip Text (Option 2)
       const tooltip = document.createElement("span");
       tooltip.className = "tooltip-text";
       tooltip.textContent = `${ent.entity_group}`;
@@ -293,12 +304,12 @@ function renderLegend(activeEntityTypes = []) {
     label.style.display = "inline-block";
     if (activeEntityTypes.includes(type)) {
 
-      const nrEntitesType = activeEntityTypes.filter(ent=>ent === type).length;
-      label.textContent = type +' (#'+nrEntitesType+')';
+      const nrEntitesType = activeEntityTypes.filter(ent => ent === type).length;
+      label.textContent = type + ' (#' + nrEntitesType + ')';
       label.classList.add("active-legend");
       //label.style.fontWeight = "bold";
       label.style.border = "2px solid black";
-      label.title = 'found:'+nrEntitesType;
+      label.title = 'found:' + nrEntitesType;
       label.addEventListener("click", () => {
         if (currentlyHighlightedType === type) {
           // Unselect if already selected

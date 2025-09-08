@@ -55,6 +55,38 @@ splitter.addEventListener("mousedown", (e) => {
 });
 
 
+const storedImageUrls = sessionStorage.getItem("image_urls");
+const storedFileName = sessionStorage.getItem("file_name");
+
+if (storedImageUrls && storedFileName) {
+    // Reuse file upload flow without needing a file
+    const parsedImageUrls = JSON.parse(storedImageUrls);
+    if (parsedImageUrls.length === 0) {
+        alert("Keine Bilder gefunden.");
+    } else {
+        imagePages = parsedImageUrls;
+        totalPages = imagePages.length;
+        currentPage = 0;
+        zonesByPage = {};
+        fileNameDisplay.textContent = storedFileName;
+
+        // Hide upload button if you want
+        document.querySelector(".file-upload").style.display = "none";
+
+        document.getElementById("main-split-container").style.display = "flex";
+        document.getElementById("footerbar").style.display = "block";
+        extractTextBtn.style.display = "inline-block";
+
+        loadCurrentPage();
+    }
+
+    // Clean up sessionStorage
+    sessionStorage.removeItem("image_urls");
+    sessionStorage.removeItem("file_name");
+}
+
+
+
 fileInput.addEventListener("change", () => {
     const file = fileInput.files[0];
     if (!file) return;
@@ -355,3 +387,32 @@ window.addEventListener("mouseup", () => {
         document.body.style.cursor = "default";
     }
 });
+
+window.addEventListener("DOMContentLoaded", () => {
+  const imageUrls = JSON.parse(sessionStorage.getItem("image_urls") || "[]");
+  const fileName = sessionStorage.getItem("file_name") || "";
+
+  if (imageUrls.length > 0) {
+    // Hide file upload because it's auto-loaded
+    document.querySelector(".file-upload").style.display = "none";
+    document.getElementById("fileNameDisplay").textContent = fileName;
+
+    // Show the main layout parts
+    document.getElementById("main-split-container").style.display = "flex";
+    document.getElementById("footerbar").style.display = "block";
+
+    // Load the first image onto canvas
+    loadImageToCanvas(imageUrls[0]);
+
+    // Store current page info for navigation (if multiple pages)
+    window.currentPageIndex = 0;
+    window.imageUrls = imageUrls;
+    loadCurrentPage();
+
+    // Clean up sessionStorage (optional)
+    sessionStorage.removeItem("image_urls");
+    sessionStorage.removeItem("file_name");
+  }
+});
+
+

@@ -47,36 +47,8 @@ def load_model_route():
         return jsonify({"status": "Model loaded"}), 200
     return jsonify({"status": "Model already loaded"}), 200
 
-# @app.route("/upload", methods=["POST"])
-# def upload_file():
-#     uploaded_file = request.files.get("file")
-#     if not uploaded_file:
-#         return jsonify({"error": "No file uploaded"}), 400
-#     os.makedirs("tmp", exist_ok=True)
-
-#     # Save in local ./tmp folder (not /tmp)
-#     temp_path = os.path.join("tmp", uploaded_file.filename)
-#     uploaded_file.save(temp_path)
-#     text = ''#text = extract_text(temp_path)
-#     ext = os.path.splitext(temp_path)[1].lower()
-#     image_urls = []
-#     if ext == ".pdf":
-#         images = convert_from_path(temp_path, dpi=150)
-
-#         for i, img in enumerate(images):
-#             image_path = os.path.join("tmp", f"{uploaded_file.filename}_page{i+1}.jpg")
-#             img.save(image_path)
-#             image_urls.append(f"/uploads/{os.path.basename(image_path)}")
-#         # image_path = temp_path + "_page1.jpg"
-#         # images[0].save(image_path)
-#         # image_url = f"/uploads/{os.path.basename(image_path)}"
 
 
-#     os.remove(temp_path)
-#     return jsonify({
-#         "image_urls": image_urls,
-#         "num_pages": len(image_urls)
-#     })
 @app.route("/upload-text", methods=["POST"])
 def upload_text_file():
     uploaded_file = request.files.get("file")
