@@ -21,28 +21,56 @@ body {
   margin: 0;
   font-size: 1.5rem;
   font-weight: bold;
+  white-space: nowrap;
 }
-
+@media (max-width: 600px) {
+  .navbar-title {
+    position: relative;
+    left: auto;
+    transform: none;
+    width: 100%;
+    text-align: center;
+    margin: 10px 0;
+  }
+}
 .navbar-logo {
   height: 100px;
   width: auto;
   z-index: 1; /* to be above other stuff */
 }
 
+@media (max-width: 600px) {
+  .navbar-logo {
+    height: 50px; /* shrink more on small screens */
+    margin-bottom: 10px;
+  }
+}
+
 .nav-tabs {
   margin-left: auto;
   display: flex;
   gap: 20px;
+  flex-wrap: wrap; /* allow tabs to wrap */
+  justify-content: flex-end;
+  width: auto;
 }
-
+@media (max-width: 600px) {
+  .nav-tabs {
+    width: 100%;
+    justify-content: center;
+    gap: 10px;
+  }
+}
 .tab-btn {
   text-decoration: none;
   color: #333;
-  padding: 8px 16px;
   border-radius: 5px;
   transition: background-color 0.2s;
   font-weight: bold;
   border: 1px solid transparent;
+  flex: 1 1 auto;
+  text-align: center;
+  padding: 10px 5px;
 }
 
 .tab-btn:hover {
@@ -70,6 +98,7 @@ body {
   margin: 15px 0;
   padding: 10px 0;
   background-color: transparent;
+  flex-wrap: wrap;
 }
 
 button {
@@ -94,6 +123,55 @@ button:disabled {
   border: 1px solid #ccc;
   opacity: 0.6;
 }
+@media (max-width: 600px) {
+  .toolbar {
+    justify-content: center;
+  }
+  
+  .toolbar > * {
+    flex: 1 1 120px; /* flex-grow, flex-shrink, flex-basis */
+    min-width: 100px;
+  }
+
+  /* File upload and filename stack vertically */
+  .file-upload {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1 1 100%;
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+
+  /* Adjust file input label styling for smaller width */
+  .custom-upload-button {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: 1px solid rgb(0, 89, 255);
+    border-radius: 4px;
+    background-color: transparent;
+    color: black;
+    text-align: center;
+  }
+
+  /* Make the filename text smaller */
+  .file-name {
+    font-size: 0.85rem;
+    color: #555;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  
+  /* Reduce button font size on small screens */
+  button {
+    font-size: 0.9rem;
+    padding: 5px 10px;
+  }
+}
+
 
 .tabs {
   width: 80%;
@@ -284,4 +362,54 @@ ul.horz-list {
 .tooltip:hover .tooltip-text {
   visibility: visible;
   opacity: 1;
+}
+
+
+@media (max-width: 1000px) {
+  #content-columns {
+    flex-direction: column;
+  }
+
+  .column {
+    width: 100%;
+  }
+
+  #entities-scroll,
+  #annotated-scroll,
+  #input-scroll {
+    max-height: 300px;
+  }
+}
+
+/*spinner wait*/
+
+#loadingOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(255, 255, 255, 0.8);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  font-size: 1.2rem;
+  color: #333;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #ccc;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }

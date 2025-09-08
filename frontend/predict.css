@@ -32,21 +32,6 @@ th {
 }
 
 
-@media (max-width: 1000px) {
-  #content-columns {
-    flex-direction: column;
-  }
-
-  .column {
-    width: 100%;
-  }
-
-  #entities-scroll,
-  #annotated-scroll,
-  #input-scroll {
-    max-height: 300px;
-  }
-}
 
 .entity:hover {
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.2);

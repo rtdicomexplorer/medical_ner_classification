@@ -17,6 +17,9 @@ const extractedTextsDiv = document.getElementById("extractedTexts");
 const splitter = document.getElementById("splitter");
 const canvasContainer = document.getElementById("canvas-container");
 const extractedTexts = document.getElementById("extractedTexts");
+const fileNameDisplay = document.getElementById("fileNameDisplay");
+
+const spinnerOverlay =  document.getElementById("loadingOverlay");//.style.display = "flex";
 
 let isResizing = false;
 // State
@@ -39,6 +42,12 @@ let isPanning = false,
 let selectedZoneIndex = -1;
 const image = new Image();
 
+
+function updateZoomDisplay() {
+  const zoomLabel = document.getElementById("zoomLevel");
+  zoomLabel.textContent = `Zoom: ${Math.round(scale * 100)}%`;
+}
+
 splitter.addEventListener("mousedown", (e) => {
     isResizing = true;
     document.body.style.cursor = "col-resize";
@@ -49,6 +58,9 @@ splitter.addEventListener("mousedown", (e) => {
 fileInput.addEventListener("change", () => {
     const file = fileInput.files[0];
     if (!file) return;
+
+    spinnerOverlay.style.display = "flex";
+    fileNameDisplay.textContent = file ? file.name : "no file selected";
     const formData = new FormData();
     formData.append("file", file);
 
@@ -66,7 +78,10 @@ fileInput.addEventListener("change", () => {
             document.getElementById("footerbar").style.display = "block";
             extractTextBtn.style.display = "inline-block"; // ← NEU!
             loadCurrentPage();
+            spinnerOverlay.style.display = "none";
         });
+
+         
 });
 
 function loadCurrentPage() {
@@ -74,7 +89,7 @@ function loadCurrentPage() {
 
     image.onload = () => {
         canvas.style.display = "block";
-        scale = 1;
+        // scale = 1;
         originX = 0;
         originY = 0;
 
@@ -83,7 +98,6 @@ function loadCurrentPage() {
         if (!zonesByPage[currentPage]) zonesByPage[currentPage] = [];
         selectedZoneIndex = -1;
         updatePageInfo();
-        updateZoneButtons();
         redraw();
     };
     image.src = imagePages[currentPage];
@@ -97,7 +111,7 @@ nextPageBtn.addEventListener("click", () => {
 });
 
 function updatePageInfo() {
-    pageInfo.textContent = `Seite ${currentPage + 1}/${totalPages}`;
+    pageInfo.textContent = `Page ${currentPage + 1}/${totalPages}`;
 }
 
 function getTransformedPoint(cx, cy) {
@@ -138,6 +152,8 @@ function redraw(preview = false) {
         ctx.fillRect(x, y, w, h);
         ctx.strokeRect(x, y, w, h);
     }
+
+    updateZoomDisplay();
 }
 
 // ROI zeichnen
@@ -228,8 +244,8 @@ resetViewBtn.onclick = () => {
     scale = 1;
     originX = 0;
     originY = 0;
-
     redraw();
+
 };
 
 // Text Extrahieren
