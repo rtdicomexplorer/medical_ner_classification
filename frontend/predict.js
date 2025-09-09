@@ -69,7 +69,12 @@ const mainPanel = document.getElementById("mainPanel");
 const modelStatus = document.getElementById("load-model-status");
 const spinnerOverlay =  document.getElementById("loadingOverlay");
 
+const hamburger = document.getElementById('hamburger');
+const navLinks = document.getElementById('navLinks');
 
+hamburger.addEventListener('click', () => {
+  navLinks.classList.toggle('show');
+});
 // ============ load model ============
 loadBtn.addEventListener("click", async () => {
   loadBtn.disabled = true;

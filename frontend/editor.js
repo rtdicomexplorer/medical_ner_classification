@@ -63,7 +63,12 @@ function RgbToHex(r, g, b) {
     return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
+const hamburger = document.getElementById('hamburger');
+const navLinks = document.getElementById('navLinks');
 
+hamburger.addEventListener('click', () => {
+  navLinks.classList.toggle('show');
+});
 const fileInput = document.getElementById("fileInput");
 const sampleSelector = document.getElementById("sampleSelector");
 const selectorContainer = document.getElementById(

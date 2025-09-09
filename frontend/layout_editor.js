@@ -1,3 +1,11 @@
+
+const hamburger = document.getElementById('hamburger');
+const navLinks = document.getElementById('navLinks');
+
+hamburger.addEventListener('click', () => {
+    navLinks.classList.toggle('show');
+});
+
 const fileInput = document.getElementById("fileInput");
 const canvas = document.getElementById("drawCanvas");
 const ctx = canvas.getContext("2d");
@@ -16,10 +24,43 @@ const extractTextBtn = document.getElementById("extractTextBtn");
 const extractedTextsDiv = document.getElementById("extractedTexts");
 const splitter = document.getElementById("splitter");
 const canvasContainer = document.getElementById("canvas-container");
-const extractedTexts = document.getElementById("extractedTexts");
 const fileNameDisplay = document.getElementById("fileNameDisplay");
 
-const spinnerOverlay =  document.getElementById("loadingOverlay");//.style.display = "flex";
+const spinnerOverlay = document.getElementById("loadingOverlay");//.style.display = "flex";
+const clearBtn = document.getElementById("clearBtn");
+clearBtn.addEventListener("click", () => {
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.width = 0;
+    canvas.height = 0;
+
+    // Clear extracted text
+    extractedTextsDiv.innerHTML = "<em>Extracted text will show here.</em>";
+
+    // Reset zones
+    zonesByPage = {};
+    imagePages = [];
+    currentPage = 0;
+    totalPages = 0;
+
+    // Hide UI parts
+    document.getElementById("main-split-container").style.display = "none";
+    document.getElementById("footerbar").style.display = "none";
+    extractTextBtn.style.display = "none";
+    clearBtn.style.display = "none";
+    saveBtn.style.display = "none";
+    deleteBtn.style.display = "none";
+    renameBtn.style.display = "none";
+
+    // Reset file name display
+    fileNameDisplay.textContent = "No file selected";
+    fileInput.value = "";
+    // Optional: Reset zoom, transforms, etc.
+    scale = 1;
+    originX = 0,
+        originY = 0;
+});
+
 
 let isResizing = false;
 // State
@@ -44,8 +85,8 @@ const image = new Image();
 
 
 function updateZoomDisplay() {
-  const zoomLabel = document.getElementById("zoomLevel");
-  zoomLabel.textContent = `Zoom: ${Math.round(scale * 100)}%`;
+    const zoomLabel = document.getElementById("zoomLevel");
+    zoomLabel.textContent = `Zoom: ${Math.round(scale * 100)}%`;
 }
 
 splitter.addEventListener("mousedown", (e) => {
@@ -69,13 +110,10 @@ if (storedImageUrls && storedFileName) {
         currentPage = 0;
         zonesByPage = {};
         fileNameDisplay.textContent = storedFileName;
-
-        // Hide upload button if you want
-        document.querySelector(".file-upload").style.display = "none";
-
         document.getElementById("main-split-container").style.display = "flex";
         document.getElementById("footerbar").style.display = "block";
         extractTextBtn.style.display = "inline-block";
+        clearBtn.style.display = "inline-block";
 
         loadCurrentPage();
     }
@@ -109,15 +147,17 @@ fileInput.addEventListener("change", () => {
                 "flex";
             document.getElementById("footerbar").style.display = "block";
             extractTextBtn.style.display = "inline-block"; // ← NEU!
+            clearBtn.style.display = "inline-block";
             loadCurrentPage();
             spinnerOverlay.style.display = "none";
         });
 
-         
+
 });
 
 function loadCurrentPage() {
     extractTextBtn.style.display = "inline-block";
+    clearBtn.style.display = "inline-block";
 
     image.onload = () => {
         canvas.style.display = "block";
@@ -169,9 +209,9 @@ function redraw(preview = false) {
         ctx.strokeStyle = i === selectedZoneIndex ? "red" : "blue";
         ctx.lineWidth = 2 / scale;
         ctx.strokeRect(z.x, z.y, z.width, z.height);
-        ctx.font = `${16 / scale}px Arial`;
+        ctx.font = `${12 / scale}px Arial`;
         ctx.fillStyle = ctx.strokeStyle;
-        ctx.fillText(z.name, z.x + 5, z.y + 20 / scale);
+        ctx.fillText(z.name, z.x + 2, z.y - 5 / scale);
     });
 
     if (isDrawing && preview) {
@@ -188,7 +228,7 @@ function redraw(preview = false) {
     updateZoomDisplay();
 }
 
-// ROI zeichnen
+// ROI tracing
 canvas.addEventListener("mousedown", (e) => {
     if (e.button === 0) {
         const p = getTransformedPoint(e.clientX, e.clientY);
@@ -226,13 +266,23 @@ canvas.addEventListener("mouseup", (e) => {
         const w = Math.abs(currentX - startX),
             h = Math.abs(currentY - startY);
         if (w > 5 && h > 5) {
-            const zArr = zonesByPage[currentPage];
+            let zArr = zonesByPage[currentPage];
             let name = `zone_${zArr.length + 1}`,
                 idx = 1;
             while (zArr.some((z) => z.name === name))
                 name = `zone_${zArr.length + 1}_${idx++}`;
             zArr.push({ name, x, y, width: w, height: h });
             selectedZoneIndex = zArr.length - 1;
+            if (zArr.length>1){
+                zArr = zArr.sort((a, b) => {
+                            if (a.y !== b.y) {
+                                return a.y - b.y; // Primary sort by y
+                            } else {
+                                return a.x - b.x; // Secondary sort by x
+                            }
+                        });
+                        }
+        
             redraw();
             updateZoneButtons();
         }
@@ -280,14 +330,15 @@ resetViewBtn.onclick = () => {
 
 };
 
-// Text Extrahieren
+// Text extraction
 extractTextBtn.addEventListener("click", async () => {
     if (!Object.values(zonesByPage).some((zs) => zs.length)) {
-        alert("Keine ROIs definiert");
+        alert("No ROIs");
         return;
     }
 
     extractedTextsDiv.textContent = "";
+    spinnerOverlay.style.display = "flex";
     for (let page = 0; page < imagePages.length; page++) {
         const zs = zonesByPage[page] || [];
         if (!zs.length) continue;
@@ -308,6 +359,7 @@ extractTextBtn.addEventListener("click", async () => {
                 (extractedTextsDiv.textContent += `${el.name}:\n${el.text}\n\n`)
         );
     }
+    spinnerOverlay.style.display = "none";
 });
 
 function updateZoneButtons() {
@@ -375,7 +427,7 @@ window.addEventListener("mousemove", (e) => {
     canvasContainer.style.flex = "none";
     canvasContainer.style.width = newWidth + "px";
 
-    extractedTexts.style.width = (containerRect.width - newWidth - splitter.offsetWidth) + "px";
+    extractedTextsDiv.style.width = (containerRect.width - newWidth - splitter.offsetWidth) + "px";
 
     // Optional: redraw canvas if needed after resizing
     redraw();
@@ -387,32 +439,3 @@ window.addEventListener("mouseup", () => {
         document.body.style.cursor = "default";
     }
 });
-
-window.addEventListener("DOMContentLoaded", () => {
-  const imageUrls = JSON.parse(sessionStorage.getItem("image_urls") || "[]");
-  const fileName = sessionStorage.getItem("file_name") || "";
-
-  if (imageUrls.length > 0) {
-    // Hide file upload because it's auto-loaded
-    document.querySelector(".file-upload").style.display = "none";
-    document.getElementById("fileNameDisplay").textContent = fileName;
-
-    // Show the main layout parts
-    document.getElementById("main-split-container").style.display = "flex";
-    document.getElementById("footerbar").style.display = "block";
-
-    // Load the first image onto canvas
-    loadImageToCanvas(imageUrls[0]);
-
-    // Store current page info for navigation (if multiple pages)
-    window.currentPageIndex = 0;
-    window.imageUrls = imageUrls;
-    loadCurrentPage();
-
-    // Clean up sessionStorage (optional)
-    sessionStorage.removeItem("image_urls");
-    sessionStorage.removeItem("file_name");
-  }
-});
-
-

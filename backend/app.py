@@ -11,6 +11,8 @@ from pdf2image import convert_from_path
 # Use absolute path for frontend directory
 FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../frontend"))
 
+TEMP_FOLDER = 'tmp'
+
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 
 
@@ -55,9 +57,9 @@ def upload_text_file():
     if not uploaded_file:
         return jsonify({"error": "No file uploaded"}), 400
 
-    os.makedirs("tmp", exist_ok=True)
+    os.makedirs(TEMP_FOLDER, exist_ok=True)
     filename = secure_filename(uploaded_file.filename)
-    temp_path = os.path.join("tmp", uploaded_file.filename)
+    temp_path = os.path.join(TEMP_FOLDER, uploaded_file.filename)
     uploaded_file.save(temp_path)
 
     text = extract_text(temp_path)
@@ -80,7 +82,7 @@ def process_pdf_as_images(pdf_path, original_filename):
         images = convert_from_path(pdf_path, dpi=150)
         for i, img in enumerate(images):
             image_name = f"{original_filename}_page{i+1}.jpg"
-            image_path = os.path.join("tmp", f"{image_name}")
+            image_path = os.path.join(TEMP_FOLDER, f"{image_name}")
             img.save(image_path)
             image_urls.append(f"/uploads/{os.path.basename(image_path)}")
     except Exception as e:
@@ -103,8 +105,8 @@ def upload_image_file():
     if not uploaded_file:
         return jsonify({"error": "No file uploaded"}), 400
 
-    os.makedirs("tmp", exist_ok=True)
-    temp_path = os.path.join("tmp", uploaded_file.filename)
+    os.makedirs(TEMP_FOLDER, exist_ok=True)
+    temp_path = os.path.join(TEMP_FOLDER, uploaded_file.filename)
     uploaded_file.save(temp_path)
 
     ext = os.path.splitext(temp_path)[1].lower()
@@ -112,7 +114,7 @@ def upload_image_file():
     if ext == ".pdf":
         images = convert_from_path(temp_path, dpi=150)
         for i, img in enumerate(images):
-            image_path = os.path.join("tmp", f"{uploaded_file.filename}_page{i+1}.jpg")
+            image_path = os.path.join(TEMP_FOLDER, f"{uploaded_file.filename}_page{i+1}.jpg")
             img.save(image_path)
             image_urls.append(f"/uploads/{os.path.basename(image_path)}")
 
@@ -145,41 +147,32 @@ def predict():
 def layout_editor_page():
     return send_file(os.path.join(FRONTEND_DIR, "layout_editor.html"))
 
-
+# extract text from image defined by roi tracing
 @app.route("/extract-text", methods=["POST"])
 def extract_text_from_rois():
     from PIL import Image
     data = request.get_json()
     image_url = data.get("image_url")
     zones = data.get("zones")
-
     if not image_url or not zones:
-        return jsonify({"error": "Fehlende Parameter: image_url oder zones"}), 400
-
+        return jsonify({"error": "Parameters missed: image_url or zones"}), 400
     filename = os.path.basename(image_url)
-    local_image_path = os.path.join("tmp", filename)
-
+    local_image_path = os.path.join(TEMP_FOLDER, filename)
     if not os.path.exists(local_image_path):
-        return jsonify({"error": "Bild nicht gefunden"}), 404
-
+        return jsonify({"error": "Image not found"}), 404
     img = Image.open(local_image_path)
 
     results = []
     for zone in zones:
         x, y, w, h = map(int, (zone["x"], zone["y"], zone["width"], zone["height"]))
         roi_img = img.crop((x, y, x + w, y + h))
-
-        # Da extract_text_from_image expects a path, wir machen hier einen Workaround:
-        # Speichern temporär die ROI als Bild in den tmp-Ordner und dann auslesen
-        temp_roi_path = os.path.join("tmp", f"roi_{zone['name']}.png")
+        temp_roi_path = os.path.join(TEMP_FOLDER, f"roi_{zone['name']}.png")
         roi_img.save(temp_roi_path)
-
         text = extract_text_from_image(temp_roi_path)
-
         try:
             os.remove(temp_roi_path)
         except Exception as e:
-            print(f"Fehler beim Löschen temporärer ROI-Datei: {e}")
+            print(f"Error, unable to delete temp image: {e}")
 
         results.append({"name": zone["name"], "text": text.strip()})
 
@@ -200,4 +193,9 @@ def uploaded_files(filename):
 
 
 if __name__ == "__main__":
+    
+    import shutil
+    if os.path.exists(TEMP_FOLDER):
+        shutil.rmtree(TEMP_FOLDER)
+
     app.run(debug=True, port=8000)
