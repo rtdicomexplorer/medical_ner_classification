@@ -13,7 +13,7 @@ body {
   justify-content: space-between;
   background: #ddeaeb79;
   padding: 10px 20px;
-   color: rgb(27, 17, 160);
+   color: #004a99;
   position: relative;
 }
 
@@ -34,7 +34,7 @@ body {
 
 .nav-links li a {
   text-decoration: none;
-  color: rgb(27, 17, 160);
+  color:  #004a99;
   font-size: 1rem;
   position: relative;
 }
@@ -48,7 +48,7 @@ body {
 .nav-links li a.active {
   background-color: white;
   border-radius: 3px;
-  color: #008fd1;
+  color: #c1002a;
 }
 
 /* Disabled link style */
@@ -260,6 +260,7 @@ label {
   overflow-y: auto;
   min-height: 380px;
   max-width: 100%;
+  white-space: pre-wrap;
 }
 
 /*card home page*/

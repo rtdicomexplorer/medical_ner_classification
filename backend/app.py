@@ -141,6 +141,31 @@ def predict():
     return jsonify({'entities': raw_predictions})
 
 
+@app.route("/predict-text", methods=["POST"])
+def predict_text_from_rois():  
+    data = request.get_json()  
+    text = data.get("text", "")
+    if not text:
+        return jsonify({"error": "No text provided"}), 400
+
+    return jsonify({
+            "text": text,
+            "fallback": True  # Signal an Frontend, dass es kein Text war
+        })
+
+
+    # if not ner_model.is_ready():
+    #     ner_model.load()
+    # raw_predictions =  ner_model.predict(text)
+
+
+    # for ent in raw_predictions:
+    #     ent['score'] = float(ent['score'])
+
+    # return jsonify({'entities': raw_predictions})
+
+
+
 
 #layout editor
 @app.route("/layout_editor")

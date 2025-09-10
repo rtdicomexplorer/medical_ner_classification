@@ -216,7 +216,6 @@ function renderLegend(activeEntityTypes = []) {
         if (activeEntityTypes.includes(type)) {
 
             const nrEntitesType = activeEntityTypes.filter(ent => ent === type).length;
-            console.log(type, nrEntitesType);
             label.textContent = type + ' (#' + nrEntitesType + ')';
             label.classList.add("active-legend");
             //label.style.fontWeight = "bold";
@@ -515,8 +514,8 @@ document.querySelectorAll(".tab-button").forEach((btn) => {
 function downloadCurrentSample() {
     const selectedIndex = parseInt(sampleSelector.value, 10);
     const sample = allSamples[selectedIndex];
-
-    const blob = new Blob([JSON.stringify(sample, null, 2)], {
+    let text = '['+JSON.stringify(sample, null, 2)+']';
+    const blob = new Blob([text], {
         type: "application/json",
     });
 

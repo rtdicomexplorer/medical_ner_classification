@@ -67,16 +67,33 @@ const labelLegend = document.getElementById("labelLegend");
 const mainPanel = document.getElementById("mainPanel");
 
 const modelStatus = document.getElementById("load-model-status");
-const spinnerOverlay =  document.getElementById("loadingOverlay");
+const spinnerOverlay = document.getElementById("loadingOverlay");
 
 const hamburger = document.getElementById('hamburger');
 const navLinks = document.getElementById('navLinks');
+
+// from layout if a text has been extracted from pdf
+const textExtracted = sessionStorage.getItem("text_extracted");
+if (textExtracted) {
+  sessionStorage.clear();
+  const parsedText = JSON.parse(textExtracted);
+  annotatedText.textContent = parsedText; 
+  //loadModel();
+  predictBtn.style.display = "inline-block";
+  predictBtn.disabled = false;
+}
+
+
 
 hamburger.addEventListener('click', () => {
   navLinks.classList.toggle('show');
 });
 // ============ load model ============
-loadBtn.addEventListener("click", async () => {
+
+
+
+async function loadModel() {
+
   loadBtn.disabled = true;
   loadBtn.innerText = "Loading...";
 
@@ -91,19 +108,16 @@ loadBtn.addEventListener("click", async () => {
       loadBtn.disabled = true;
       predictBtn.disabled = true;
       fileUpload.style.display = "block";
-
       modelStatus.innerText = "✅"
-
     }
   } catch (err) {
     alert("Fehler beim Laden des Modells");
     loadBtn.disabled = false;
     loadBtn.innerText = "Load Model";
     modelStatus.innerText = "❌"
-
   }
-});
-
+}
+loadBtn.addEventListener("click", loadModel);
 
 // ============ upload file ============
 fileInput.addEventListener('change', async function () {
@@ -113,8 +127,7 @@ fileInput.addEventListener('change', async function () {
 
   const formData = new FormData();
   formData.append("file", file);
-
-   spinnerOverlay.style.display = "flex";
+  spinnerOverlay.style.display = "flex";
   const response = await fetch("/upload-text", {
     method: "POST",
     body: formData
@@ -138,7 +151,7 @@ fileInput.addEventListener('change', async function () {
 
     alert("Unsupported or corrupt file. No text or image could be extracted.");
   }
-     spinnerOverlay.style.display = "none";
+  spinnerOverlay.style.display = "none";
 });
 
 // ============ Predict ============
@@ -159,10 +172,10 @@ predictBtn.addEventListener("click", async () => {
     body: JSON.stringify({ text: text })
   });
 
+
   const data = await response.json();
   const entities = data.entities || [];
-
-
+  console.log("return from predict", entities);
   renderHighlights(text, entities);
   activeEntities = entities.map(ele => ele.entity_group);
   renderLegend(activeEntities);

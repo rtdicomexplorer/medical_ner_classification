@@ -28,6 +28,41 @@ const fileNameDisplay = document.getElementById("fileNameDisplay");
 
 const spinnerOverlay = document.getElementById("loadingOverlay");//.style.display = "flex";
 const clearBtn = document.getElementById("clearBtn");
+const predictBtn = document.getElementById("predictBtn");
+const renameBtn = document.getElementById("renameBtn");
+
+predictBtn.addEventListener("click", async () => {
+
+    const text = extractedTextsDiv.innerText;
+    if (!text.trim()) {
+        alert("Please load a report or insert a text!");
+        return;
+    }
+
+    const response = await fetch("/predict-text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: text })
+    });
+
+
+    const data = await response.json();
+    console.log(data)
+    if (data.fallback && data.text) {
+        // redirect the text to prediction page
+        sessionStorage.setItem("text_extracted", JSON.stringify(data.text));
+        window.location.href = "/predictor";
+    } else {
+
+        alert("No text could be extracted.");
+    }
+    const entities = data.entities || [];
+
+    console.log("retun from predict text", entities)
+
+});
+
+
 clearBtn.addEventListener("click", () => {
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -35,7 +70,7 @@ clearBtn.addEventListener("click", () => {
     canvas.height = 0;
 
     // Clear extracted text
-    extractedTextsDiv.innerHTML = "<em>Extracted text will show here.</em>";
+    extractedTextsDiv.innerHTML = "<em>text preview</em>";
 
     // Reset zones
     zonesByPage = {};
@@ -119,8 +154,7 @@ if (storedImageUrls && storedFileName) {
     }
 
     // Clean up sessionStorage
-    sessionStorage.removeItem("image_urls");
-    sessionStorage.removeItem("file_name");
+    sessionStorage.clear();
 }
 
 
@@ -273,16 +307,16 @@ canvas.addEventListener("mouseup", (e) => {
                 name = `zone_${zArr.length + 1}_${idx++}`;
             zArr.push({ name, x, y, width: w, height: h });
             selectedZoneIndex = zArr.length - 1;
-            if (zArr.length>1){
+            if (zArr.length > 1) {
                 zArr = zArr.sort((a, b) => {
-                            if (a.y !== b.y) {
-                                return a.y - b.y; // Primary sort by y
-                            } else {
-                                return a.x - b.x; // Secondary sort by x
-                            }
-                        });
-                        }
-        
+                    if (a.y !== b.y) {
+                        return a.y - b.y; // Primary sort by y
+                    } else {
+                        return a.x - b.x; // Secondary sort by x
+                    }
+                });
+            }
+
             redraw();
             updateZoneButtons();
         }
@@ -359,6 +393,8 @@ extractTextBtn.addEventListener("click", async () => {
                 (extractedTextsDiv.textContent += `${el.name}:\n${el.text}\n\n`)
         );
     }
+
+    predictBtn.style.display = extractedTextsDiv.innerText !== "" ? 'inline-block' : 'none';
     spinnerOverlay.style.display = "none";
 });
 
@@ -366,7 +402,7 @@ function updateZoneButtons() {
     const visible = selectedZoneIndex >= 0;
     saveBtn.style.display = visible ? "inline-block" : "none";
     deleteBtn.style.display = visible ? "inline-block" : "none";
-    renameBtn.style.display = visible ? "inline-block" : "none";
+    //renameBtn.style.display = visible ? "inline-block" : "none";
 }
 
 saveBtn.addEventListener("click", () => {
