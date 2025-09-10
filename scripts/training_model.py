@@ -4,7 +4,14 @@ from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForTokenClassification, TrainingArguments, Trainer, DataCollatorForTokenClassification
 import numpy as np
 from sklearn.metrics import precision_recall_fscore_support,classification_report
-from config import LABEL_LIST, ID2LABEL,LABEL2ID
+import os
+import sys
+# Add project root to sys.path if needed
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+from  scripts.config import LABEL_LIST, ID2LABEL,LABEL2ID
 import random
 
 # Config (could be moved to config.py)
@@ -88,10 +95,9 @@ def __set_seed(seed=42):
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
-def main():
+def main(print_examples= False):
+    print(f"Starting  print example options is: {print_examples} !")
     datasets = load_dataset("json", data_files=DATA_FILES)
-
-
     batch_size = 4
     learning_rate = 3e-5
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -124,6 +130,7 @@ def main():
         save_total_limit=2,
         seed=42,
         dataloader_drop_last=False,
+        label_smoothing_factor = 0.1
     )
 
   
@@ -142,29 +149,35 @@ def main():
     print(f"Test metrics: {test_metrics}")
 
     trainer.save_model(OUTPUT_DIR)
-    # === Evaluation on test dataset ===
-    print("\n🔎 Running evaluation on test set:")
-    metrics = trainer.evaluate(eval_dataset=tokenized_datasets["test"])
-    print(f"Evaluation results: {metrics}")
 
-    # === Generate predictions on test set ===
-    print("\n📝 Generating predictions on test set:")
-    test_predictions, test_labels, _ = trainer.predict(tokenized_datasets["test"])
-    preds = np.argmax(test_predictions, axis=2)
+    if print_examples: 
+        # === Evaluation on test dataset ===
+        print("\n🔎 Running evaluation on test set:")
+        metrics = trainer.evaluate(eval_dataset=tokenized_datasets["test"])
+        print(f"Evaluation results: {metrics}")
 
-    # Convert preds and labels back to tag strings
-    true_labels = [[ID2LABEL[l] for l in label if l != -100] for label in test_labels]
-    true_preds = [[ID2LABEL[p] for (p, l) in zip(pred, lab) if l != -100] for pred, lab in zip(preds, test_labels)]
+        # === Generate predictions on test set ===
+        print("\n📝 Generating predictions on test set:")
+        test_predictions, test_labels, _ = trainer.predict(tokenized_datasets["test"])
+        preds = np.argmax(test_predictions, axis=2)
 
-    # Example: print first 3 samples with tokens, true tags, predicted tags
-    for i in range(3):
-        print(f"\nSample {i + 1}:")
-        tokens = tokenized_datasets["test"][i]["tokens"]
-        print("Tokens:     ", tokens)
-        print("True tags:  ", true_labels[i])
-        print("Pred tags:  ", true_preds[i])
-   
+        # Convert preds and labels back to tag strings
+        true_labels = [[ID2LABEL[l] for l in label if l != -100] for label in test_labels]
+        true_preds = [[ID2LABEL[p] for (p, l) in zip(pred, lab) if l != -100] for pred, lab in zip(preds, test_labels)]
+
+        # Example: print first 3 samples with tokens, true tags, predicted tags
+        n_samples = min(3, len(tokenized_datasets["test"]))
+        for i in range(n_samples):
+            print(f"\nSample {i + 1}:")
+            print("\nTrue tags:  ", true_labels[i])
+            print("\nPred tags:  ", true_preds[i])
+  
 
 if __name__ == "__main__":
     __set_seed(42)
-    main()
+    print_examples = False
+    if len(sys.argv) > 1:
+         print_examples = sys.argv[1].lower() == 'true'
+    
+    main(print_examples)
+

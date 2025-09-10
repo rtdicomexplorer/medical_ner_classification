@@ -1,8 +1,52 @@
-# Clinical NER to FHIR Pipeline
+# NER Named Entitiy Recognition
+Named Entity Recognition (NER) is a subtask of Natural Language Processing (NLP) 
+that involves identifying and classifying key elements in text into predefined categories.
+Fundamentally, NER revolves around two primary steps:
+- identifying entities within the text and
+- categorizing these entities into distinct groups.
 
-This repository contains a complete pipeline for extracting clinical entities from documents and mapping them to FHIR resources.
+### Entity Detection
+Before performing NER, the raw text is cleaned and broken into units.  
+At its most basic, a document or sentence is just a long string of characters. 
+Tokenization is the process of breaking this string into meaningful pieces called tokens.  
+In English, tokens are often equivalent to words but can also represent punctuation or other symbols
 
----
+### Entity classification:
+Involves assigning the identified entities to specific categories or classes based on their semantic significance and context. These categories can range from person and organization to location, date, and myriad other labels depending on the application's requirements.
+
+
+## ML Approch (Statistical)
+In the realm of traditional machine learning methods for NER, models are trained on data where entities are labeled.  
+### BERT-based NER
+Input: Entire sentence.  
+Output: Label for each token  
+*example*
+
+>"Apple Inc. was founded by Steve Jobs in Cupertino."
+
+        | Token     | Entity |
+        | --------- | ------ |
+        | Apple     | B-ORG  |
+        | Inc.      | I-ORG  |
+        | was       | O      |
+        | founded   | O      |
+        | by        | O      |
+        | Steve     | B-PER  |
+        | Jobs      | I-PER  |
+        | in        | O      |
+        | Cupertino | B-LOC  |
+        | .         | O      |
+
+Tags like:
+
+        B-: Beginning of ...
+
+        I-: Inside of ...
+
+        O: Outside any named entity
+
+In our prpject we ara using  **Hugging-Face** with **gbert-base** for Geraman language..
+
 
 ## Overview
 
@@ -24,22 +68,48 @@ The pipeline processes clinical documents (PDFs, DOCX, images, TXT), extracts te
      │ Model Training (NER)│  <-- train_ner.py (Fine-tune a transformer (e.g. ClinicalBERT or DeBERTa) using Hugging Face Trainer)
      └────────┬────────────┘
               │
+              ▼  models/gber-base
+        
+### Predictions
+
+           report_xxx
+              │
               ▼
-      ┌──────────────────┐
-      │ Trained NER Model│  (e.g., fine-tuned BERT)
-      └────────┬─────────┘
-               │
-               ▼
      ┌────────────────────┐
      │ Inference Pipeline │  <-- infer_ner.py   (Use infer_ner.py to run predictions on unseen reports)
      └────────┬───────────┘
               │
               ▼
       ┌──────────────────────┐
-      │ NER Output (Entities)│ --- (Returns detected entity spans and labels.)
+      │ NER Output (Entities)│ --- (Returns detected entity spans and labels. )
       └────────┬─────────────┘
                │
                ▼
+predictions/            output/                      
+report_xxx.json         compare_postprocessing_report_xxx.html
+        
+
+
+
+### Evaluation:
+ To evaluate the model, we have created expected results (update of previous prediction)  
+ and compare those with the new prediction.  
+ The results of the evaluation will saved in evaluation_report..
+
+        
+        prediction  expected
+      ┌──────────────────────┐
+      │    evaluate_ner.py   │ --- (Returns detected entity spans and labels. )
+      └────────┬─────────────┘
+               │
+               ▼
+        ** evaluation ?
+
+
+
+        ------------------------------------------------Not yet ready
+
+
      ┌──────────────────────────┐
      │ FHIR Mapping Logic       │  <-- fhir_mapper.py (DOCTOR → Practitioner, DIAGNOSIS → Condition,MEDICATION → MedicationRequest)
      └────────┬─────────────────┘
@@ -51,82 +121,22 @@ The pipeline processes clinical documents (PDFs, DOCX, images, TXT), extracts te
 
 
 
-## Prediction Pipeline Steps
-
-1. **Text Extraction**  
-   Handles different file types:
-   - PDFs (normal and scanned via OCR)  
-   - DOCX documents  
-   - Images (PNG, JPG, TIFF, etc.)  
-   - Plain text files (TXT)  
-
-2. **NER Inference**  
-   Uses a fine-tuned ClinicalBERT model for token classification to extract entities such as PERSON, DOCTOR, DIAGNOSIS, MEDICATION, etc.
-
-3. **Mapping to FHIR**  
-   Converts detected entities into appropriate FHIR resource JSON structures, e.g., Patient, Condition, MedicationRequest.
-
----
-## File Structure
-
-- `text_extractor.py`  
-  Extracts raw text from various document formats.
-
-- `generate_data.py`  
-  Generates synthetic labeled clinical text data for training.
-
-- `train_ner.py`  
-  Fine-tunes the ClinicalBERT model on synthetic data.
-
-- `infer_ner.py`  
-  Loads the trained model and runs inference on extracted text.
-
-- `ner_to_fhir.py`  
-  Maps NER entities to FHIR resources.
-
-- `config.py`  
-  Configuration and label mappings.
-
----
-
 ## Usage
 python -m venv venv
 - venv\Scripts\activate (win)
 - source venv/bin/activate  (linux)
+install tesseract: 
+ Windows: 
+ download https://github.com/UB-Mannheim/tesseract/wiki (also GERMAN Language)
+
+ UBUNTU:  
+> sudo apt update
+> sudo apt install tesseract-ocr
+> sudo apt install tesseract-ocr-deu
+
+
 
 pip install -r requirements.txt
-
-
-### Training:
-
-- python generate_data.py
-- python train_ner.py
-
---- 
-
-
-### Extract text from a file:
-
-from text_extractor import extract_text_from_file
-text = extract_text_from_file("path/to/document.pdf")
-print(text)
-
----
-
-### Run NER inference on extracted text:
-from infer_ner import load_model, infer_text
-
-nlp = load_model()
-entities = infer_text(nlp, text)
-print(entities)
-
----
-### Map NER results to FHIR:
-
-from ner_to_fhir import map_ner_to_fhir
-
-fhir_resources = map_ner_to_fhir(entities)
-print(fhir_resources)
 
 ---
 ## Contaact
@@ -159,16 +169,18 @@ Want me to help you save this as a file or customize it?
 
 
 
-
-
-
 ### question
 I'd like to train a model that can recovery medical information, name date diagnosis etc from medical report. How can I proced
 
 
-### https://medium.com/one-medical-technology/rapid-prototyping-and-deployment-of-clinical-nlp-models-e4096e3ce833
+### related works
+- https://medium.com/one-medical-technology/rapid-prototyping-and-deployment-of-clinical-nlp-models-e4096e3ce833
 
-#### links
+- https://www.youtube.com/watch?v=tk4ykvAvV7w
+
+- https://www.mdpi.com/2076-3417/15/6/3379
+
+#### tools
 - https://github.com/doccano/doccano
 
 
@@ -236,4 +248,15 @@ Compare model output against labeled data
 
 Use seqeval, classification_report, etc.
 
-#### previous works : https://www.mdpi.com/2076-3417/15/6/3379
+
+
+
+root-| scripts      (__init__.py,predictions.py, training.py, utils.py, config.py)
+     | backend      (__init__.py, app.py)    
+     | frontend     (index.html, predict.css, predict.js)    
+     | models       (gbert-base)    
+
+                        toolbar
+
+     column1           | column 2               | column 3
+     (input text area) |Annotated text          | Entities

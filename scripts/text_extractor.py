@@ -5,7 +5,7 @@ from docx import Document
 import pytesseract
 from PIL import Image
 from pdf2image import convert_from_path
-
+import pytesseract
 def extract_text_from_txt(txt_path):
     text = ""
     try:
@@ -63,9 +63,9 @@ def extract_text(file_path):
     if ext == ".pdf":
         # Try extracting text normally first
         text = extract_text_from_pdf(file_path)
-        if len(text.strip()) < 100:  # Heuristic: If too little text, might be scanned PDF
+        if len(text.strip()) < 10:  # Heuristic: If too little text, might be scanned PDF
             print("Detected likely scanned PDF. Running OCR...")
-            text = extract_text_from_scanned_pdf(file_path)
+           # text = extract_text_from_scanned_pdf(file_path)
         return text
 
     elif ext == ".docx":

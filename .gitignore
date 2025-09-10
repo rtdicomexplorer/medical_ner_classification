@@ -4,6 +4,12 @@ venv
 data
 txt_reports
 __pycache__
-models
-*output/
+models*
+*output*/
 finetuner/
+*.html
+expected/
+predictions/
+temp/
+tmp/
+entities

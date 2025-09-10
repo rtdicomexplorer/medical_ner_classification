@@ -1,0 +1,37 @@
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border: 1px solid #aaa;
+  padding: 8px;
+  text-align: left;
+}
+
+th {
+  background-color: #eee;
+}
+
+.highlight {
+  padding: 1px 2px;
+  border-radius: 3px;
+  color: #000;
+}
+
+
+#entities-scroll {
+  max-height: 600px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  padding: 10px;
+  background: #fff;
+  margin-bottom: 10px;
+}
+
+
+
+
+
