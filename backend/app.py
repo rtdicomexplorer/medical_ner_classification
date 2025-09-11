@@ -153,24 +153,56 @@ def predict_text_from_rois():
             "fallback": True  # Signal an Frontend, dass es kein Text war
         })
 
-
-    # if not ner_model.is_ready():
-    #     ner_model.load()
-    # raw_predictions =  ner_model.predict(text)
-
-
-    # for ent in raw_predictions:
-    #     ent['score'] = float(ent['score'])
-
-    # return jsonify({'entities': raw_predictions})
-
-
-
-
 #layout editor
 @app.route("/layout_editor")
 def layout_editor_page():
     return send_file(os.path.join(FRONTEND_DIR, "layout_editor.html"))
+
+def build_text_by_rows_with_columns(rois, logical_width=1000, y_threshold=25):
+    from collections import defaultdict
+
+    # Group ROIs into rows based on Y position (within y_threshold)
+    rows = defaultdict(list)
+    for roi in rois:
+        y = roi['y']
+        assigned = False
+        for row_y in rows:
+            if abs(y - row_y) < y_threshold:
+                rows[row_y].append(roi)
+                assigned = True
+                break
+        if not assigned:
+            rows[y].append(roi)
+
+    # Sort rows by Y
+    sorted_rows = sorted(rows.items(), key=lambda r: r[0])
+    all_lines = []
+
+    for _, row_rois in sorted_rows:
+        # Sort ROIs left to right
+        row_rois_sorted = sorted(row_rois, key=lambda r: r['x'])
+
+        # Track text fragments to be merged for this row
+        row_fragments = []
+
+        for roi in row_rois_sorted:
+            x_start = roi['x']
+            indent_level = int((x_start / logical_width) * 80)
+            indent = ' ' * indent_level
+
+            # Preserve multiline text
+            text_lines = roi['text'].splitlines()
+            for line in text_lines:
+                if line.strip():
+                    row_fragments.append(f"{indent}{line.strip()}")
+                else:
+                    row_fragments.append("")
+
+        # Add the row's lines to the full output
+        all_lines.extend(row_fragments)
+        all_lines.append("")  # Extra newline between rows for clarity
+
+    return '\n'.join(all_lines)
 
 # extract text from image defined by roi tracing
 @app.route("/extract-text", methods=["POST"])
@@ -198,9 +230,19 @@ def extract_text_from_rois():
             os.remove(temp_roi_path)
         except Exception as e:
             print(f"Error, unable to delete temp image: {e}")
-
-        results.append({"name": zone["name"], "text": text.strip()})
-
+        results.append({
+            "name": zone["name"],
+            "text": text.strip(),
+            "x": x,
+            "y": y,
+            "width": w,
+            "height": h
+        })
+        #results.append({"name": zone["name"], "text": text.strip()})
+    # formatted_text = build_text_by_rows_with_columns(results, logical_width=img.width)
+    if not ner_model.is_ready():
+        ner_model.load()
+    #return jsonify(formatted_text)
     return jsonify(results)
 
 

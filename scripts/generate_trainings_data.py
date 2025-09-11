@@ -165,14 +165,12 @@ def __generate_paraphrase_more_text(values):
             # values[ent] ist Liste → paraphrasiere alle und füge hinzu
             for val in values[ent]:
                 paraphrase = paraphrase_entity(ent, val)
-                #paraphrase = f"{paraphrase} {random.choice(' ', '\n')}"
                 phrases.append(paraphrase)
 
     # Paraphrase für Einmal-Entities
     for ent in ENTITY_LIST:
         if ent in values and ent not in MORE_VAL_ENTITIES:
             paraphrase = paraphrase_entity(ent, values[ent])
-            #paraphrase = f"{paraphrase} {random.choice(' ', '\n')}"
             phrases.append(paraphrase)
     
     random.shuffle(phrases)
@@ -291,9 +289,7 @@ if __name__ == "__main__":
         n_samples = int(sys.argv[1])
     if len(sys.argv) > 2:
         save_reports = sys.argv[2].lower() == 'true'
-    if len(sys.argv) > 3:
-        clean_data = sys.argv[3].lower() == 'true'
-    print(f"Starting generation of {n_samples} data!\n Saving reports is {save_reports}!\n Cleaning data option {clean_data}!")
+    print(f"Starting generation of {n_samples} data!\n Saving reports is {save_reports}!\n !")
     __generate_dataset(n_samples=n_samples, save_reports=save_reports,)
 
 

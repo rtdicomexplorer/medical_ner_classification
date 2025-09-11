@@ -1,3 +1,10 @@
+
+
+<p align="center">
+  <img src="frontend/clinical_data_extractor.png" alt="Projekt Logo" width="200"/>
+</p>
+
+
 # NER Named Entitiy Recognition
 Named Entity Recognition (NER) is a subtask of Natural Language Processing (NLP) 
 that involves identifying and classifying key elements in text into predefined categories.
@@ -6,23 +13,25 @@ Fundamentally, NER revolves around two primary steps:
 - categorizing these entities into distinct groups.
 
 ### Entity Detection
-Before performing NER, the raw text is cleaned and broken into units.  
-At its most basic, a document or sentence is just a long string of characters. 
-Tokenization is the process of breaking this string into meaningful pieces called tokens.  
-In English, tokens are often equivalent to words but can also represent punctuation or other symbols
+Before performing NER, the raw text is cleaned and broken into units (token).  
+In English, tokens are often equivalent to words but can also represent punctuation or other symbols.
 
 ### Entity classification:
-Involves assigning the identified entities to specific categories or classes based on their semantic significance and context. These categories can range from person and organization to location, date, and myriad other labels depending on the application's requirements.
+Involves assigning the identified entities to specific categories or classes based on their semantic significance and context.
+<br>These categories can range from person and organization to location, date, and myriad other labels depending on the application's requirements.
 
 
 ## ML Approch (Statistical)
 In the realm of traditional machine learning methods for NER, models are trained on data where entities are labeled.  
-### BERT-based NER
+
+
+In our prpject we ara using  **Hugging-Face** with **gbert-base** for German language..
+### GBERT-based NER
 Input: Entire sentence.  
 Output: Label for each token  
 *example*
 
->"Apple Inc. was founded by Steve Jobs in Cupertino."
+>"Apple Inc. was founded on April 1, 1976 by Steve Jobs in Cupertino."
 
         | Token     | Entity |
         | --------- | ------ |
@@ -30,68 +39,114 @@ Output: Label for each token
         | Inc.      | I-ORG  |
         | was       | O      |
         | founded   | O      |
+        | on        | O      |
+        | April     | B-DATE |
+        | 1         | I-DATE |
+        | ,         | I-DATE |
+        | 1976      | I-DATE |
         | by        | O      |
         | Steve     | B-PER  |
         | Jobs      | I-PER  |
         | in        | O      |
         | Cupertino | B-LOC  |
         | .         | O      |
+The Entities, defined by **LABEL** are in this case: 
+
+        ORG
+        PER
+        LOC
+        DATE
 
 Tags like:
 
         B-: Beginning of ...
-
         I-: Inside of ...
-
         O: Outside any named entity
 
-In our prpject we ara using  **Hugging-Face** with **gbert-base** for Geraman language..
+
+### TRAININGS DATA
+To train the model, a significant amount of data consisting of tokens and their positions in a json structure is needed.
+
+       [
+                {
+                "tokens": [
+                                "Apple", "Inc.", "was", "founded", "on", "April", "1", ",", "1976",
+                                "by", "Steve", "Jobs", "in", "Cupertino", "."
+                        ],
+                "ner_tags": [
+                                1, 2, 0, 0, 0, 6, 7, 7, 7,
+                                0, 3, 4, 0, 5, 0
+                        ]
+                }
+        ]
+
+
+The program includes a script that can generate synthetic data based on templates and paraphrases.
+
+### OUTPUT DATA
+For the sentece: 
+> "Microsoft Inc. was founded on April 4, 1975 by Bill Gates in Albuquerque."
+
+
+        [
+                {
+                        "entity_group": "ORG",
+                        "word": "Microsoft Inc.",
+                        "start": 0,
+                        "end": 15,
+                        "score": 1.0
+                },
+                {
+                        "entity_group": "DATE",
+                        "word": "April 4, 1975",
+                        "start": 26,
+                        "end": 40,
+                        "score": 1.0
+                },
+                {
+                        "entity_group": "PERSON",
+                        "word": "Bill Gates",
+                        "start": 44,
+                        "end": 54,
+                        "score": 1.0
+                },
+                {
+                        "entity_group": "LOC",
+                        "word": "Albuquerque",
+                        "start": 58,
+                        "end": 69,
+                        "score": 1.0
+                }
+        ]
+
+
 
 
 ## Overview
 
-The pipeline processes clinical documents (PDFs, DOCX, images, TXT), extracts text, runs Named Entity Recognition (NER) using a fine-tuned ClinicalBERT model, and maps recognized entities to FHIR standard resources.
+### Trainings PIPELINE
 
----
+> 1 - Generate synthetic data: python .\scripts\generate_new_data.py -nr-data(int)  -save-reports(bool) it generates nr data splitted in tran.json, test.json, val.json in **./data/**; if you decide to save the reports, then all rports will be saved in **./txt_reports/** and the entities in **./entities/** it will be saved also all.json in ./data
+<br> 2 - Train the model:  python .\scrips\training_model.py
+<br> 3 - After the training the new model has been saved into models/gbert-base   
 
-       ┌────────────────────┐
-       │ Synthetic Data Gen │  <-- generate_data.py  (Inject labeled entities: PERSON, DOCTOR, ORG, DIAGNOSIS, etc.)
-       └────────┬───────────┘
-                │
-                ▼
-        ┌──────────────┐
-        │ Token Labeler│  (BIO tags) (Convert text and labeled spans to token-level BIO format.) z.B. "Max" → B-PERSON, "Müller" → I-PERSON
-        └─────┬────────┘
-              │
-              ▼
-     ┌─────────────────────┐
-     │ Model Training (NER)│  <-- train_ner.py (Fine-tune a transformer (e.g. ClinicalBERT or DeBERTa) using Hugging Face Trainer)
-     └────────┬────────────┘
-              │
-              ▼  models/gber-base
-        
-### Predictions
 
-           report_xxx
-              │
-              ▼
-     ┌────────────────────┐
-     │ Inference Pipeline │  <-- infer_ner.py   (Use infer_ner.py to run predictions on unseen reports)
-     └────────┬───────────┘
-              │
-              ▼
-      ┌──────────────────────┐
-      │ NER Output (Entities)│ --- (Returns detected entity spans and labels. )
-      └────────┬─────────────┘
-               │
-               ▼
-predictions/            output/                      
-report_xxx.json         compare_postprocessing_report_xxx.html
-        
+### Prediction PIPELINE
+The pipeline processes extracted texts from clinical documents (PDFs, DOCX, images, TXT, Scans). 
+
+let run: python ./scripts/predictions_ner.py -filename
+
+the prediction will be saved in ./prediction/filename.json
+in ./output/ is also saved the ner_tag.json and a compare.html, that display the differences after a postprocessing process (**not yet testet** )
+
+
+  
 
 
 
-### Evaluation:
+## TO DO
+
+### 1- Evaluation (to be updated....):
  To evaluate the model, we have created expected results (update of previous prediction)  
  and compare those with the new prediction.  
  The results of the evaluation will saved in evaluation_report..
@@ -99,7 +154,7 @@ report_xxx.json         compare_postprocessing_report_xxx.html
         
         prediction  expected
       ┌──────────────────────┐
-      │    evaluate_ner.py   │ --- (Returns detected entity spans and labels. )
+      │    validate_prediction.py   │ --- (Returns detected entity spans and labels. )
       └────────┬─────────────┘
                │
                ▼
@@ -107,47 +162,7 @@ report_xxx.json         compare_postprocessing_report_xxx.html
 
 
 
-        ------------------------------------------------Not yet ready
-
-
-     ┌──────────────────────────┐
-     │ FHIR Mapping Logic       │  <-- fhir_mapper.py (DOCTOR → Practitioner, DIAGNOSIS → Condition,MEDICATION → MedicationRequest)
-     └────────┬─────────────────┘
-              │
-              ▼
-     ┌──────────────────────────┐
-     │ FHIR Resources (JSON)    │  --> Output (fhir_output.json)
-     └──────────────────────────┘
-
-
-
-## Usage
-python -m venv venv
-- venv\Scripts\activate (win)
-- source venv/bin/activate  (linux)
-install tesseract: 
- Windows: 
- download https://github.com/UB-Mannheim/tesseract/wiki (also GERMAN Language)
-
- UBUNTU:  
-> sudo apt update
-> sudo apt install tesseract-ocr
-> sudo apt install tesseract-ocr-deu
-
-
-
-pip install -r requirements.txt
-
----
-## Contaact
-For questions or collaboration, please contact [Your Name] at [michele.bufano@uniklinik-freiburg.de].
-
-Want me to help you save this as a file or customize it?
-
-
-
-
-### Mapping Clinical Label to FHIR
+### 2- Entities to FHIR 
 
 | NER Label       | Example Entities       | Corresponding FHIR Resource                 |
 | --------------- | ---------------------- | ------------------------------------------- |
@@ -169,8 +184,63 @@ Want me to help you save this as a file or customize it?
 
 
 
-### question
-I'd like to train a model that can recovery medical information, name date diagnosis etc from medical report. How can I proced
+
+
+
+
+
+
+## Usage
+
+### Prerequisite
+python -m venv venv
+- venv\Scripts\activate (win)
+- source venv/bin/activate  (linux)
+
+install tesseract: 
+ Windows: 
+ download https://github.com/UB-Mannheim/tesseract/wiki (also GERMAN Language)
+
+ UBUNTU:  
+> sudo apt update
+> sudo apt install tesseract-ocr
+> sudo apt install tesseract-ocr-deu
+
+pip install -r requirements.txt
+
+
+### WEB APP
+
+The project contains also a small flask/app to manage the predictions:
+
+> python ./backend/app.py
+
+
+
+
+
+---
+
+## Citation
+
+```tex
+@misc{doccano,
+  title={{MEDICAL_NER_CLASSIFICATION}: Clinical data extractor.},
+  url={https://github.com/rtdicomexplorer/medical_ner_classification},
+  note={Software available from https://github.com/rtdicomexplorer/medical_ner_classification},
+  author={
+    Michele Bufano},
+    year={2025},
+}
+```
+
+
+
+
+
+## Contaact
+For questions or collaboration, please contact [the author](https://github.com/rtdicomexplorer)
+
 
 
 ### related works
@@ -180,83 +250,9 @@ I'd like to train a model that can recovery medical information, name date diagn
 
 - https://www.mdpi.com/2076-3417/15/6/3379
 
-#### tools
-- https://github.com/doccano/doccano
 
 
 
--git remote add origin REMOTE-URL
+#### to remember
+- git remote add origin REMOTE-URL
 
-
-
-## High-Level Diagram Outline
-🧾 Input: Clinical Text (e.g., patient history, discharge summary, etc.)
-⬇️
-1. Preprocessing
-
-Clean text
-
-Sentence/token split (optional)
-
-Handle encoding, OCR artifacts, etc.
-
-⬇️
-2. NER Model Inference
-
-Model: fine-tuned ClinicalBERT
-
-Output: list of labeled entities (with confidence, spans)
-
-⬇️
-3. Postprocessing
-
-Filter low-confidence entities
-
-Resolve overlaps/conflicts
-
-Merge fragmented spans
-
-⬇️
-4. Normalization (UMLS API)
-
-Map entities to:
-
-ICD-10 / SNOMED CT (Diagnosis)
-
-RxNorm (Medications)
-
-Adds standard codes and names
-
-⬇️
-5. FHIR Mapping
-
-Convert entities to:
-
-Patient, Condition, MedicationRequest, etc.
-
-Use normalization output when available
-
-⬇️
-6. Output: FHIR Bundle (JSON)
-
-A full structured representation of the medical information
-
-⬇️
-7. (Optional) Evaluation
-
-Compare model output against labeled data
-
-Use seqeval, classification_report, etc.
-
-
-
-
-root-| scripts      (__init__.py,predictions.py, training.py, utils.py, config.py)
-     | backend      (__init__.py, app.py)    
-     | frontend     (index.html, predict.css, predict.js)    
-     | models       (gbert-base)    
-
-                        toolbar
-
-     column1           | column 2               | column 3
-     (input text area) |Annotated text          | Entities

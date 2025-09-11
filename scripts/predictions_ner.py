@@ -76,14 +76,14 @@ class NERModel:
     def is_ready(self):
         return self.pipeline is not None
 
-def smart_chunk_text(text, max_chars=1500, allowed_breaks={'\n', ';', ' '}):
+def smart_chunk_text(text, max_chars=1500):
     """
-    Splits text into chunks of roughly max_chars, extending to the next allowed character if needed.
+    Splits text into pieces of roughly max_chars.
     """
 
-    return my_chunk_text(text,)
+    return __smart_chunk_text(text=text, max_chars=max_chars)
 
-def my_chunk_text(text, max_chars=1500):
+def __smart_chunk_text(text, max_chars=1500):
     chunks = []
     elements = text.splitlines(keepends=True)  # Keeps '\n' in each element!
     chunk = ''
@@ -100,31 +100,6 @@ def my_chunk_text(text, max_chars=1500):
 
     print(len(''.join(chunks)), len(text))  # Should now match exactly
     return chunks
-
-
-def my_chunk_text_(text, max_chars=1500):
-    chunks = []
-    elements = text.split('\n')
-    chunk = ''
-    
-    for element in elements:
-        # Re-add the newline that was removed by split('\n')
-        line = element + '\n'
-        
-        if len(chunk) + len(line) < max_chars:
-            chunk += line
-        else:
-            chunks.append(chunk)
-            chunk = line  # Start new chunk with this line
-    
-    if chunk:
-        chunks.append(chunk)  # Add the last chunk
-
-    print(len(''.join(chunks)), len(text))  # Should be equal
-    return chunks
-
-
-
 
 ner_model = NERModel()
 
@@ -263,8 +238,6 @@ def __execute_predictions(text):
 
 def main(file_path):
 
-
-
     _, report_file_name = os.path.split(file_path)
     
     report_file_name, _ = os.path.splitext(report_file_name) 
@@ -280,7 +253,8 @@ def main(file_path):
         entity_type = ent.get("entity_group", ent.get("entity"))
         # print(ent)
         print(f"Entity: '{ent['word']}'  |  Type: {entity_type}  |  Score: {ent['score']:.3f}")
-    #postprocess the entities to make them clean...
+    
+    #postprocess the entities to make them clean...to be tested and updated
     cleaned_entities = postprocess_entities(predictions)
 
     __save_predictions(cleaned_entities,report_file_name)
@@ -300,13 +274,11 @@ def main(file_path):
 if __name__ == "__main__":
     import sys
     file_path = './documents/artz_brief.txt'
-    file_path = './documents/pers_report.pdf'
     #file_path = './txt_reports/report_30.txt'
    # file_path = './documents/sample_adult_history_de.txt'
     if len(sys.argv) == 2:   
-        file_path = sys.argv[1]
-        if not os.path.exists(file_path):
+        file_path = sys.argv[1]           
+    if not os.path.exists(file_path):
             print(f"File not found: {file_path}")
             exit(1)
-    
     main(file_path)

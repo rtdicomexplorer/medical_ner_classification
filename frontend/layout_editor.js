@@ -388,6 +388,7 @@ extractTextBtn.addEventListener("click", async () => {
         }
         const data = await res.json();
         extractedTextsDiv.textContent += `=== Seite ${page + 1} ===\n`;
+    //    extractedTextsDiv.textContent+= `${data}\n`;    
         data.forEach(
             (el) =>
                 (extractedTextsDiv.textContent += `${el.name}:\n${el.text}\n\n`)

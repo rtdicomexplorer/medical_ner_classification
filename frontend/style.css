@@ -13,7 +13,7 @@ body {
   justify-content: space-between;
   background: #ddeaeb79;
   padding: 10px 20px;
-   color: #004a99;
+  color: #004a99;
   position: relative;
 }
 
@@ -34,7 +34,7 @@ body {
 
 .nav-links li a {
   text-decoration: none;
-  color:  #004a99;
+  color: #004a99;
   font-size: 1rem;
   position: relative;
 }
@@ -132,10 +132,10 @@ body {
 }
 
 .container {
- margin: 10px;
- padding-left: 10px;
- padding-right: 10px;
-   flex: 1 1 auto;
+  margin: 10px;
+  padding-left: 10px;
+  padding-right: 10px;
+  flex: 1 1 auto;
   background-color: transparent;
   display: flex;
   flex-direction: column;
@@ -254,7 +254,7 @@ label {
   border: 1px solid #ccc;
   border-radius: 8px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-  white-space: normal;
+  white-space: pre-wrap;
   word-wrap: break-word;
   max-height: 600px;
   overflow-y: auto;
@@ -421,9 +421,7 @@ ul.horz-list {
   }
 }
 
-
 /*Entities*/
-
 
 #labelLegend {
   display: flex;
@@ -433,7 +431,7 @@ ul.horz-list {
 }
 
 #labelLegend span {
-  cursor: pointer; 
+  cursor: pointer;
 }
 
 #labelLegend span:hover {
@@ -459,11 +457,10 @@ ul.horz-list {
 }
 
 .highlighted-entity {
-    outline: 2px solid black;
-    box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
-    font-weight: bold;
+  outline: 2px solid black;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
+  font-weight: bold;
 }
-
 
 .entity:hover {
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.2);

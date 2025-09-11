@@ -78,9 +78,9 @@ if (textExtracted) {
   sessionStorage.clear();
   const parsedText = JSON.parse(textExtracted);
   annotatedText.textContent = parsedText; 
-  //loadModel();
   predictBtn.style.display = "inline-block";
   predictBtn.disabled = false;
+  modelStatus.innerText = "✅"
 }
 
 
