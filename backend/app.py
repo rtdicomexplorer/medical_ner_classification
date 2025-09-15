@@ -6,15 +6,16 @@ from flask import Flask, request, jsonify, send_from_directory,send_file
 from scripts.predictions_ner import ner_model
 from scripts.text_extractor import extract_text_from_image, extract_text
 from werkzeug.utils import secure_filename
-from scripts.utils import validate_ner_sample_smart
+from scripts.utils import validate_ner_sample_smart, generate_ner_data
 from pdf2image import convert_from_path
 # Use absolute path for frontend directory
 FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../frontend"))
 
 TEMP_FOLDER = 'tmp'
+from flask_cors import CORS
 
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
-
+CORS(app)
 
 @app.route("/")
 def home_page():
@@ -68,7 +69,7 @@ def upload_text_file():
         os.remove(temp_path)
         return jsonify({"text": text})
 
-# Fallback: zu "upload_image_logic" springen
+# Fallback: to "upload_image_logic" jumping
     if filename.lower().endswith(".pdf"):
         return process_pdf_as_images(temp_path, filename)
     
@@ -132,13 +133,12 @@ def predict():
     if not text:
         return jsonify({"error": "No text provided"}), 400
 
-    raw_predictions =  ner_model.predict(text)
-
-
-    for ent in raw_predictions:
+    predictions =  ner_model.predict(text)
+    ner_data = generate_ner_data(text, predictions)
+    for ent in predictions:
         ent['score'] = float(ent['score'])
 
-    return jsonify({'entities': raw_predictions})
+    return jsonify({'entities': predictions, 'ner_data':ner_data})
 
 
 @app.route("/predict-text", methods=["POST"])
@@ -238,12 +238,11 @@ def extract_text_from_rois():
             "width": w,
             "height": h
         })
-        #results.append({"name": zone["name"], "text": text.strip()})
-    # formatted_text = build_text_by_rows_with_columns(results, logical_width=img.width)
+    formatted_text = build_text_by_rows_with_columns(results, logical_width=img.width)
     if not ner_model.is_ready():
         ner_model.load()
-    #return jsonify(formatted_text)
-    return jsonify(results)
+    return jsonify(formatted_text)
+    #return jsonify(results)
 
 
 

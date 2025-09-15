@@ -56,6 +56,8 @@ const ENTITY_COLORS = {
   VITALSIGNS: "#24d332",
 };
 
+let prediction_entities = null;
+let ner_data = null;
 const loadBtn = document.getElementById("load-btn");
 const predictBtn = document.getElementById("predict-btn");
 const clearBtn = document.getElementById("clear-btn");
@@ -72,26 +74,56 @@ const spinnerOverlay = document.getElementById("loadingOverlay");
 
 const hamburger = document.getElementById('hamburger');
 const navLinks = document.getElementById('navLinks');
+const saveBtn = document.getElementById("saveBtn");
+
+const predictBar = document.getElementById('predict-bar');
+
+saveBtn.addEventListener("click", () => {
+  if (prediction_entities) {
+    const jsonString = JSON.stringify(prediction_entities, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "entities.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  if (ner_data) {
+    const jsonString = '[' + JSON.stringify(ner_data, null, 2) + ']';
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "ner_data.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+});
+
 
 // from layout if a text has been extracted from pdf
 const textExtracted = sessionStorage.getItem("text_extracted");
 if (textExtracted) {
   sessionStorage.clear();
   const parsedText = JSON.parse(textExtracted);
-  originalText.value = parsedText; 
+  originalText.value = parsedText;
   predictBtn.style.display = "inline-block";
   predictBtn.disabled = false;
   modelStatus.innerText = "✅"
+  // predictBar.style.display = "inline-block";
 }
-
-
 
 hamburger.addEventListener('click', () => {
   navLinks.classList.toggle('show');
 });
 // ============ load model ============
-
-
 
 async function loadModel() {
 
@@ -123,9 +155,7 @@ loadBtn.addEventListener("click", loadModel);
 // ============ upload file to predict ============
 fileInput.addEventListener('change', async function () {
   const file = this.files[0];
-
   if (!file) return;
-
   const formData = new FormData();
   formData.append("file", file);
   spinnerOverlay.style.display = "flex";
@@ -172,17 +202,19 @@ predictBtn.addEventListener("click", async () => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text: text })
   });
-
-
   const data = await response.json();
-  const entities = data.entities || [];
-  console.log("return from predict", entities);
-  renderHighlights(text, entities);
-  activeEntities = entities.map(ele => ele.entity_group);
+  prediction_entities = data.entities || [];
+  ner_data = data.ner_data || '';
+  renderHighlights(text, prediction_entities);
+  activeEntities = prediction_entities.map(ele => ele.entity_group);
   renderLegend(activeEntities);
-  renderTable(entities);
+  renderTable(prediction_entities);
+  updateJsonPreview(ner_data)
   clearBtn.style.display = "inline-block";
   predictBtn.innerText = "Predicted";
+  saveBtn.style.display = "inline-block";
+
+  predictBar.style.display = "inline-block";
 
 });
 
@@ -278,8 +310,10 @@ function escapeHTML(text) {
 
 
 function clean() {
+  prediction_entities = null;
+  ner_data = null;
   annotatedText.innerHTML = "";
-  originalText.value ="";
+  originalText.value = "";
   document.querySelector("#results-table tbody").innerHTML = "";
   labelLegend.innerHTML = "";
   clearBtn.style.display = "none";
@@ -369,4 +403,21 @@ document.querySelectorAll(".tab-button").forEach((btn) => {
     btn.classList.add("active");
     document.getElementById(btn.dataset.tab).style.display = "block";
   });
+});
+
+
+function updateJsonPreview(data) {
+  const formatted = JSON.stringify(data, null, 2);
+  const lines = formatted.split("\n");
+
+  const preview = document.getElementById("jsonPreview");
+  const lineNumbers = document.getElementById("jsonLineNumbers");
+
+  preview.textContent = formatted;
+  lineNumbers.textContent = lines.map((_, i) => (i + 1)).join("\n");
+}
+
+
+document.getElementById("jsonPreview").addEventListener("scroll", (e) => {
+  document.getElementById("jsonLineNumbers").scrollTop = e.target.scrollTop;
 });
