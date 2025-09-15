@@ -62,7 +62,8 @@ const clearBtn = document.getElementById("clear-btn");
 const fileInput = document.getElementById("fileInput");
 const fileUpload = document.getElementById("file-upload");
 const fileNameDisplay = document.getElementById("fileNameDisplay");
-const annotatedText = document.getElementById("annotated-text")
+const annotatedText = document.getElementById("annotated-text");
+const originalText = document.getElementById("originalText")
 const labelLegend = document.getElementById("labelLegend");
 const mainPanel = document.getElementById("mainPanel");
 
@@ -77,7 +78,7 @@ const textExtracted = sessionStorage.getItem("text_extracted");
 if (textExtracted) {
   sessionStorage.clear();
   const parsedText = JSON.parse(textExtracted);
-  annotatedText.textContent = parsedText; 
+  originalText.value = parsedText; 
   predictBtn.style.display = "inline-block";
   predictBtn.disabled = false;
   modelStatus.innerText = "✅"
@@ -103,10 +104,10 @@ async function loadModel() {
 
     if (result.status.includes("loaded")) {
       // Modell geladen → Predict zeigen
-      predictBtn.style.display = "inline-block";
       loadBtn.innerText = "Model Loaded";
       loadBtn.disabled = true;
-      predictBtn.disabled = true;
+      predictBtn.style.display = "inline-block";
+      predictBtn.disabled = false;
       fileUpload.style.display = "block";
       modelStatus.innerText = "✅"
     }
@@ -119,7 +120,7 @@ async function loadModel() {
 }
 loadBtn.addEventListener("click", loadModel);
 
-// ============ upload file ============
+// ============ upload file to predict ============
 fileInput.addEventListener('change', async function () {
   const file = this.files[0];
 
@@ -138,7 +139,7 @@ fileInput.addEventListener('change', async function () {
   if (data.text) {
     // Extracted text → continue as usual
     clean();
-    annotatedText.innerText = data.text;
+    originalText.value = data.text;
     predictBtn.disabled = false;
     predictBtn.innerText = "Predict";
     fileNameDisplay.textContent = file ? file.name : "no file selected";
@@ -156,7 +157,7 @@ fileInput.addEventListener('change', async function () {
 
 // ============ Predict ============
 predictBtn.addEventListener("click", async () => {
-  const text = annotatedText.innerText;
+  const text = originalText.value;//   annotatedText.innerText;
 
   if (!text.trim()) {
     alert("Please load a report or insert a text!");
@@ -237,11 +238,12 @@ function renderHighlights(text, entities) {
 
     currentIndex = ent.end;
   }
-
+  originalText.style.display = 'none';
   // Add remaining text after last entity
   container.append(document.createTextNode(text.slice(currentIndex)));
   annotatedText.innerHTML = '';
   annotatedText.appendChild(container);
+  annotatedText.style.display = 'inline-block';
 }
 
 
@@ -277,10 +279,13 @@ function escapeHTML(text) {
 
 function clean() {
   annotatedText.innerHTML = "";
+  originalText.value ="";
   document.querySelector("#results-table tbody").innerHTML = "";
   labelLegend.innerHTML = "";
   clearBtn.style.display = "none";
   fileNameDisplay.textContent = "no file selected";
+  originalText.style.display = 'inline-block';
+  annotatedText.style.display = 'none';
 }
 
 // ============ Clear ============
