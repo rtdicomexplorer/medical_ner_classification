@@ -1,3 +1,49 @@
+
+freib_template =(
+"                                         {ORG}                                               "
+"                                                                                             "
+"                                         Department {DEPT}                                   "
+"                                                                                             "
+"                                         Klinik für {DEPT}                                   "
+"                                         Ärztlicher Direktor: {DOCTOR}                       "
+"                                                                                             "
+"        {PATIENT}, * {BIRTHDATE}, PIZ: {PID}                                                 "
+"        {ADDRES_PATIENT}                                                                     "
+"                                                                                             "
+"        Sehr geehrte Frau Bufano,                                                            "
+"                                                                                             "
+"        wir bedanken uns für die freundliche Zuweisung von PATIENT, die                      "
+"        sich am {ADMISSION_DATE} in unserer kinderchirurgischen Sprechstunde                 "
+"        vorstellte.                                                                          "
+"                                                                                             "
+"        Diagnose:                                                                            "
+"		 {DIAGNOSIS}                                                                           "
+"        {DIAGNOSIS}                                                                          "
+"        {DIAGNOSIS}                                                                          "
+"        {DIAGNOSIS}                                                                          "
+"                                                                                             "
+"        {DIAGNOSIS}                                                                          "
+"        {DIAGNOSIS}                                                                          "
+"                                                                                             "
+"        {TREATMENT}: Klinische Untersuchung, Beratung                                        "
+"                                                                                             "
+"        Anamnese:                                                                            "
+"                                                                                             "
+"        {PATIENT} ist eine in unserer Klinik gut bekannte Patientin mit einer                "
+"        {DIAGNOSIS}. Für die ausführliche                                                    "
+"        ‚Anamnese dürfen wir freundlicherweise auf die alten Arztbriefe verweisen. Die       "
+"        heutige Vorstellung in unserer kinderchirurgischen Sprechstunde erfolgt              "
+"        aufgrund einer {SYMPTOM} und                                                         "
+"        {SYMPTOM}. Im {TREATMENT} sowie einer {TREATMENT}                                    "
+"        zeigte sich deutlich Hinweise für einen {DIAGNOSIS}. Außerdem                        "
+"        berichtet die Mutter wiederholt von {SYMPTOM} sowie wiederholtem {SYMPTOM},          "
+"        insbesondere in Stresssituationen. Aktuell wünschen sich die Eltern bei              "
+"        erschwerter Nahrungszufuhr und starkem ösophagalen Reflux mit                        "
+"        rezidivierendem Erbrechen eine {TREATMENT}.                                          "
+"                                                                                             "
+)
+
+
 muster_template =(
 "        {ORG}                                                                            "
 "                                                                                         "
@@ -396,4 +442,4 @@ TEMPLATES_LIST =[complete_template ,reha_gutachten_template,pflegeueberleitung_t
                  notfall_template,attest_template,hkp_template,aufnahmebogen_template,opfreigabe_template,pflegedoku_template,
                  therapieplan_template,rezept_template,impfpass_template,einwilligung_template,ueberweisung_template,patho_template,
                  radiologie_template,laborbericht_template,anamnesebogen_template,entlassungsbericht_template, operationsbericht_template,
-                 befundbericht_template,arztbrief_template,arztbrief_template2, muster_template]
+                 befundbericht_template,arztbrief_template,arztbrief_template2, muster_template, freib_template]

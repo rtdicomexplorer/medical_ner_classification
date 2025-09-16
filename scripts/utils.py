@@ -38,6 +38,21 @@ def init_tesseract():
     else:
         raise EnvironmentError(f"❌ Unbekanntes Betriebssystem: {system}")
 
+def replace_entities_with_labels(text, entities):
+    """
+    Replaces detected entity spans in the text with their label name, e.g., {PATIENT}.
+    The replacement is done in reverse order of entity start index to avoid index shifting.
+    """
+    # Sort entities in reverse by start index to avoid messing up indices when replacing
+    entities_sorted = sorted(entities, key=lambda x: x['start'], reverse=True)
+    
+    for ent in entities_sorted:
+        label = ent['entity_group'].upper()
+        start = ent['start']
+        end = ent['end']
+        text = text[:start] + f"{{{label}}}" + text[end:]
+
+    return text
 
 def generate_ner_data(text,entities):
     tokens, offsets = smart_tokenize_with_offsets(text)  #smart_tokenize(text)           
@@ -171,7 +186,8 @@ def generate_dates(count=10,start_year=2015, end_year=2024):
         date  = random_date(start_year-2, end_year)    
         result.append(date.strftime('%d-%B-%Y'))#"DD-Month-YYYY:"
         date  = random_date(start_year-3, end_year)    
-        result.append(date.strftime("%d.%m.%Y"))#"dd.mm.yyyy" 
+        result.append(date.strftime("%d.%m.%Y"))#"dd.mm.yyyy"
+        result.append(date.strftime("%d. %B %Y")) 
     return result
 
 
@@ -663,6 +679,7 @@ def paraphrase_entity(entity_type, value):
             f"patient-id {value}",
             f"ID: {value}",
             f"PID: {value}",
+            f"PIZ: {value}",
             f"Patientenkennzeichen: {value}",
             f"Identifikationsnummer: {value}"
             ],
@@ -1017,6 +1034,15 @@ symptoms = [
     "Schwellung",
     "Rötung",
     "Hautveränderungen"
+    "Gewichtszunahme",
+    "gastroösophagealen Reflux",
+    "Mundgeruch",
+    "wiederholtem Spucken",
+    "starkem ösophagalen Reflux",
+    "Erbrechen",
+    "erschwerter Nahrungszufuhr "
+
+
 ]
 medications = [
 
@@ -1117,10 +1143,10 @@ findings =[ "Infiltrat in der rechten Lunge"  ,
             "Geringe Beweglichkeit im rechten Kniegelenk"]
 allergies = ["Penicillin", "Pollen", "Nüsse","Hausstaubmilben","Tierhaar", "Soia"]
 immunizations = ["Masern-Impfung", "Grippeimpfung", "Covid 19"]
-devices = ["Herzschrittmacher", "Insulinpumpe","Schlafmaske", "Blutdruckgerät", "Kateter"]
+devices = ["Herzschrittmacher", "Insulinpumpe","Schlafmaske", "Blutdruckgerät", "Kateter","PEG-Sonde"]
 family_histories = ["Mutter mit Diabetes", "Vater mit Bluthochdruck","Herzinfarkte beim Vater", "Krebs bei der Mutter",
                     "Diabetes in der Familie", "Vater hatte einen Schlaganfall", "Bruder mit Zuckerkrakheit"]
-procedures = ["Angioplastie", "MRT-Scan", "Biopsie", "Ultraschall","CT Kopf", "Lyse-Therapie"]
+procedures = ["Angioplastie", "MRT-Scan", "Biopsie", "Ultraschall","CT Kopf", "Lyse-Therapie","Ösophagogastroduodenoskopie", "ÖGD", "Röntgen MDP"]
 departments = ["Kardiologie", "Notaufnahme", "Onkologie", "Radiologie","Neurologie", "Innere Medizin"]
 
 hospital_names = ["St. Marien Krankenhaus", "Allgemeine Gesundheitsklinik",
@@ -1143,7 +1169,7 @@ impressions = [
 ]
 
 prev_diagnoses = [
-    "frühere Appendizitis", "bekannte Arthrose", "chronische Bronchitis",
+    "frühere Appendizitis", "bekannte Arthrose", "chronische Bronchitis","schwerer peripartaler Asphyxie","Spastisch-dystone Zerebralparese GMFCS °IV"
     "status post Herzinfarkt", "durchgemachte Pneumonie", "alte Fraktur", "bekannte COPD"
 ]
 
