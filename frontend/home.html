@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="icon" type="image/png" href="./clinical_data_extractor.png">
+    <meta charset="UTF-8" />
+    <title>NER Manager</title>
+    <link rel="stylesheet" href="style.css" />
+ <style>
+    .logo_container {
+      display: flex;
+      justify-content: center;  /* horizontal zentrieren */
+      align-items: center;      /* vertikal zentrieren */
+      margin: 0;
+      background-color: transparent; /* optional: Hintergrund */
+    }
+    img {
+      max-width: 300px;  /* Größe anpassen */
+      height: auto;
+    }
+  </style>
+
+  </head>
+  <body>
+    <nav class="navbar">
+      <img src="./logo.png" alt="Logo" class="navbar-logo" />
+    </nav>
+
+    
+    <div class="logo_container">
+          <img src="./clinical_data_extractor.png" alt="Logo" width="300px" height="auto"  />
+    </div>
+
+    <div class="card-container">
+      <a href="/predictor" class="card">
+        <div class="card-title">📊 Prediction Viewer</div>
+        <div class="card-description">
+          Lade Text oder Dokumente hoch und annotiere automatisch mit dem
+          NER-Modell.
+        </div>
+      </a>
+
+      <a href="/editor" class="card">
+        <div class="card-title">📝 NER Editor</div>
+        <div class="card-description">
+          Bearbeite Trainingsdaten, Tags und Vorschauen interaktiv im
+          Token-Editor.
+        </div>
+      </a>
+
+      <a href="/layout_editor" class="card">
+        <div class="card-title">📐 Layout-Zonen Editor</div>
+        <div class="card-description">
+          Definiere manuell OCR-Zonen in gescannten PDFs zur besseren
+          Texterkennung.
+        </div>
+      </a>
+    </div>
+    
+
+    <footer>
+      <div role="contentinfo" id="fine-print">
+        <ul class="horz-list mt-2">
+         <li class="last-item">clinical data extractor &copy; 2025</li>
+        </ul>
+        <ul class="horz-list mt-1">
+          <li>
+            <a
+              title="University Medical Center Freiburg"
+              href="https://www.uniklinik-freiburg.de/"
+              target="_blank"
+              >University Medical Center Freiburg</a
+            >
+          </li>
+          <li>
+            <a
+              title="Radiology Department"
+              href="https://www.uniklinik-freiburg.de/radiologie.html"
+              target="_blank"
+              >Radiology Department</a
+            >
+          </li>
+          <li class="last-item">
+            <a href="mailto:michele.bufano@uniklinik-freiburg.de">Contact Us</a>
+          </li>
+        </ul>
+      </div>
+    </footer>
+  </body>
+</html>

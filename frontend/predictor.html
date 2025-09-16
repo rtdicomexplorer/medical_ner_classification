@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Medical NER Prediction</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="predict.css" />
+    <link rel="icon" type="image/png" href="./clinical_data_extractor.png" />
+  </head>
+  <body>
+    <nav class="navbar">
+      <img src="./logo.png" alt="Logo" class="navbar-logo" />
+      <span class="navbar-title">NER Predictor </span>
+
+      <ul class="nav-links" id="navLinks">
+        <li>
+          <a href="/" data-short="🏠"><span>🏠 Home</span></a>
+        </li>
+        <li>
+          <a href="/predictor" data-short="📊" class="active"
+            ><span>📊 Prediction Viewer</span></a
+          >
+        </li>
+        <li>
+          <a href="/editor" data-short="📝"><span>📝 NER Editor</span></a>
+        </li>
+        <li>
+          <a href="/layout_editor" data-short="📐"
+            ><span>📐 Scan Layout Editor</span></a
+          >
+        </li>
+      </ul>
+
+      <div class="hamburger" id="hamburger">&#9776;</div>
+    </nav>
+
+    <div id="loadingOverlay" style="display: none">
+      <div class="spinner"></div>
+      <span>Please wait...</span>
+    </div>
+    <div class="container">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <button id="load-btn">🤖 Load Model</button>
+        <span id="load-model-status">❌</span>
+
+        <div class="file-upload" id="file-upload" style="display: none">
+          <label for="fileInput" class="custom-upload-button"
+            >📂 Load file</label
+          >
+          <input type="file" id="fileInput" accept=".txt, .docx, .pdf" />
+          <span id="fileNameDisplay" class="file-name">No file selected</span>
+        </div>
+
+        <button id="predict-btn" style="display: none">🧠 Predict</button>
+
+        <button id="clear-btn" style="display: none">🗑️ Clean</button>
+      </div>
+
+      <div id="mainPanel">
+        <div class="tabs">
+          <button class="tab-button active" data-tab="entitiesTab">
+            📄 Report
+          </button>
+          <div style="display: none;" id ="predict-bar">
+          <button class="tab-button" data-tab="tableTab">
+            📊Entity viewer
+          </button>
+          <button class="tab-button" data-tab="nerDataTab">
+            📝 NER viewer
+          </button>
+          <button id="saveBtn" style="display: none" title="save ner data json">
+            💾 Save
+          </button>
+          </div>
+        </div>
+
+        <div class="tab-content" id="entitiesTab">
+          <textarea
+            id="originalText"
+            class="text-output"
+            placeholder="No sample selected yet."
+          ></textarea>
+          <div id="annotated-text" class="text-output" style="display: none">
+            No sample selected yet.
+          </div>
+          <div id="labelLegend"></div>
+        </div>
+
+        <div class="tab-content" id="tableTab" style="display: none">
+          <table id="results-table">
+            <thead>
+              <tr>
+                <th>Entity Group</th>
+                <th>Word</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="tab-content" id="nerDataTab" style="display: none">
+          <div id="jsonPreviewWrapper">
+            <div id="jsonLineNumbers"></div>
+            <div id="jsonPreview"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <footer>
+      <div role="contentinfo" id="fine-print">
+        <ul class="horz-list mt-2">
+          <li class="last-item">clinical data extractor &copy; 2025</li>
+        </ul>
+        <ul class="horz-list mt-1">
+          <li>
+            <a
+              title="University Medical Center Freiburg"
+              href="https://www.uniklinik-freiburg.de/"
+              target="_blank"
+              >University Medical Center Freiburg</a
+            >
+          </li>
+          <li>
+            <a
+              title="Radiology Department"
+              href="https://www.uniklinik-freiburg.de/radiologie.html"
+              target="_blank"
+              >Radiology Department</a
+            >
+          </li>
+          <li class="last-item">
+            <a href="mailto:michele.bufano@uniklinik-freiburg.de">Contact Us</a>
+          </li>
+        </ul>
+      </div>
+    </footer>
+    <script src="id2label.js"></script>
+    <script src="predict.js"></script>
+  </body>
+</html>

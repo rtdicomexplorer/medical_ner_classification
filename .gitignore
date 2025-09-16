@@ -7,7 +7,6 @@ __pycache__
 models*
 *output*/
 finetuner/
-*.html
 expected/
 predictions/
 temp/

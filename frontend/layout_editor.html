@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Layout Editor mit Zoom</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="layout_editor.css" />
+    <link rel="icon" type="image/png" href="./clinical_data_extractor.png">
+  </head>
+  <body>
+    <nav class="navbar">
+      <img src="./logo.png" alt="Logo" class="navbar-logo" />
+      <span class="navbar-title">Scan Editor</span>
+
+      <ul class="nav-links" id="navLinks">
+        <li>
+          <a href="/" data-short="🏠"><span>🏠 Home</span></a>
+        </li>
+        <li>
+          <a href="/predictor" data-short="📊"
+            ><span>📊 Prediction Viewer</span></a
+          >
+        </li>
+        <li>
+          <a href="/editor" data-short="📝"><span>📝 NER Editor</span></a>
+        </li>
+        <li>
+          <a href="/layout_editor" data-short="📐" class="active"
+            ><span>📐 Scan Layout Editor</span></a
+          >
+        </li>
+      </ul>
+
+      <div class="hamburger" id="hamburger">&#9776;</div>
+    </nav>
+
+    <div id="loadingOverlay" style="display: none">
+      <div class="spinner"></div>
+      <span>Please wait...</span>
+    </div>
+
+    <div class="container">
+      <div class="toolbar">
+        <div class="file-upload">
+          <label for="fileInput" class="custom-upload-button"
+            >📂 Load scan</label
+          >
+          <input type="file" id="fileInput" accept="image/*,application/pdf" />
+          <span id="fileNameDisplay" class="file-name">No file selected</span>
+        </div>
+        <button id="zoomInBtn" title="zoom in">➕🔍</button>
+        <span id="zoomLevel" style="min-width: 20px">100%</span>
+        <button id="zoomOutBtn" title="zoom out">➖🔍</button>
+        <button id="resetViewBtn" title="reset zoom">🔁</button>
+        <button id="saveBtn" style="display: none" title="save rois as json">💾 ROI</button>
+        <button id="deleteBtn" style="display: none" title="delete roi">🚫 ROI</button>
+        <button id="renameBtn" style="display: none">Rename 🎨</button>
+        <button id="extractTextBtn" style="display: none" title="extract text">📥 Extract text</button>
+        <button id="clearBtn" style="display: none" title="clear all">🗑️ Clear</button>
+        <button id="predictBtn" style="display: none" title="go to predictor">📊 Predict</button>
+      </div>
+
+      <div
+        id="main-split-container"
+        style="display: none; flex: 1; min-height: 0"
+      >
+        <!-- Left: Canvas -->
+        <div
+          id="canvas-container"
+          style="flex: 1; overflow: auto; border-right: 2px solid #ccc"
+        >
+          <canvas id="drawCanvas"></canvas>
+        </div>
+
+        <div
+          id="splitter"
+          style="width: 5px; cursor: col-resize; background: #ddd"
+        ></div>
+        <!-- right extracted texts-->
+
+        <div
+          id="extractedTexts"
+          style="
+            width: 35%;
+            white-space: pre-wrap;
+            font-family: Segoe UI, Roboto, sans-serif;
+            font-size: 1rem;
+            background: #ddeaeb79;
+            border: 1px solid #f1e9c3;
+            padding: 10px;
+            overflow-y: auto;
+            display: block;
+          "
+        >
+          <em>text preview.</em>
+        </div>
+      </div>
+      <div
+        id="footerbar"
+        style="padding: 10px; display: none; text-align: center"
+      >
+        <button id="prevPageBtn">← Back</button>
+        <span id="pageInfo" style="margin: 0 10px">Page 1</span>
+        <button id="nextPageBtn">Next →</button>
+      </div>
+    </div>
+
+    <footer>
+      <div role="contentinfo" id="fine-print">
+        <ul class="horz-list mt-2">
+        <li class="last-item">clinical data extractor &copy; 2025</li>
+        </ul>
+        <ul class="horz-list mt-1">
+          <li>
+            <a
+              title="University Medical Center Freiburg"
+              href="https://www.uniklinik-freiburg.de/"
+              target="_blank"
+              >University Medical Center Freiburg</a
+            >
+          </li>
+          <li>
+            <a
+              title="Radiology Department"
+              href="https://www.uniklinik-freiburg.de/radiologie.html"
+              target="_blank"
+              >Radiology Department</a
+            >
+          </li>
+          <li class="last-item">
+            <a href="mailto:michele.bufano@uniklinik-freiburg.de">Contact Us</a>
+          </li>
+        </ul>
+      </div>
+    </footer>
+
+    <script src="layout_editor.js"></script>
+  </body>
+</html>

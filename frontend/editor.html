@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>NER viewer editor</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="editor.css" />
+    <link rel="icon" type="image/png" href="./clinical_data_extractor.png" />
+  </head>
+  <body>
+    <nav class="navbar">
+      <img src="./logo.png" alt="Logo" class="navbar-logo" />
+      <span class="navbar-title">NER Editor</span>
+
+      <ul class="nav-links" id="navLinks">
+        <li>
+          <a href="/" data-short="🏠"><span>🏠 Home</span></a>
+        </li>
+        <li>
+          <a href="/predictor" data-short="📊"
+            ><span>📊 Prediction Viewer</span></a
+          >
+        </li>
+        <li>
+          <a href="/editor" data-short="📝" class="active"
+            ><span>📝 NER Editor</span></a
+          >
+        </li>
+        <li>
+          <a href="/layout_editor" data-short="📐"
+            ><span>📐 Scan Layout Editor</span></a
+          >
+        </li>
+      </ul>
+
+      <div class="hamburger" id="hamburger">&#9776;</div>
+    </nav>
+
+    <div class="container">
+      <div class="toolbar">
+        <div class="file-upload">
+          <label for="fileInput" class="custom-upload-button"
+            >📂 Load JSON</label
+          >
+          <input type="file" id="fileInput" accept=".json" />
+          <span id="fileNameDisplay" class="file-name">No file selected</span>
+        </div>
+
+        <button
+          id="saveFile"
+          style="margin-left: 20px; display: none"
+          title="Save the changes in the file"
+          onclick="downloadCurrentState()"
+        >
+          💾 Save all samples
+        </button>
+      </div>
+
+      <div id="sampleSelectorContainer" style="margin-top: 10px; display: none">
+        <label for="sampleSelector"><strong>Select Sample:</strong></label>
+        <select id="sampleSelector"></select>
+
+        <button
+          id="validateButton"
+          style="margin-left: 20px"
+          title="Validate current sample"
+        >
+          🚨 Validate
+        </button>
+        <span id="validationResult" style="margin-left: 10px">
+          validation ....</span
+        >
+
+        <button
+          style="margin-left: 20px"
+          title="Save selected sample only"
+          onclick="downloadCurrentSample()"
+        >
+          💾 Save
+        </button>
+      </div>
+      <div id="mainPanel" style="display: none; margin-top: 10px">
+        <div class="tabs">
+          <button class="tab-button active" data-tab="entitiesTab">
+            📜 Entity Viewer
+          </button>
+          <button class="tab-button" data-tab="tableTab">
+            🧾✏️ Token Editor
+          </button>
+          <button class="tab-button" data-tab="jsonTab">🔠 Token viewer</button>
+        </div>
+
+        <div class="tab-content" id="entitiesTab">
+          <h2>
+            Entity Viewer
+            <button
+              id="save-sample-text"
+              style="margin-left: 20px"
+              title="Save selected sample as text"
+            >
+              💾 🧾 Save
+            </button>
+          </h2>
+          <div id="entityViewer" class="text-output">
+            No sample selected yet.
+          </div>
+          <h2>Entity Types</h2>
+          <div id="labelLegend"></div>
+        </div>
+
+        <div class="tab-content" id="tableTab" style="display: none">
+          <h2>Token Editor</h2>
+          <table id="tokenTable" border="1" cellpadding="6">
+            <thead>
+              <tr>
+                <th style="width: 5%">Index</th>
+                <th style="width: 35%">Token</th>
+                <th style="width: 10%">Tag ID</th>
+                <th style="width: 40%">Label</th>
+                <th style="width: 10%">Delete</th>
+              </tr>
+            </thead>
+            <tbody id="tokenTableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="tab-content" id="jsonTab" style="display: none">
+          <h2>Raw JSON Preview</h2>
+          <div id="jsonPreviewWrapper">
+            <div id="jsonLineNumbers"></div>
+            <div id="jsonPreview"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <div role="contentinfo" id="fine-print">
+        <ul class="horz-list mt-2">
+          <li class="last-item">clinical data extractor &copy; 2025</li>
+        </ul>
+        <ul class="horz-list mt-1">
+          <li>
+            <a
+              title="University Medical Center Freiburg"
+              href="https://www.uniklinik-freiburg.de/"
+              target="_blank"
+              >University Medical Center Freiburg</a
+            >
+          </li>
+          <li>
+            <a
+              title="Radiology Department"
+              href="https://www.uniklinik-freiburg.de/radiologie.html"
+              target="_blank"
+              >Radiology Department</a
+            >
+          </li>
+          <li class="last-item">
+            <a href="mailto:michele.bufano@uniklinik-freiburg.de">Contact Us</a>
+          </li>
+        </ul>
+      </div>
+    </footer>
+    <script src="id2label.js"></script>
+
+    <script src="editor.js"></script>
+  </body>
+</html>
