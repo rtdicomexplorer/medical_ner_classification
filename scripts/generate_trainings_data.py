@@ -224,8 +224,8 @@ def __generate_dataset(n_samples,save_reports):
     count_paraphrase = 0
     for i in range(n_samples):
         try:
-            if random.random() < 0.999999:     
-                template = freib_template# random.choice(TEMPLATES_LIST)
+            if random.random() < 0.5:     
+                template = random.choice(TEMPLATES_LIST)
                 placeholder_counts = __count_entity_placeholders(template)
                 values_dict = __generate_values(entity_values, SINGLE_VAL_ENTITIES, placeholder_counts)
                 text =  __fill_template(template, values_dict)
