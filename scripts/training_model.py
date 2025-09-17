@@ -148,7 +148,7 @@ def main(print_examples= False):
     test_metrics = trainer.evaluate(eval_dataset=tokenized_datasets["test"])
     print(f"Test metrics: {test_metrics}")
     trainer.save_model(OUTPUT_DIR)
-    print(f"\Model saved {OUTPUT_DIR}")
+    print(f"\nModel saved {OUTPUT_DIR}")
 
     if print_examples: 
         # === Generate predictions on test set ===
