@@ -27,7 +27,7 @@ freib_template = (
 "                                                                                                                       "
 "Anamnese:                                                                                                              "
 "{PATIENT} ist eine in unserer Klinik gut bekannte Patientin mit einer                                                  "
-"{DIAGNOSIS} bei {PREV_DIAGNOSIS_1}. Für die ausführliche Anamnese dürfen wir                                         "
+"{DIAGNOSIS} bei {PREV_DIAGNOSIS}. Für die ausführliche Anamnese dürfen wir                                         "
 "freundlicherweise auf die alten Arztbriefe verweisen. Die heutige Vorstellung in                                       "
 "unserer {DEPARTMENT} Sprechstunde erfolgt aufgrund einer                                                               "
 "{DIAGNOSIS} mit {SYMPTOM} und {SYMPTOM}. Im Rahmen einer {PROCEDURE}                                           "

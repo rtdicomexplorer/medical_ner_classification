@@ -17,7 +17,7 @@ from collections import defaultdict
 
 entity_values = {                       
     "ADDRESS": 				hospital_addresses,	
-    "ADDRESS_PATIENT":      patient_addresses,
+    "ADDRESS_PATIENT":      get_fake_address(100),# patient_addresses,
     "ADMISSION_DATE": 		generate_dates(), 	
     "ALCOHOL_CONSUMPTION": 	alcohol_consumptions,	
     "ALLERGY": 				allergies, 
@@ -55,10 +55,10 @@ entity_values = {
     "LIFESTYLE":           	lifestyles,	
     "MEDICATION":          	medications,	
     "OCCUPATION":          	occupations,	
-    "ORG":                 	hospital_names,	
-    "PATIENT":              names,	
+    "ORG":                 	 get_fake_hospitals(100),# hospital_names,	
+    "PATIENT":              get_fake_names(100),#names	
     "PHONE":               	hospital_phones,
-    "PATIENT_PHONE":        patient_phones,	
+    "PATIENT_PHONE":        get_fake_phone(100),# patient_phones,	
     "PID":                 	generate_patint_ids(),	
     "PREV_DIAGNOSIS":      	prev_diagnoses,	
     "PROCEDURE":           	procedures,	

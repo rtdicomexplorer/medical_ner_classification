@@ -24,7 +24,7 @@ import random
 
 MODEL_NAME = 'deepset/gbert-base'#"emilyalsentzer/Bio_ClinicalBERT" #medgpt/gbert-medical-ner
 DATA_PATH = "./data/synthetic_ner_data.json"
-OUTPUT_DIR = "./models/gbert-base"
+OUTPUT_DIR = "./models2/gbert-base"
 DATA_FILES = {
     "train": "./data/train.json",
     "validation": "./data/val.json",
@@ -139,23 +139,18 @@ def main(print_examples= False):
         args=training_args,
         train_dataset=tokenized_datasets["train"],
         eval_dataset=tokenized_datasets["validation"],
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
         data_collator=data_collator,
         compute_metrics=__compute_metrics,
     )
     trainer.train()
     print("\nEvaluating on test dataset...")
-    test_metrics = trainer.evaluate(eval_dataset=datasets["test"])
+    test_metrics = trainer.evaluate(eval_dataset=tokenized_datasets["test"])
     print(f"Test metrics: {test_metrics}")
-
     trainer.save_model(OUTPUT_DIR)
+    print(f"\Model saved {OUTPUT_DIR}")
 
     if print_examples: 
-        # === Evaluation on test dataset ===
-        print("\n🔎 Running evaluation on test set:")
-        metrics = trainer.evaluate(eval_dataset=tokenized_datasets["test"])
-        print(f"Evaluation results: {metrics}")
-
         # === Generate predictions on test set ===
         print("\n📝 Generating predictions on test set:")
         test_predictions, test_labels, _ = trainer.predict(tokenized_datasets["test"])

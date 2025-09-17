@@ -1457,20 +1457,79 @@ def refresh_and_clean_ner_labels(data, id2label, threshold = 0.95):
 
 
 
-def main():
-    # Lade Daten
-    data_path = "./data/train.json"
-    output_path = "dein_datensatz_cleaned2.json"
-    with open(data_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    cleardata = refresh_and_clean_ner_labels(data,ID2LABEL, 0.95)
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(cleardata, f, indent=2, ensure_ascii=False)
-    print(f"✔ Bereinigt und gespeichert unter: {output_path}")
+def get_fake_names(count =10):
+    from faker import Faker
+    fake = Faker('de_DE')  # German locale
+    names = []
+    for _ in range(count):
+
+        names.append(fake.name())
+
+    return names
 
 
-# if __name__ == "__main__":
-#     main()
+def get_fake_address(count =10):
+    from faker import Faker
+    fake = Faker('de_DE')  # German locale
+    address = []
+    for _ in range(count):
+        address.append(fake.address())
+    return address
+
+def get_fake_phone(count =10):
+    from faker import Faker
+    fake = Faker('de_DE')  # German locale
+    phone_numbers = []
+    for _ in range(count):
+        phone_numbers.append(fake.phone_number())
+    return phone_numbers
+
+def get_fake_email(count =10):
+    from faker import Faker
+    fake = Faker('de_DE')  # German locale
+    emails = []
+    for _ in range(count):
+        emails.append(fake.email())
+    return emails
+
+
+def get_fake_hospital():
+    cities = ["Berlin", "Hamburg", "München", "Stuttgart", "Frankfurt"]
+    types = ["Klinik", "Krankenhaus", "Medizinisches Zentrum", "Gesundheitszentrum"]
+    saints = ["St. Nikolaus", "St. Elisabeth", "St. Johannes", "St. Marien"]
+    specialties = ["Onkologie", "Herz", "Orthopädie", "Neurologie", "Reha"]
+
+    style = random.choice(["city", "saint", "specialty", "generic"])
+    if style == "city":
+        return f"{random.choice(cities)} {random.choice(types)}"
+    elif style == "saint":
+        return f"{random.choice(saints)} {random.choice(types)}"
+    elif style == "specialty":
+        return f"Zentrum für {random.choice(specialties)}"
+    else:
+        return f"{random.choice(['Zentral', 'Modern', 'Premium'])} {random.choice(types)}"
+
+def get_fake_hospitals(count =10):
+    hospitals = []
+    for _ in range(count):
+        hospitals.append(get_fake_hospital())
+    return hospitals
+
+
+# def main():
+#     # Lade Daten
+#     data_path = "./data/train.json"
+#     output_path = "dein_datensatz_cleaned2.json"
+#     with open(data_path, "r", encoding="utf-8") as f:
+#         data = json.load(f)
+#     cleardata = refresh_and_clean_ner_labels(data,ID2LABEL, 0.95)
+#     with open(output_path, "w", encoding="utf-8") as f:
+#         json.dump(cleardata, f, indent=2, ensure_ascii=False)
+#     print(f"✔ Bereinigt und gespeichert unter: {output_path}")
+
+
+# # if __name__ == "__main__":
+# #     main()
 
 
    
