@@ -38,6 +38,20 @@ def init_tesseract():
     else:
         raise EnvironmentError(f"❌ Unbekanntes Betriebssystem: {system}")
 
+
+def format_diagnoses(diagnosis_icd10_map):
+    # return "\n".join(
+    #     f"- {diagnosis} ({code})" if code else f"- {diagnosis}"
+    #     for diagnosis, code in diagnosis_icd10_map.items()
+    # result = []
+    entries=[]
+    for diagnosis, code in diagnosis_icd10_map.items():
+        entry = f"{diagnosis} ({code})" if code else f"{diagnosis}"  
+        
+        entries.append(entry)
+    return entries
+    
+
 def replace_entities_with_labels(text, entities):
     """
     Replaces detected entity spans in the text with their label name, e.g., {PATIENT}.
@@ -930,7 +944,10 @@ diagnosis_icd10_map = {
     "Hypertonie": "I10",
     "Diabetes Mellitus": "E11.9",
     "Asthma": "J45",
-    "Pneumonie": "J18.9"
+    "Pneumonie": "J18.9",
+    "Gastroösophagealer Reflux":"",
+    "Mangelnde Gewichtszunahme":"",
+    "Spastisch-dystone Zerebralparese":""
 }
 
 vitalsigns = [
@@ -962,7 +979,7 @@ risk_factors = [
 names = ["Herr. Max Müller", "Patientin: Anna Schmidt", "L. Weber", "Frau Sophie Fischer","Otto Kromberger","Irina, Klose"
          "John Smith", "Mary Jones", "Robert Lee", "Emily Davis"]
 doctors = ["Dr. Müller", "Dr. Schneider", "Dr. Becker", "Dr. Weber","Dr. Suhle Nikolas", "Dr. Lehmann", "Dr. Fischer", "Dr. Weber",
-           "Dr. Adams", "Dr. Lee", "Dr. Patel", "Dr. Chen", "Prof. A. Passero" ]
+           "Dr. Adams", "Dr. Lee", "Dr. Patel", "Dr. Chen", "Prof. A. Passero","Frau Moller", "Herr Moller"]
 
 
 symptoms = [
@@ -1033,7 +1050,7 @@ symptoms = [
     "Juckreiz",
     "Schwellung",
     "Rötung",
-    "Hautveränderungen"
+    "Hautveränderungen",
     "Gewichtszunahme",
     "gastroösophagealen Reflux",
     "Mundgeruch",
@@ -1119,7 +1136,7 @@ medications = [
     "Infliximab"
 ]
 
-treatments = ["Sauerstofftherapie", "Operation", "Chemotherapie", "Physiotherapie", "Schlafmedikamente"]
+treatments = ["Sauerstofftherapie", "Operation", "Chemotherapie", "Physiotherapie", "Reha"]
 lab_results = ["Hb 13.5 g/dL", "Blutzucker 110 mg/dL", "Cholesterin 200 mg/dL","Glukose: 110 mg/dL"]
 findings =[ "Infiltrat in der rechten Lunge"  , 
             "Herzvergrößerung", 
@@ -1146,15 +1163,16 @@ immunizations = ["Masern-Impfung", "Grippeimpfung", "Covid 19"]
 devices = ["Herzschrittmacher", "Insulinpumpe","Schlafmaske", "Blutdruckgerät", "Kateter","PEG-Sonde"]
 family_histories = ["Mutter mit Diabetes", "Vater mit Bluthochdruck","Herzinfarkte beim Vater", "Krebs bei der Mutter",
                     "Diabetes in der Familie", "Vater hatte einen Schlaganfall", "Bruder mit Zuckerkrakheit"]
-procedures = ["Angioplastie", "MRT-Scan", "Biopsie", "Ultraschall","CT Kopf", "Lyse-Therapie","Ösophagogastroduodenoskopie", "ÖGD", "Röntgen MDP"]
-departments = ["Kardiologie", "Notaufnahme", "Onkologie", "Radiologie","Neurologie", "Innere Medizin"]
+procedures = ["Angioplastie", "MRT-Scan", "Biopsie", "Ultraschall","CT Kopf", "Lyse-Therapie",
+              "Ösophagogastroduodenoskopie", "ÖGD", "Röntgen MDP","laparoskopische Fundoplicatio", "assistierten Gastrostomie"]
+departments = ["Kardiologie", "Notaufnahme", "Onkologie", "Radiologie","Neurologie", "Innere Medizin", "Sozialdienst"]
 
-hospital_names = ["St. Marien Krankenhaus", "Allgemeine Gesundheitsklinik",
+hospital_names = ["St. Marien Krankenhaus", "Allgemeine Gesundheitsklinik","Fachklinik Gailingen", "Rehaklinik Schönberg",
                   "Städtisches Medizinzentrum", "Universitätsklinikum München", "Kinderklinik Freiburg"]
 hospital_addresses = ["Hauptstraße 12, 80331 München", "Berliner Allee 45, 40212 Düsseldorf","Lindenstraße 8, 10115 Berlin", "Goetheplatz 9, 50674 Köln",
                       "Hugstetterstr. 7 79106 Freiburg", "Kamphausenstr. 23, 79666 Reute"]
-hospital_phones = ["089 123456", "0211 987654", "030 234567", "0221 456789", "0761 2720298"]
-patient_phones = ["089 123456", "0211 987654", "030 234567", "0221 456789", "0761 2720298"]
+hospital_phones = ["089 123456", "0211 987654", "030 234567", "0221 456789", "0761 2720298", "3456", "112", "+4912120120"]
+patient_phones = ["089 123456", "0211 987654", "030 234567", "0221 456789", "0761 2720298", "+491873446456"]
 
 patient_addresses = ["Hauptstraße 12, 80331 München", "Berliner Allee 45, 40212 Düsseldorf","Lindenstraße 8, 10115 Berlin", "Goetheplatz 9, 50674 Köln",
                       "Hugstetterstr. 7 79106 Freiburg", "Kamphausenstr. 23, 79666 Reute"]
@@ -1169,8 +1187,8 @@ impressions = [
 ]
 
 prev_diagnoses = [
-    "frühere Appendizitis", "bekannte Arthrose", "chronische Bronchitis","schwerer peripartaler Asphyxie","Spastisch-dystone Zerebralparese GMFCS °IV"
-    "status post Herzinfarkt", "durchgemachte Pneumonie", "alte Fraktur", "bekannte COPD"
+    "frühere Appendizitis", "bekannte Arthrose", "chronische Bronchitis","schwerer peripartaler Asphyxie","Spastisch-dystone Zerebralparese GMFCS °IV",
+    "status post Herzinfarkt", "durchgemachte Pneumonie", "alte Fraktur", "bekannte COPD", "Zustand nach schwerer peripartaler Asphyxie"
 ]
 
 
@@ -1183,8 +1201,8 @@ occupations = [
 ]
 
 family_members = [
-  "Bruder", "Schwester", "Mutter", "Vater", "Großvater", "Großmutter", "Enkel", "Enkelin",
-  "Onkel", "Kind", "Kinder", "Sohn", "Tochter", "Cousine", "Neffe", "Nichte", "Witwe"
+  "Familie","Bruder", "Schwester", "Mutter", "Vater", "Großvater", "Großmutter", "Enkel", "Enkelin","Schwiegertöchter",
+  "Onkel", "Kind", "Kinder", "Sohn", "Tochter", "Cousine", "Neffe", "Nichte", "Witwe", "Eltern","Schwiegersohn"
 ]
 
 Arztbrief=						"Arztbrief"

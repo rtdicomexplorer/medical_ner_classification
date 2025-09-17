@@ -10,7 +10,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from scripts.text_extractor import extract_text 
-from scripts.utils import generate_ner_data, init_tesseract
+from scripts.utils import generate_ner_data, init_tesseract, replace_entities_with_labels
 
 from scripts.postprocess import postprocess_entities  # Your custom postprocessing
 from scripts.ner_to_fhir import map_ner_to_fhir    # Your mapping from NER to FHIR
@@ -249,12 +249,14 @@ def main(file_path):
     dataset = []   
     dataset.append(ner_data)
 
-    for ent in predictions:
-        entity_type = ent.get("entity_group", ent.get("entity"))
-        # print(ent)
-        print(f"Entity: '{ent['word']}'  |  Type: {entity_type}  |  Score: {ent['score']:.3f}")
+    # for ent in predictions:
+    #     entity_type = ent.get("entity_group", ent.get("entity"))
+    #     print(f"Entity: '{ent['word']}'  |  Type: {entity_type}  |  Score: {ent['score']:.3f}")
     
-    #postprocess the entities to make them clean...to be tested and updated
+    #the idea is to use the report as new template    
+    text_as_template = replace_entities_with_labels(text,predictions)
+    
+    #postprocess the entities to make them clean...to be tested and updated, not called via WEB
     cleaned_entities = postprocess_entities(predictions)
 
     __save_predictions(cleaned_entities,report_file_name)
@@ -270,12 +272,17 @@ def main(file_path):
     with open(output_ner_file, "w", encoding="utf-8") as f:
         json.dump(dataset, f, indent=2, ensure_ascii=False)
 
+    output_text_template =  os.path.join(OUTPUTDIR,f"template_{report_file_name}.txt")
+    with open(output_text_template, "w", encoding="utf-8") as f:
+        f.write(text_as_template)
+
+    print(f"All result files have been saved in {OUTPUTDIR}")
 
 if __name__ == "__main__":
     import sys
     file_path = './documents/artz_brief.txt'
     #file_path = './txt_reports/report_30.txt'
-   # file_path = './documents/sample_adult_history_de.txt'
+    file_path = './temp/real_report.txt'
     if len(sys.argv) == 2:   
         file_path = sys.argv[1]           
     if not os.path.exists(file_path):

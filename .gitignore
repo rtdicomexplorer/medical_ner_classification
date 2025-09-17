@@ -12,3 +12,5 @@ predictions/
 temp/
 tmp/
 entities
+latex/*
+!latex/main.tex

@@ -28,3 +28,9 @@ Benefits of Normalization
 📊 Analytics-ready — You can count, group, and analyze by code.
 
 🌐 Language-agnostic — E.g., “Asthma” in German is “Asthma bronchiale” → still maps to the same ICD-10 code.
+
+
+
+
+#### to remember
+- git remote add origin REMOTE-URL
