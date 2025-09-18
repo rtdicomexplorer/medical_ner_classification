@@ -15,7 +15,7 @@ from templates import TEMPLATES_LIST, freib_template
 from collections import defaultdict
 
 
-entity_values = {                       
+ENTITY_RANDOM_VALUES = {                       
     "ADDRESS": 				hospital_addresses,	
     "ADDRESS_PATIENT":      get_fake_address(100),# patient_addresses,
     "ADMISSION_DATE": 		generate_dates(), 	
@@ -31,7 +31,7 @@ entity_values = {
     "DOSAGE":              	dosages,	
     "DEPARTMENT":          	departments,	
     "DEVICE":              	devices,	
-    "DIAGNOSIS":           	list(format_diagnoses( diagnosis_icd10_map)),	
+    "DIAGNOSIS":           	list(format_diagnoses(diagnoses)),	
     "DISCHARGE_DATE":		generate_dates(),
     "DOCTOR":              	doctors,	
     "DURATION":            	durations,	
@@ -46,8 +46,8 @@ entity_values = {
     "GEWICHT":             	generate_random_weights(),	
     "GROESSE":             	generate_random_heights(),	
     "HOSPITAL_STAY":		generate_random_hospital_stay(),		
-    "ICD10_CODE":          	list(diagnosis_icd10_map.keys()),	
-    "ICD10_DESC":          	list(diagnosis_icd10_map.values()),	
+    # "ICD10_CODE":          	list(diagnosis_icd10_map.keys()),	
+    # "ICD10_DESC":          	list(diagnosis_icd10_map.values()),	
     "IMMUNIZATION":        	immunizations,	
     "IMPRESSION":          	impressions,	
     "INSURANCE_ID":        	insurance_ids,	
@@ -55,12 +55,12 @@ entity_values = {
     "LIFESTYLE":           	lifestyles,	
     "MEDICATION":          	medications,	
     "OCCUPATION":          	occupations,	
-    "ORG":                 	 get_fake_hospitals(100),# hospital_names,	
+    "ORG":                 	get_fake_hospitals(100),# hospital_names,	
     "PATIENT":              get_fake_names(100),#names	
     "PHONE":               	hospital_phones,
     "PATIENT_PHONE":        get_fake_phone(100),# patient_phones,	
     "PID":                 	generate_patint_ids(),	
-    "PREV_DIAGNOSIS":      	prev_diagnoses,	
+    "PREV_DIAGNOSIS":      	list(format_prev_diagnoses(diagnoses)),	
     "PROCEDURE":           	procedures,	
     "RISKFACTOR":          	risk_factors,	
     "ROOM_NUMBER":         	room_numbers,	
@@ -84,12 +84,12 @@ def __create_sample_more_text(single_entity_values):
     sample = {}
     # more time Entities - random value list
     for ent in ENTITY_LIST:
-        if ent in entity_values:
+        if ent in ENTITY_RANDOM_VALUES:
             if ent in single_entity_values:
-                sample[ent] = random.choice(entity_values[ent])
+                sample[ent] = random.choice(ENTITY_RANDOM_VALUES[ent])
             else:
-                sample[ent] = random.sample(entity_values[ent], 
-                                       k=random.randint(1, min(3, len(entity_values[ent]))))
+                sample[ent] = random.sample(ENTITY_RANDOM_VALUES[ent], 
+                                       k=random.randint(1, min(3, len(ENTITY_RANDOM_VALUES[ent]))))
     return sample
 
 def __normalize_text(text):
@@ -157,16 +157,25 @@ def __extract_entities_generalized(text, values):
 
 def __generate_paraphrase_more_text(values, single_val_entities):
     phrases = []
+    capitalize_next = False
     for ent in ENTITY_LIST:
         if ent in values :
             if ent in single_val_entities: #just once
                 paraphrase = paraphrase_entity(ent, values[ent])
+                if capitalize_next:    
+                    paraphrase = paraphrase[0].upper() + paraphrase[1:]
                 phrases.append(paraphrase)
+                capitalize_next =  paraphrase.strip()[-1] in ['.','!','?']
             else:
                  for val in values[ent]: # more
                     paraphrase = paraphrase_entity(ent, val)
+                    if capitalize_next:    
+                        paraphrase = paraphrase[0].upper() + paraphrase[1:]
                     phrases.append(paraphrase)
+                    capitalize_next =  paraphrase.strip()[-1] in ['.','!','?']
 
+            
+            
     
     random.shuffle(phrases)
     return " ".join(phrases)
@@ -227,7 +236,7 @@ def __generate_dataset(n_samples,save_reports):
             if random.random() < 0.5:     
                 template = random.choice(TEMPLATES_LIST)
                 placeholder_counts = __count_entity_placeholders(template)
-                values_dict = __generate_values(entity_values, SINGLE_VAL_ENTITIES, placeholder_counts)
+                values_dict = __generate_values(ENTITY_RANDOM_VALUES, SINGLE_VAL_ENTITIES, placeholder_counts)
                 text =  __fill_template(template, values_dict)
                 entities = __extract_entities_generalized(text, values_dict)   
                 count_template +=1

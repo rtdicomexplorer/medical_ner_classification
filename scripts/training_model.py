@@ -24,7 +24,7 @@ import random
 
 MODEL_NAME = 'deepset/gbert-base'#"emilyalsentzer/Bio_ClinicalBERT" #medgpt/gbert-medical-ner
 DATA_PATH = "./data/synthetic_ner_data.json"
-OUTPUT_DIR = "./models/gbert-base"
+OUTPUT_DIR = "./models2/gbert-base"
 DATA_FILES = {
     "train": "./data/train.json",
     "validation": "./data/val.json",
@@ -139,7 +139,7 @@ def main(print_examples= False):
         args=training_args,
         train_dataset=tokenized_datasets["train"],
         eval_dataset=tokenized_datasets["validation"],
-        processing_class=tokenizer,
+        # processing_class=tokenizer,
         data_collator=data_collator,
         compute_metrics=__compute_metrics,
     )
