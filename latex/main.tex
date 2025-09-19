@@ -95,7 +95,76 @@ The system consists of two main pipelines: training and prediction.
     \label{fig:pipeline}
 \end{figure}
 
-% --- Evaluation ---
+\section{Evaluation and Validation}
+Model validation is a crucial step to assess the quality of extracted entities. 
+Our framework supports an end-to-end evaluation workflow based on synthetic data generation and prediction comparison.
+
+\subsection{Synthetic Reference Data}
+Each generated synthetic sample is produced in two formats:
+\begin{itemize}
+    \item \textbf{NER JSON}: {\raggedright token-level annotations in BIO scheme, serving as ground truth.\par}
+    \item \textbf{Text report}: a plain-text clinical note created from the same template, which can be processed by the prediction pipeline.
+\end{itemize}
+
+\subsection{Prediction and Comparison}
+The prediction pipeline processes the text reports and produces structured entity outputs in JSON. 
+These predictions are then compared against the ground truth NER JSON. 
+The comparison script aligns predicted entity spans with reference spans and computes standard metrics:
+\begin{itemize}
+    \item \textbf{Precision}: proportion of correctly predicted entities among all predicted entities.
+    \item \textbf{Recall}: proportion of correctly predicted entities among all reference entities.
+    \item \textbf{F1-score}: harmonic mean of precision and recall.
+\end{itemize}
+\begin{figure}[htbp]
+    \centering
+    \resizebox{\linewidth}{!}{%
+    \begin{tikzpicture}[
+        node distance=1.8cm and 1.5cm,
+        every node/.style={font=\sffamily},
+        process/.style={rectangle, draw, rounded corners, minimum width=3cm, minimum height=1cm, align=center},
+        io/.style={trapezium, trapezium left angle=70, trapezium right angle=110, draw, minimum width=3.2cm, minimum height=1cm, align=center},
+        arrow/.style={-Latex, thick}
+    ]
+        % Nodes
+        \node[io] (synthetic) {Synthetic Data Generator};
+        \node[process, right=of synthetic] (groundtruth) {NER JSON (Ground Truth)};
+        \node[process, below=of groundtruth] (txt) {Text Report (.txt)};
+        \node[process, right=of txt] (prediction) {NER Model Prediction};
+        \node[process, above=of prediction] (compare) {Comparison \& Metrics};
+        \node[io, right=of compare] (report) {Evaluation Report\\ (Precision, Recall, F1)};
+
+        % Arrows
+        \draw[arrow] (synthetic) -- (groundtruth);
+        \draw[arrow] (synthetic) -- (txt);
+        \draw[arrow] (txt) -- (prediction);
+        \draw[arrow] (groundtruth) -- (compare);
+        \draw[arrow] (prediction) -- (compare);
+        \draw[arrow] (compare) -- (report);
+    \end{tikzpicture}
+    }
+    \caption{Validation workflow: synthetic data is generated in both annotated JSON and plain-text format. The text report is processed by the model, predictions are compared against the ground truth JSON, and metrics are computed.}
+    \label{fig:validation}
+\end{figure}
+
+
+\subsection{Evaluation Reports}
+{\raggedright For each validation run, the system outputs an \texttt{evaluation\_report.json} including: \par}
+\begin{itemize}
+    \item Entity-level results (true positives, false positives, false negatives).
+    \item Global metrics per label type (e.g., ORG, DATE, DIAGNOSIS).
+    \item Confusion analysis highlighting frequent misclassifications.
+\end{itemize}
+
+This design allows rapid testing of new model versions against a reproducible synthetic benchmark. 
+Future work will extend the validation to annotated real-world datasets for more representative performance estimates.
+
+
+
+
+
+
+
+
 \section{Evaluation}
 Evaluation is performed by comparing predictions against reference annotations using precision, recall, and F1-score. A validation script reports detected spans and labels. Current experiments focus on synthetic data and small real-world samples; larger gold-standard datasets are planned.
 Figure~\ref{fig:evaluation} shows precision, recall, and F1-scores for selected entity types (see end of document).
@@ -118,7 +187,18 @@ Albuquerque    & B-LOC               & B-LOC \\ \bottomrule
 
 % --- Results ---
 \section{Results}
-Initial experiments on synthetic reports show high precision and recall for well-structured entities such as dates and organizations. Performance on complex clinical terms (diagnoses, medications) is promising but requires further validation.
+Initial experiments on synthetic reports show that the validation pipeline 
+(Figure~\ref{fig:validation}) can reliably compare predictions against reference annotations. 
+High precision and recall are obtained for well-structured entities such as \texttt{DATE} and \texttt{ORG}, 
+while performance on more complex clinical terms (e.g., \texttt{DIAGNOSIS}, \texttt{MEDICATION}) remains more challenging.
+
+Table~\ref{tab:example} illustrates an example of token-level alignment between 
+gold-standard labels and predicted labels. Figure~\ref{fig:evaluation} summarizes 
+aggregated performance across selected entity types.
+
+These results confirm that the system is suitable for structured entities with 
+unambiguous boundaries, and provide a reproducible baseline for model 
+improvements in future iterations.
 
 % --- Discussion & Future Work ---
 \section{Discussion and Future Work}

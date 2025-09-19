@@ -24,7 +24,7 @@ import random
 
 MODEL_NAME = 'deepset/gbert-base'#"emilyalsentzer/Bio_ClinicalBERT" #medgpt/gbert-medical-ner
 DATA_PATH = "./data/synthetic_ner_data.json"
-OUTPUT_DIR = "./models2/gbert-base"
+OUTPUT_DIR = "./models/gbert-base"
 DATA_FILES = {
     "train": "./data/train.json",
     "validation": "./data/val.json",
