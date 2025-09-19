@@ -133,7 +133,12 @@ def predict():
     if not text:
         return jsonify({"error": "No text provided"}), 400
 
-    predictions =  ner_model.predict(text)
+    try:
+        predictions =  ner_model.predict(text)
+    except Exception as e:
+        return jsonify({"error": e}), 500
+
+
     ner_data = generate_ner_data(text, predictions)
     for ent in predictions:
         ent['score'] = float(ent['score'])

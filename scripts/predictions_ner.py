@@ -10,13 +10,14 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from scripts.text_extractor import extract_text 
-from scripts.utils import generate_ner_data, init_tesseract
+from scripts.utils import generate_ner_data, init_tesseract, replace_entities_with_labels
 
 from scripts.postprocess import postprocess_entities  # Your custom postprocessing
 from scripts.ner_to_fhir import map_ner_to_fhir    # Your mapping from NER to FHIR
 from scripts.config import ID2LABEL,LABEL2ID
 MODEL_PATH = "./models/gbert-base"
-OUTPUTDIR = "output"
+OUTPUT_DIR = "output"
+PREDICTIONS_DIR ="predictions"
 class NERModel:
     def __init__(self):
         self.pipeline = None
@@ -105,13 +106,13 @@ ner_model = NERModel()
 
 init_tesseract()
 
-def __save_entity_comparison_html(raw_entities, post_entities, filename="ner_comparison.html"):
+def __save_entity_comparison_html(predictions, post_predictions, filename="ner_comparison.html"):
     from pathlib import Path
     import html
 
     # Build lookups by span
-    raw_by_span = {(e["start"], e["end"]): e for e in raw_entities}
-    post_by_span = {(e["start"], e["end"]): e for e in post_entities}
+    raw_by_span = {(e["start"], e["end"]): e for e in predictions}
+    post_by_span = {(e["start"], e["end"]): e for e in post_predictions}
     all_spans = sorted(set(raw_by_span.keys()).union(post_by_span.keys()))
 
     rows = ""
@@ -148,84 +149,82 @@ def __save_entity_comparison_html(raw_entities, post_entities, filename="ner_com
         )
 
     html_content = f"""
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <title>Compare entities (Merged View)</title>
-    <style>
-        body {{
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f9f9f9;
-            color: #333;
-        }}
-        h1 {{
-            text-align: center;
-            margin-bottom: 30px;
-        }}
-        table {{
-            border-collapse: collapse;
-            width: 100%;
-        }}
-        th, td {{
-            border: 1px solid #ccc;
-            padding: 8px 12px;
-            text-align: left;
-            white-space: nowrap;
-        }}
-        th {{
-            background-color: #eaeaea;
-            position: sticky;
-            top: 0;
-        }}
-        tr:hover {{
-            background-color: #f1f1f1;
-        }}
-        .changed {{
-            background-color: #ffe0e0;
-            font-weight: bold;
-        }}
-        .added {{
-            background-color: #e0ffe0;
-            font-style: italic;
-        }}
-        .removed {{
-            background-color: #fce5cd;
-            font-style: italic;
-        }}
-    </style>
-</head>
-<body>
-    <h1>Compare NER-Entities (RAW vs. Postpprocessing)</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>Typ</th>
-                <th>Entity (Raw)</th>
-                <th>Entity (Post)</th>
-                <th>Score (Raw)</th>
-                <th>Score (Post)</th>
-                <th>Span</th>
-            </tr>
-        </thead>
-        <tbody>
-            {rows}
-        </tbody>
-    </table>
-</body>
-</html>
-"""
+                    <!DOCTYPE html>
+                    <html lang="de">
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>Compare entities (Merged View)</title>
+                        <style>
+                            body {{
+                                font-family: Arial, sans-serif;
+                                margin: 20px;
+                                background-color: #f9f9f9;
+                                color: #333;
+                            }}
+                            h1 {{
+                                text-align: center;
+                                margin-bottom: 30px;
+                            }}
+                            table {{
+                                border-collapse: collapse;
+                                width: 100%;
+                            }}
+                            th, td {{
+                                border: 1px solid #ccc;
+                                padding: 8px 12px;
+                                text-align: left;
+                                white-space: nowrap;
+                            }}
+                            th {{
+                                background-color: #eaeaea;
+                                position: sticky;
+                                top: 0;
+                            }}
+                            tr:hover {{
+                                background-color: #f1f1f1;
+                            }}
+                            .changed {{
+                                background-color: #ffe0e0;
+                                font-weight: bold;
+                            }}
+                            .added {{
+                                background-color: #e0ffe0;
+                                font-style: italic;
+                            }}
+                            .removed {{
+                                background-color: #fce5cd;
+                                font-style: italic;
+                            }}
+                        </style>
+                    </head>
+                    <body>
+                        <h1>Compare NER-Entities (RAW vs. Postpprocessing)</h1>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Typ</th>
+                                    <th>Entity (Raw)</th>
+                                    <th>Entity (Post)</th>
+                                    <th>Score (Raw)</th>
+                                    <th>Score (Post)</th>
+                                    <th>Span</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rows}
+                            </tbody>
+                        </table>
+                    </body>
+                    </html>
+                    """
     Path(filename).write_text(html_content, encoding="utf-8")
-    print(f"\nHTML merged comparison saved to {filename}")
 
 
-def __save_predictions(predictions, file_name, output_dir="predictions"):
-    os.makedirs(output_dir, exist_ok=True)
-    path = os.path.join(output_dir, f"{file_name}.json")
-    with open(path, "w", encoding="utf-8") as f:
+
+def __save_predictions(predictions, file_name):
+    with open(file_name, "w", encoding="utf-8") as f:
         json.dump(predictions, f, indent=2, ensure_ascii=False)
-    print(f"✅ Predictions saved to {path}")
+    
 
 
 def __execute_predictions(text):
@@ -236,49 +235,82 @@ def __execute_predictions(text):
 
 
 
-def main(file_path):
+def main(file_path,post_process_predictions, save_as_template):
 
     _, report_file_name = os.path.split(file_path)
     
     report_file_name, _ = os.path.splitext(report_file_name) 
-
-    print(f"Extracting text from {file_path} ...")
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    os.makedirs(PREDICTIONS_DIR, exist_ok=True)
+    
+    print(f"step1 - Extracting text from {file_path} ...")
     text = extract_text(file_path)
+    print(f"step2 - Executing prediction ...")
     predictions = __execute_predictions(text)
+    print(f"step3 - Generating ner data {file_path} ...")
     ner_data = generate_ner_data(text, predictions)
     dataset = []   
     dataset.append(ner_data)
 
-    for ent in predictions:
-        entity_type = ent.get("entity_group", ent.get("entity"))
-        # print(ent)
-        print(f"Entity: '{ent['word']}'  |  Type: {entity_type}  |  Score: {ent['score']:.3f}")
+
+    # for ent in predictions:
+    #     entity_type = ent.get("entity_group", ent.get("entity"))
+    #     print(f"Entity: '{ent['word']}'  |  Type: {entity_type}  |  Score: {ent['score']:.3f}")
     
-    #postprocess the entities to make them clean...to be tested and updated
-    cleaned_entities = postprocess_entities(predictions)
 
-    __save_predictions(cleaned_entities,report_file_name)
-
-    os.makedirs(OUTPUTDIR, exist_ok=True)
     
-    output_html = os.path.join(OUTPUTDIR, f"compare_postprocessing_{report_file_name}.html")  
-    if os.path.exists(output_html):
-        os.remove(output_html)
-    __save_entity_comparison_html(predictions, cleaned_entities,output_html)
+    #postprocess the entities to make them clean...to be tested and updated, not called via WEB
+    if post_process_predictions:# just for testing
+        post_predictions = postprocess_entities(predictions)
+        post_preditctions_file = os.path.join(PREDICTIONS_DIR, f"postprediction_{report_file_name}.json")
+        __save_predictions(post_predictions,post_preditctions_file)
+        print(f"✅ Post Predictions saved to {post_preditctions_file}")
 
-    output_ner_file = os.path.join(OUTPUTDIR,f"ner_{report_file_name}.json")
+        #saving compare between prediction and post_predictions    
+        output_html = os.path.join(OUTPUT_DIR, f"compare_postprocessing_{report_file_name}.html")  
+        if os.path.exists(output_html):
+            os.remove(output_html)
+        __save_entity_comparison_html(predictions, post_predictions,output_html)
+        print(f"✅ HTML merged comparison saved to {output_html}")
+    else:
+        preditctions_file = os.path.join(PREDICTIONS_DIR, f"prediction_{report_file_name}.json")
+        __save_predictions(predictions,preditctions_file)
+        print(f"✅ Predictions saved to {preditctions_file}")
+
+        
+    #saving the predictions as ner data in bio format
+    output_ner_file = os.path.join(OUTPUT_DIR,f"ner_{report_file_name}.json")
     with open(output_ner_file, "w", encoding="utf-8") as f:
         json.dump(dataset, f, indent=2, ensure_ascii=False)
+    
+    print(f"✅ Ner data as bio format saved {output_ner_file}")
 
+    if save_as_template: 
+        #the idea is to use the report as new template    
+        text_as_template = replace_entities_with_labels(text,predictions)
+        #saving the predictions as txt for a new template
+        output_text_template =  os.path.join(OUTPUT_DIR,f"template_{report_file_name}.txt")
+        with open(output_text_template, "w", encoding="utf-8") as f:
+            f.write(text_as_template)
+        print(f"✅ Prediction as ttxt report for template saved {output_text_template}")
+
+    print(f"All result files have been saved in {OUTPUT_DIR}")
 
 if __name__ == "__main__":
     import sys
     file_path = './documents/artz_brief.txt'
     #file_path = './txt_reports/report_30.txt'
-   # file_path = './documents/sample_adult_history_de.txt'
+    file_path = './temp/real_report.txt'     
+    post_process_predictions = False
+    save_as_template = False
     if len(sys.argv) == 2:   
-        file_path = sys.argv[1]           
+        file_path = sys.argv[1]   
     if not os.path.exists(file_path):
-            print(f"File not found: {file_path}")
-            exit(1)
-    main(file_path)
+        print(f"File not found: {file_path}")
+        exit(1)
+    if len(sys.argv) == 3:
+        post_process_predictions = sys.argv[2].lower() == 'true'
+    if len(sys.argv) == 4:
+        save_as_template = sys.argv[3].lower() == 'true'
+ 
+    main(file_path=file_path, post_process_predictions=post_process_predictions,save_as_template=save_as_template)

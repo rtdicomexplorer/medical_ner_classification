@@ -38,6 +38,32 @@ def init_tesseract():
     else:
         raise EnvironmentError(f"❌ Unbekanntes Betriebssystem: {system}")
 
+
+def format_diagnoses(diagnosis_icd10_map):
+    entries=[]
+    for diagnosis, code in diagnosis_icd10_map.items():
+        entry = f"{diagnosis} ({code})" if code else f"{diagnosis}"         
+        entries.append(entry)
+    return entries
+
+
+def format_prev_diagnoses(diagnosis_icd10_map):
+    entries=[]
+    for diagnosis, code in diagnosis_icd10_map.items():
+        prev_entries =  [
+            f"frühere {diagnosis}",
+            f"Zustand nach  {diagnosis}",
+            f"{diagnosis} in der Vorgeschichte",
+            f"vor {random.randint(1,30)} {random.choice(['Monate', 'Jahre'])} diagnostiziert: {diagnosis}"]
+        prev_diagnosis = random.choice(prev_entries) 
+        entry = f"{prev_diagnosis} ({code})" if code else f"{prev_diagnosis}"         
+        entries.append(entry)
+    return entries
+
+
+
+
+
 def replace_entities_with_labels(text, entities):
     """
     Replaces detected entity spans in the text with their label name, e.g., {PATIENT}.
@@ -55,8 +81,8 @@ def replace_entities_with_labels(text, entities):
     return text
 
 def generate_ner_data(text,entities):
-    tokens, offsets = smart_tokenize_with_offsets(text)  #smart_tokenize(text)           
-    tags =  create_bio_tags_from_offsets(tokens=tokens,offsets=offsets,entities= entities)# __create_bio_tags_from_offsets(tokens=tokens,entities=entities, text=text)
+    tokens, offsets = smart_tokenize_with_offsets(text)          
+    tags =  create_bio_tags_from_offsets(tokens=tokens,offsets=offsets,entities= entities)
     tag_ids = bio_tags_to_ids(tags, LABEL2ID)
     dataset = {
         "tokens": tokens,
@@ -230,7 +256,6 @@ def paraphrase_hospital_stay(entities):
     admission = entities.get("ADMISSION_DATE")
     discharge = entities.get("DISCHARGE_DATE")
     stay_reason = entities.get("STAY_REASON")
-    # Falls keine Daten: Rückgabe leerer String
     if not (admission or discharge or stay_reason):
         return ""
     
@@ -244,9 +269,6 @@ def paraphrase_hospital_stay(entities):
         "Aufgenommen am {admission}, entlassen am {discharge} aufgrund von {stay_reason}.",
     ]
 
-
-
-    # Wähle zufällige Vorlage, abhängig davon, welche Daten vorhanden sind
     possible_templates = []
 
     if admission and discharge and stay_reason:
@@ -265,7 +287,6 @@ def paraphrase_hospital_stay(entities):
             "Grund des Krankenhausaufenthalts: {stay_reason}.",
         ]
     else:
-        # Fallback wenn nur einzelne Werte da sind
         possible_templates = templates
 
     template = random.choice(possible_templates)
@@ -279,8 +300,8 @@ def paraphrase_hospital_stay(entities):
 
 def paraphrase_medication_combination(entities):
     """
-    Kombiniert MEDICATION + DOSAGE + ROUTE + FREQUENCY + DURATION (wenn vorhanden).
-    Gibt einen natürlichen Satz zurück.
+    Combine MEDICATION + DOSAGE + ROUTE + FREQUENCY + DURATION 
+    
     """
     medication = entities.get("MEDICATION")
     dosage = entities.get("DOSAGE")
@@ -288,13 +309,10 @@ def paraphrase_medication_combination(entities):
     frequency = entities.get("FREQUENCY")
     duration = entities.get("DURATION")
 
-
-
-    # Fallback wenn nicht alle Werte vorhanden
     if not medication:
         return None
 
-    # Einfacher Satz falls nur Medikament angegeben
+    # Simplke sentence if only medication is present
     if not any([dosage, route, frequency, duration]):
         return f"Behandlung mit {medication}"
 
@@ -305,10 +323,8 @@ def paraphrase_medication_combination(entities):
         "Behandlung mit {medication} ({dosage}), {route}, {frequency}, geplant für {duration}.",
     ]
 
-    # Wähle zufällige Vorlage
+    
     template = random.choice(templates)
-
-    # Formatieren mit leeren Strings statt None
     phrase = template.format(
         medication=medication or "",
         dosage=dosage or "",
@@ -317,21 +333,23 @@ def paraphrase_medication_combination(entities):
         duration=duration or "",
     )
 
-    # Überflüssige Kommata und Leerzeichen entfernen (z.B. ", ,", ", .", "  ")
+    # remove commas if not necessary (z.B. ", ,", ", .", "  ")
     phrase = re.sub(r'\s+,', ',', phrase)  # Leerzeichen vor Komma entfernen
-    phrase = re.sub(r',\s*,', ',', phrase) # Mehrfache Kommata reduzieren
+    phrase = re.sub(r',\s*,', ',', phrase) # Mehrfache Komma reduzieren
     phrase = re.sub(r',\s*\.', '.', phrase) # Komma vor Punkt entfernen
     phrase = re.sub(r'\s{2,}', ' ', phrase) # Mehrfache Leerzeichen auf eins reduzieren
     phrase = phrase.strip()
 
-    # Falls Satz mit Komma endet, ersetze durch Punkt
     if phrase.endswith(','):
         phrase = phrase[:-1] + '.'
     return phrase
 
 def paraphrase_entity(entity_type, value):
-    variations = {
-        
+    """
+    Create a paraphrase by given entity, with given value
+    Neetds to be checked... 
+    """
+    variations = {      
         "ADDRESS": [
             f"Standort: {value}",
             f"Adresse: {value}",
@@ -369,24 +387,24 @@ def paraphrase_entity(entity_type, value):
             ],
 
         "ANAMNESE": [
-                f"Anamnese: {value}",
-                f"Vegetative Anamnese zeigt: {value}",
-                f"Aus der Anamnese geht hervor: {value}",
-                f"Der Patient berichtet über {value}",
-                f"Vorgeschichte des Patienten: {value}",
-                f"Anamnestisch auffällig: {value}",
-                f"In der medizinischen Anamnese: {value}",
-                f"{value} wurde anamnestisch erhoben",
-                f"Anamnestisch wurden {value} beschrieben",
-                f"Anamnestisch relevante Angabe: {value}",
-                f"Medikamente Anamnese : {value}",
-                f"Soziale Anamnese: {value}",
-                f"Familiäre Anamnese: {value}"
+            f"Anamnese: {value}",
+            f"Vegetative Anamnese zeigt: {value}",
+            f"Aus der Anamnese geht hervor: {value}",
+            f"Der Patient berichtet über {value}",
+            f"Vorgeschichte des Patienten: {value}",
+            f"Anamnestisch auffällig: {value}",
+            f"In der medizinischen Anamnese: {value}",
+            f"{value} wurde anamnestisch erhoben",
+            f"Anamnestisch wurden {value} beschrieben",
+            f"Anamnestisch relevante Angabe: {value}",
+            f"Medikamente Anamnese : {value}",
+            f"Soziale Anamnese: {value}",
+            f"Familiäre Anamnese: {value}"
             ],
 
 
         "BIRTHDATE":[
-             f"geboren am: {value}",
+            f"geboren am: {value}",
             f"Geburtsdatum: {value}",
             f"Der Geburtstag ist der {value}",
             f"Geboren wurde am {value}"
@@ -466,7 +484,7 @@ def paraphrase_entity(entity_type, value):
             f"Arzt: {value}",
             f"medizinisch betreut von {value}",
             f"{value} als behandelnder Arzt",
-            f"unter der Aufsicht von {value}",
+            f"unter der Aufsicht von {value} ",
             f"{value} hat die Behandlung übernommen"
             ],
 
@@ -508,135 +526,135 @@ def paraphrase_entity(entity_type, value):
                 ],
 
         "FAMHIST":[
-            f"in der Familie gab es schon Fälle mit {value}",
-            f"Familienanamnese: {value}",
-            f"familiäre Häufung von {value} bekannt",
-            f"familiäre Vorbelastung mit {value}",
-            f"es liegen familiäre Fälle von {value} vor",
-            f"familiäre Erkrankung: {value}",
-            f"in der Verwandtschaft tritt {value} auf"
-            ],
+                f"in der Familie gab es schon Fälle mit {value}",
+                f"Familienanamnese: {value}",
+                f"familiäre Häufung von {value} bekannt",
+                f"familiäre Vorbelastung mit {value}",
+                f"es liegen familiäre Fälle von {value} vor",
+                f"familiäre Erkrankung: {value}",
+                f"in der Verwandtschaft tritt {value} auf"
+                ],
 
         "FINDING": [
-            f"Befund: {value}",
-            f"es zeigte sich {value}",
-            f"untersucht wurde: {value}",
-            f"beobachtet wurde {value}",
-            f"{value} trat auf",
-            f"nachgewiesen: {value}",
-            f"diagnostischer Befund: {value}"
-            ],
+                f"Befund: {value}",
+                f"es zeigte sich {value}",
+                f"untersucht wurde: {value}",
+                f"beobachtet wurde {value}",
+                f"{value} trat auf",
+                f"nachgewiesen: {value}",
+                f"diagnostischer Befund: {value}"
+                ],
 
         "FOLLOWUP_REASON": [
-            f"Grund für die Nachsorge: {value}",
-            f"Folgegrund: {value}",
-            f"Nachsorge erforderlich wegen {value}",
-            f"{value} als Anlass für Nachkontrolle",
-            f"{value} wurde als Folgegrund angegeben"
-            ],
+                f"Grund für die Nachsorge: {value}",
+                f"Folgegrund: {value}",
+                f"Nachsorge erforderlich wegen {value}",
+                f"{value} als Anlass für Nachkontrolle",
+                f"{value} wurde als Folgegrund angegeben"
+                ],
 
         "FOLLOWUP_REQ": [
-            f"Folgeanforderung: {value}",
-            f"weiteres Vorgehen: {value}",
-            f"empfohlene Maßnahme: {value}",
-            f"{value} soll durchgeführt werden",
-            f"{value} wurde als nächste Maßnahme geplant"
-            ],
+                f"Folgeanforderung: {value}",
+                f"weiteres Vorgehen: {value}",
+                f"empfohlene Maßnahme: {value}",
+                f"{value} soll durchgeführt werden",
+                f"{value} wurde als nächste Maßnahme geplant"
+                ],
 
         "FREQUENCY": [
-            f"Häufigkeit: {value}",
-            f"{value} verabreicht",
-            f"Verabreichung {value}"
-            ],
+                f"Häufigkeit: {value}",
+                f"{value} verabreicht",
+                f"Verabreichung {value}"
+                ],
 
         "GEWICHT":[
-            f"wiegt: {value}",
-            f"er/sie wiegt {value}",
-            f"das Gewicht beträgt {value}",
-            f"das Körpergewicht liegt bei {value}",
-            f"Gewicht: {value}",
-            f"Gewicht : {value}"
-            ],
+                f"wiegt: {value}",
+                f"er/sie wiegt {value}",
+                f"das Gewicht beträgt {value}",
+                f"das Körpergewicht liegt bei {value}",
+                f"Gewicht: {value}",
+                f"Gewicht : {value}"
+                ],
 
         "GROESSE":[
-            f"Größe: {value}",
-            f"Größe : {value}",
-            f"er/sie ist {value} groß",
-            f"die Körpergröße beträgt {value}",
-            f"die Größe ist {value}",
-            f"die Körpergröße liegt bei {value}"
-            ],
+                f"Größe: {value}",
+                f"Größe : {value}",
+                f"er/sie ist {value} groß",
+                f"die Körpergröße beträgt {value}",
+                f"die Größe ist {value}",
+                f"die Körpergröße liegt bei {value}"
+                ],
 
         "HOSPITAL_STAY": [
-            f"Aufenthaltsdauer: {value}",
-            f"stationär für {value}",
-            f"Krankenhausaufenthalt von {value}"
-            ],        
+                f"Aufenthaltsdauer: {value}",
+                f"stationär für {value}",
+                f"Krankenhausaufenthalt von {value}"
+                ],        
         "IMMUNIZATION":[
-            f"Impfungen: {value}",
-            f"geimpft gegen {value}",
-            f"Impfstatus: {value}",
-            f"Der Patient wurde immunisiert gegen {value}",
-            f"Impfungen liegen vor für {value}"
-            ],
+                f"Impfungen: {value}",
+                f"geimpft gegen {value}",
+                f"Impfstatus: {value}",
+                f"Der Patient wurde immunisiert gegen {value}",
+                f"Impfungen liegen vor für {value}"
+                ],
 
-         "IMPRESSION": [
-            f"Einschätzung: {value}",
-            f"Beurteilung: {value}",
-            f"Zusammenfassend ergibt sich: {value}",
-            f"klinische Impression: {value}",
-            f"Schlussfolgerung: {value}",
-            f"abschließende Einschätzung: {value}",
-            f"Interpretation: {value}",
-            f"{value} als zusammenfassender Befund"
-        ],
+        "IMPRESSION": [
+                f"Einschätzung: {value}",
+                f"Beurteilung: {value}",
+                f"Zusammenfassend ergibt sich: {value}",
+                f"klinische Impression: {value}",
+                f"Schlussfolgerung: {value}",
+                f"abschließende Einschätzung: {value}",
+                f"Interpretation: {value}",
+                f"{value} als zusammenfassender Befund"
+                ],
 
         "INSURANCE_ID": [
-            f"Versicherungsnummer: {value}",
-            f"Vers.-ID: {value}",
-            f"Versicherten-ID: {value}"
-            ],
+                f"Versicherungsnummer: {value}",
+                f"Vers.-ID: {value}",
+                f"Versicherten-ID: {value}"
+                ],
     
         "LAB_RESULT": [
-            f"Laborergebnisse: {value}",
-            f"Im Labor zeigte sich: {value}",
-            f"Blutwerte: {value}",
-            f"Laborbefund: {value}",
-            f"Ergebnisse der Laboruntersuchung: {value}",
-            f"diagnostisch relevante Werte: {value}",
-            f"Laborparameter: {value}",
-            f"{value} wurden im Labor festgestellt"
-            ],
+                f"Laborergebnisse: {value}",
+                f"Im Labor zeigte sich: {value}",
+                f"Blutwerte: {value}",
+                f"Laborbefund: {value}",
+                f"Ergebnisse der Laboruntersuchung: {value}",
+                f"diagnostisch relevante Werte: {value}",
+                f"Laborparameter: {value}",
+                f"{value} wurden im Labor festgestellt"
+                ],
 
         "LIFESTYLE": [
-            f"Lebensstil: {value}",
-            f"führt einen {value} Lebensstil",
-            f"Verhaltensmuster: {value}",
-            f"Lebensgewohnheiten: {value}",
-            f"Lebensweise: {value}"
-            ],
+                f"Lebensstil: {value}",
+                f"führt einen {value} Lebensstil",
+                f"Verhaltensmuster: {value}",
+                f"Lebensgewohnheiten: {value}",
+                f"Lebensweise: {value}"
+                ],
 
         "MEDICATION": [
-            f"bekommt {value}",
-            f"Therapie mit {value}",
-            f"{value} wurde verabreicht",
-            f"Medikation: {value}",
-            f"wird behandelt mit {value}",
-            f"Medikamentöse Behandlung mit {value}",
-            f"erhält {value} als Medikament"
-            ],
+                f"bekommt {value}",
+                f"Therapie mit {value}",
+                f"{value} wurde verabreicht",
+                f"Medikation: {value}",
+                f"wird behandelt mit {value}",
+                f"Medikamentöse Behandlung mit {value}",
+                f"erhält {value} als Medikament"
+                ],
 
         "OCCUPATION":[
-            f"aktueller Beruf: {value}",
-            f"is {value} von Beruf",
-            f"er ist {value}",
-            f"arbeitet als {value}",
-            f"keine Beschäftigung",
-            f"arbeitet als {value}",
-            f"{value} ist sein/ihr Beruf",
-            f"Beruflich tätig als {value}",
-            f"Zurzeit ohne Beschäftigung" if random.random() < 0.2 else f"Er/Sie ist {value}",
-            ],
+                f"aktueller Beruf: {value}",
+                f"is {value} von Beruf",
+                f"er ist {value}",
+                f"arbeitet als {value}",
+                f"keine Beschäftigung",
+                f"arbeitet als {value}",
+                f"{value} ist sein/ihr Beruf",
+                f"Beruflich tätig als {value}",
+                f"Zurzeit ohne Beschäftigung" if random.random() < 0.2 else f"Er/Sie ist {value}",
+                ],
 
         "ORG": [
                 f"im Krankenhaus {value}",
@@ -656,16 +674,17 @@ def paraphrase_entity(entity_type, value):
                 f"Betroffene Person: {value}",
                 f"{value} wurde aufgenommen",
                 f"Es handelt sich um {value}",
-                f"Die Person namens {value}"
+                f"Die Person namens {value}",
+                f"{value} wurde eingewiesen"
             ],
             
         "PHONE": [
-            f"Telefonnummer: {value}",
-            f"Kontakt: {value}",
-            f"Telefon: {value}",
-            f"erreichbar unter: {value}",
-            f"Rufnummer: {value}"
-            ],
+                f"Telefonnummer: {value}",
+                f"Kontakt: {value}",
+                f"Telefon: {value}",
+                f"erreichbar unter: {value}",
+                f"Rufnummer: {value}"
+                ],
 
         "PHONE_PATIENT": [
                 f"Telefonnummer: {value}",
@@ -676,103 +695,107 @@ def paraphrase_entity(entity_type, value):
                 ],
 
         "PID":[
-            f"patient-id {value}",
-            f"ID: {value}",
-            f"PID: {value}",
-            f"PIZ: {value}",
-            f"Patientenkennzeichen: {value}",
-            f"Identifikationsnummer: {value}"
-            ],
+                f"patient-id {value}",
+                f"ID: {value}",
+                f"PID: {value}",
+                f"PIZ: {value}",
+                f"Patientenkennzeichen: {value}",
+                f"Identifikationsnummer: {value}"
+                ],
 
         "PREV_DIAGNOSIS": [
-            f"frühere Diagnose: {value}",
-            f"Vordiagnose: {value}",
-            f"zuvor diagnostiziert mit {value}",
-            f"es lag bereits {value} vor",
-            f"bekannte Vorerkrankung: {value}",
-            f"bisherige Diagnose: {value}",
-            f"medizinische Vorgeschichte zeigt {value}",
-            f"diagnostiziert in der Vergangenheit: {value}",
-            f"Vorerkrankungen: {value}"
-            ],
+                f"frühere Diagnose: {value}",
+                f"Vordiagnose: {value}",
+                f"zuvor diagnostiziert mit {value}",
+                f"es lag bereits {value} vor",
+                f"bekannte Vorerkrankung: {value}",
+                f"bisherige Diagnose: {value}",
+                f"medizinische Vorgeschichte zeigt {value}",
+                f"diagnostiziert in der Vergangenheit: {value}",
+                f"Vorerkrankungen: {value}"
+                ],
 
         "PROCEDURE": [
-            f"durchgeführte Prozedur: {value}",
-            f"eingesetztes Verfahren: {value}",
-            f"Untersuchung mittels {value}",
-            f"{value} wurde angewendet",
-            f"{value} wurde durchgeführt",
-            f"diagnostisches Verfahren: {value}"
-            ],
+                f"durchgeführte Prozedur: {value}",
+                f"eingesetztes Verfahren: {value}",
+                f"Untersuchung mittels {value}",
+                f"{value} wurde angewendet",
+                f"{value} wurde durchgeführt",
+                f"diagnostisches Verfahren: {value}"
+                ],
 
         "RISKFACTOR": [
-            f"mögliche Risikofaktoren: {value}",
-            f"es bestehen folgende Risiken: {value}",
-            f"Risikoaspekte: {value}",
-            f"bekannte Risikofaktoren: {value}",
-            f"{value} gelten als Risikofaktoren",
-            f"erhöhtes Risiko durch: {value}",
-            f"relevante Risiken: {value}"
-            ],
+                f"mögliche Risikofaktoren: {value}",
+                f"es bestehen folgende Risiken: {value}",
+                f"Risikoaspekte: {value}",
+                f"bekannte Risikofaktoren: {value}",
+                f"{value} gelten als Risikofaktoren",
+                f"erhöhtes Risiko durch: {value}",
+                f"relevante Risiken: {value}"
+                ],
 
         "ROOM_NUMBER": [
-            f"Zimmernummer: {value}",
-            f"untergebracht ins Zimmer {value}",
-            f"Raum: {value}"
-            ],
+                f"Zimmernummer: {value}",
+                f"untergebracht ins Zimmer {value}",
+                f"Raum: {value}"
+                ],
 
         "ROUTE": [
-            f"Applikationsweg: {value}",
-            f"wurde {value} verabreicht",
-            f"Verabreichungsform: {value}"
-        ]   ,
+                f"Applikationsweg: {value}",
+                f"wurde {value} verabreicht",
+                f"Verabreichungsform: {value}"
+                ]   ,
         
         "SMOKING_STATUS": [
-            f"Raucherstatus: {value}",
-            f"er/sie ist {value}",
-            f"Tabakkonsum: {value}"
-            ],
+                f"Raucherstatus: {value}",
+                f"er/sie ist {value}",
+                f"Tabakkonsum: {value}"
+                ],
     
         "STAY_REASON":[
-            f"Grund des Krankenhausaufenthalts: {value}.",
-            f"Aufgrund von {value}",
-            f"muss noch stationär wegen {value}",
-            f"wegen {value} muss stationäre."
-            ],
+                f"Grund des Krankenhausaufenthalts: {value}",
+                f"Aufgrund von {value}",
+                f"muss noch stationär wegen {value}",
+                f"wegen {value} muss stationäre"
+                ],
 
         "SYMPTOM": [
-            f"klagt über {value}",
-            f"zeigt Symptome wie {value}",
-            f"Symptomatik: {value}",
-            f"hat {value}",
-            f"es wurden {value} beobachtet",
-            f"{value} wurde berichtet",
-            f"leidet unter {value}",
-            f"stark anhaltend dumpfen {value}",
-            f"fühlt sich {value}",
-            ],
+                f"klagt über {value}",
+                f"zeigt Symptome wie {value}",
+                f"Symptomatik: {value}",
+                f"hat {value}",
+                f"es wurden {value} beobachtet",
+                f"{value} wurde berichtet",
+                f"leidet unter {value}",
+                f"stark anhaltend dumpfen {value}",
+                f"fühlt sich {value}",
+                ],
 
         "TREATMENT": [
-            f"erhält Behandlung mit {value}",
-            f"Therapieansatz: {value}",
-            f"{value} wurde eingeleitet",
-            f"Behandlungsform: {value}",
-            f"es erfolgte eine Behandlung mittels {value}",
-            f"Therapie: {value}",
-            f"therapeutische Maßnahme: {value}"
-            ],
+                f"erhält Behandlung mit {value}",
+                f"Therapieansatz: {value}",
+                f"{value} wurde eingeleitet",
+                f"Behandlungsform: {value}",
+                f"es erfolgte eine Behandlung mittels {value}",
+                f"Therapie: {value}",
+                f"therapeutische Maßnahme: {value}"
+                ],
 
         "VITALSIGNS":[
-            f"{value}",
-            f"Vitalparameter: {value}",
-            f"Die Vitalzeichen zeigen: {value}",
-            f"Gemessene Werte: {value}"
-            ],
+                f"{value}",
+                f"Vitalparameter: {value}",
+                f"Die Vitalzeichen zeigen: {value}",
+                f"Gemessene Werte: {value}"
+                ],
         # add more as needed
     }
+
+    end_char = random.choice(['. ',', ','; ','! '])
+    phrase = f"{entity_type}: {value}{end_char}"# default value
     if entity_type in variations:
-        return random.choice(variations[entity_type])
-    return f"{entity_type}: {value}"
+        phrase =f" {random.choice(variations[entity_type])}{end_char}"
+        
+    return phrase
 
 
 anamneses = [
@@ -926,12 +949,50 @@ station_names=[
 ]
 
 
-diagnosis_icd10_map = {
+diagnoses = {
+    "Appendizitis": "K37",
+    "Spastisch-dystone Zerebralparese GMFCS °IV": "G80.3",
+    "Arthrose": "M15-M19",
+    "Peripartaler Asphyxie": "P21.9",
+    "Herzinfarkt": "I25.2",
+    "Fraktur": "Z87.81",
+    "COPD": "J44",
+    "Bronchitis": "J42",
     "Hypertonie": "I10",
     "Diabetes Mellitus": "E11.9",
     "Asthma": "J45",
-    "Pneumonie": "J18.9"
+    "Pneumonie": "J18.9",
+    "arterielle Hypertonie": "I10",  # Essential hypertension
+    "Diabetes mellitus Typ 2": "E11",  # Type 2 diabetes
+    "Hyperlipidämie": "E78.5",  # Elevated lipids (unspecified)
+    "chronische Niereninsuffizienz": "N18.9",  # Chronic kidney disease, unspecified
+    "status post Schlaganfall": "I69.3",  # Sequelae of cerebral infarction
+    "chronisches Schmerzsyndrom": "R52.2",  # Chronic pain, not elsewhere classified
+    "epileptische Anfälle in der Vorgeschichte": "Z86.6",  # Personal history of epilepsy
+    "bekannte Demenz": "F03.9",  # Unspecified dementia
+    "chronische Hepatitis C": "B18.2",  # Chronic viral hepatitis C
+    "Asthma bronchiale": "J45.9",  # Asthma, unspecified
+    "koronare Herzkrankheit": "I25.1",  # Atherosclerotic heart disease
+    "Vorhofflimmern": "I48.0",  # Paroxysmal atrial fibrillation
+    "Adipositas": "E66.9",  # Obesity, unspecified
+    "Zustand nach Bypass-Operation": "Z95.1",  # Presence of aortocoronary bypass graft
+    "Zustand nach Endoprothese Hüfte": "Z96.64",  # Presence of hip implant
+    "Zustand nach Endoprothese Knie": "Z96.65",  # Presence of knee implant
+    "Osteoporose": "M81.0",  # Age-related osteoporosis without fracture
+    "Rheumatoide Arthritis": "M06.9",  # Rheumatoid arthritis, unspecified
+    "Parkinson-Krankheit": "G20",  # Parkinson’s disease
+    "Multiple Sklerose": "G35",  # Multiple sclerosis
+    "Gastroösophagealer Reflux":"K21.9",
+    "gastroösophagealer Reflux mit Ösophagitis": "K21.0",
+    "mangelnde Gewichtszunahme (Kind)": "R62.8",
+    "mangelnde Gewichtszunahme (Neugeborenes)": "P92.6",
+    "mangelnde Gewichtszunahme (Erwachsener, unspezifisch)": "R63.4",
+    "Spastisch-dystone Zerebralparese":"G80.8",
+    "Spastisch-dystone Zerebralparese (dyskinetisch betont)": "G80.3",  # Dyskinetic cerebral palsy
+    "Spastisch-dystone Zerebralparese (gemischt)": "G80.8",  # Mixed type / Other cerebral palsy
+
 }
+
 
 vitalsigns = [
     "Blutdruck 120/80 mmHg", 
@@ -962,7 +1023,7 @@ risk_factors = [
 names = ["Herr. Max Müller", "Patientin: Anna Schmidt", "L. Weber", "Frau Sophie Fischer","Otto Kromberger","Irina, Klose"
          "John Smith", "Mary Jones", "Robert Lee", "Emily Davis"]
 doctors = ["Dr. Müller", "Dr. Schneider", "Dr. Becker", "Dr. Weber","Dr. Suhle Nikolas", "Dr. Lehmann", "Dr. Fischer", "Dr. Weber",
-           "Dr. Adams", "Dr. Lee", "Dr. Patel", "Dr. Chen", "Prof. A. Passero" ]
+           "Dr. Adams", "Dr. Lee", "Dr. Patel", "Dr. Chen", "Prof. A. Passero","Frau Moller", "Herr Moller"]
 
 
 symptoms = [
@@ -1033,7 +1094,7 @@ symptoms = [
     "Juckreiz",
     "Schwellung",
     "Rötung",
-    "Hautveränderungen"
+    "Hautveränderungen",
     "Gewichtszunahme",
     "gastroösophagealen Reflux",
     "Mundgeruch",
@@ -1119,7 +1180,7 @@ medications = [
     "Infliximab"
 ]
 
-treatments = ["Sauerstofftherapie", "Operation", "Chemotherapie", "Physiotherapie", "Schlafmedikamente"]
+treatments = ["Sauerstofftherapie", "Operation", "Chemotherapie", "Physiotherapie", "Reha"]
 lab_results = ["Hb 13.5 g/dL", "Blutzucker 110 mg/dL", "Cholesterin 200 mg/dL","Glukose: 110 mg/dL"]
 findings =[ "Infiltrat in der rechten Lunge"  , 
             "Herzvergrößerung", 
@@ -1146,15 +1207,17 @@ immunizations = ["Masern-Impfung", "Grippeimpfung", "Covid 19"]
 devices = ["Herzschrittmacher", "Insulinpumpe","Schlafmaske", "Blutdruckgerät", "Kateter","PEG-Sonde"]
 family_histories = ["Mutter mit Diabetes", "Vater mit Bluthochdruck","Herzinfarkte beim Vater", "Krebs bei der Mutter",
                     "Diabetes in der Familie", "Vater hatte einen Schlaganfall", "Bruder mit Zuckerkrakheit"]
-procedures = ["Angioplastie", "MRT-Scan", "Biopsie", "Ultraschall","CT Kopf", "Lyse-Therapie","Ösophagogastroduodenoskopie", "ÖGD", "Röntgen MDP"]
-departments = ["Kardiologie", "Notaufnahme", "Onkologie", "Radiologie","Neurologie", "Innere Medizin"]
+procedures = ["Angioplastie", "MRT-Scan", "Biopsie", "Ultraschall","CT Kopf", "Lyse-Therapie",
+              "Ösophagogastroduodenoskopie", "ÖGD", "Röntgen MDP","laparoskopische Fundoplicatio", "assistierten Gastrostomie"]
+departments = ["Kardiologie", "Notaufnahme", "Onkologie", "Radiologie","Neurologie", "Innere Medizin", "Sozialdienst"]
 
-hospital_names = ["St. Marien Krankenhaus", "Allgemeine Gesundheitsklinik",
+hospital_names = ["St. Marien Krankenhaus", "Allgemeine Gesundheitsklinik","Fachklinik Gailingen", "Rehaklinik Schönberg",
                   "Städtisches Medizinzentrum", "Universitätsklinikum München", "Kinderklinik Freiburg"]
-hospital_addresses = ["Hauptstraße 12, 80331 München", "Berliner Allee 45, 40212 Düsseldorf","Lindenstraße 8, 10115 Berlin", "Goetheplatz 9, 50674 Köln",
+hospital_addresses = ["Hauptstraße 12, 80331 München", "Berliner Allee 45, 40212 Düsseldorf",
+                      "Lindenstraße 8, 10115 Berlin", "Goetheplatz 9, 50674 Köln",
                       "Hugstetterstr. 7 79106 Freiburg", "Kamphausenstr. 23, 79666 Reute"]
-hospital_phones = ["089 123456", "0211 987654", "030 234567", "0221 456789", "0761 2720298"]
-patient_phones = ["089 123456", "0211 987654", "030 234567", "0221 456789", "0761 2720298"]
+hospital_phones = ["089 123456", "0211 987654", "030 234567", "0221 456789", "0761 2720298", "3456", "112", "+4912120120"]
+patient_phones = ["089 123456", "0211 987654", "030 234567", "0221 456789", "0761 2720298", "+491873446456"]
 
 patient_addresses = ["Hauptstraße 12, 80331 München", "Berliner Allee 45, 40212 Düsseldorf","Lindenstraße 8, 10115 Berlin", "Goetheplatz 9, 50674 Köln",
                       "Hugstetterstr. 7 79106 Freiburg", "Kamphausenstr. 23, 79666 Reute"]
@@ -1168,10 +1231,6 @@ impressions = [
     "mögliche Fraktur", "Verdacht auf Infekt", "Hinweis auf Tumor"
 ]
 
-prev_diagnoses = [
-    "frühere Appendizitis", "bekannte Arthrose", "chronische Bronchitis","schwerer peripartaler Asphyxie","Spastisch-dystone Zerebralparese GMFCS °IV"
-    "status post Herzinfarkt", "durchgemachte Pneumonie", "alte Fraktur", "bekannte COPD"
-]
 
 
 occupations = [
@@ -1183,11 +1242,11 @@ occupations = [
 ]
 
 family_members = [
-  "Bruder", "Schwester", "Mutter", "Vater", "Großvater", "Großmutter", "Enkel", "Enkelin",
-  "Onkel", "Kind", "Kinder", "Sohn", "Tochter", "Cousine", "Neffe", "Nichte", "Witwe"
+  "Familie","Bruder", "Schwester", "Mutter", "Vater", "Großvater", "Großmutter", "Enkel", "Enkelin","Schwiegertöchter",
+  "Onkel", "Kind", "Kinder", "Sohn", "Tochter", "Cousine", "Neffe", "Nichte", "Witwe", "Eltern","Schwiegersohn", "Angehörige"
 ]
 
-Arztbrief=						"Arztbrief"
+Arztbrief=					   "Arztbrief"
 Befundbericht=                 "Befundbericht"
 Operationsbericht=             "Operationsbericht"
 Entlassungsbericht=            "Entlassungsbericht"
@@ -1243,7 +1302,13 @@ document_types = [
 
 family_status = ["verheiratet", "geschieden", "verwitwet", "ledig", "getrennt", "in einer Beziehung", "alleinstehend"]
 
-def normalize_token(token):
+
+
+
+
+
+
+def __normalize_token(token):
     return unicodedata.normalize("NFKC", token.lower())
 
 def __merge_date_tokens(tokens, tags):
@@ -1293,166 +1358,223 @@ def __merge_date_tokens(tokens, tags):
         i += 1
     return merged_tokens, merged_tags
 
-def is_numeric_or_code(token):
-    return re.fullmatch(r"[\d.]+", token) or re.fullmatch(r"[A-Z]\d{2}", token)
+# def is_numeric_or_code(token):
+#     return re.fullmatch(r"[\d.]+", token) or re.fullmatch(r"[A-Z]\d{2}", token)
 
 
 
-def __generate_filtered_stopwords(data, id2label, threshold=0.95):
-    from collections import defaultdict
-    import unicodedata
+# def __generate_filtered_stopwords(data, id2label, threshold=0.95):
+#     from collections import defaultdict
+#     import unicodedata
 
-    def normalize(token):
-        return unicodedata.normalize("NFKC", token.lower())
+#     def normalize(token):
+#         return unicodedata.normalize("NFKC", token.lower())
 
-    token_counts = defaultdict(int)
-    token_non_entity_counts = defaultdict(int)
-    entity_token_set = set()
+#     token_counts = defaultdict(int)
+#     token_non_entity_counts = defaultdict(int)
+#     entity_token_set = set()
 
-    for entry in data:
-        tokens = entry["tokens"]
-        tags = entry["ner_tags"]
-        for token, tag_id in zip(tokens, tags):
-            token_n = normalize(token)
-            token_counts[token_n] += 1
-            label = id2label[tag_id]
-            if label != "O":
-                entity_token_set.add(token_n)
-            else:
-                token_non_entity_counts[token_n] += 1
-  # Substring-Matching Liste
-    substring_whitelist = [
-        "schmerz", "befund", "messung", "anamnese", "symptom", "diagnose", "therapie", "entzündung","untersuchung", "aufnahme", 
-        "fall", "arzt", "krank", "blut"
-    ]
-    manual_whitelist = {
-        "impression",
+#     for entry in data:
+#         tokens = entry["tokens"]
+#         tags = entry["ner_tags"]
+#         for token, tag_id in zip(tokens, tags):
+#             token_n = normalize(token)
+#             token_counts[token_n] += 1
+#             label = id2label[tag_id]
+#             if label != "O":
+#                 entity_token_set.add(token_n)
+#             else:
+#                 token_non_entity_counts[token_n] += 1
+#   # Substring-Matching Liste
+#     substring_whitelist = [
+#         "schmerz", "befund", "messung", "anamnese", "symptom", "diagnose", "therapie", "entzündung","untersuchung", "aufnahme", 
+#         "fall", "arzt", "krank", "blut"
+#     ]
+#     manual_whitelist = {
+#         "impression",
 
-        "puls", 
-        "risikofaktor", "medikament", 
-         "untersuchung", "beschwerden",  "verabreichtes",
-        "icd", "ursache", "folgegrund", "wahrscheinlich", "virale",
-       "kam", "ihn", "über", "empfohlen","patienten", "gerät",
-        "anhaltende", "vorherige", "frühere", "brachte", "wird",
-         # Symptome
-        "atemnot", "fieber", "husten", "kribbeln", "schwindel", "übelkeit",
-        "erbrechen", "lallende",  "schluckstörung", "blutdruck", "taubheit", "sehstörung",
-         "atemprobleme", "müdigkeit", "erschöpfung", "gewichtverlust",
+#         "puls", 
+#         "risikofaktor", "medikament", 
+#          "untersuchung", "beschwerden",  "verabreichtes",
+#         "icd", "ursache", "folgegrund", "wahrscheinlich", "virale",
+#        "kam", "ihn", "über", "empfohlen","patienten", "gerät",
+#         "anhaltende", "vorherige", "frühere", "brachte", "wird",
+#          # Symptome
+#         "atemnot", "fieber", "husten", "kribbeln", "schwindel", "übelkeit",
+#         "erbrechen", "lallende",  "schluckstörung", "blutdruck", "taubheit", "sehstörung",
+#          "atemprobleme", "müdigkeit", "erschöpfung", "gewichtverlust",
     
-        # Diagnosen
-        "diabetes", "hypertonie", "hypotonie", "epilepsie", "tumor", "appendizitis", "schlaganfall",
-        "infarkt", "bronchitis", "asthma", "adipositas", "depression", "herzinsuffizienz",
+#         # Diagnosen
+#         "diabetes", "hypertonie", "hypotonie", "epilepsie", "tumor", "appendizitis", "schlaganfall",
+#         "infarkt", "bronchitis", "asthma", "adipositas", "depression", "herzinsuffizienz",
 
-        # Medikamente
-        "metformin", "lisinopril", "insulin", "paracetamol", "ibuprofen", "antibiotika", "aspirin",
-        "glucose", "cholesterin",
+#         # Medikamente
+#         "metformin", "lisinopril", "insulin", "paracetamol", "ibuprofen", "antibiotika", "aspirin",
+#         "glucose", "cholesterin",
 
-        # Maßnahmen
-        "eingriff", "operation", "behandlung",
-        "lyse", "injektion", "aufnahme", "entlassung",
+#         # Maßnahmen
+#         "eingriff", "operation", "behandlung",
+#         "lyse", "injektion", "aufnahme", "entlassung",
 
-        # Geräte
-        "schlafmaske", "rollstuhl", "insulinpumpe", "beatmungsgerät", "infusionspumpe", "monitor",
+#         # Geräte
+#         "schlafmaske", "rollstuhl", "insulinpumpe", "beatmungsgerät", "infusionspumpe", "monitor",
 
-        # Labor
-       "puls", "blutdruck", "temperatur", "sauerstoffsättigung", "herzfrequenz",
-        "mg", "dl", "bmi", "gewicht", "größe",
+#         # Labor
+#        "puls", "blutdruck", "temperatur", "sauerstoffsättigung", "herzfrequenz",
+#         "mg", "dl", "bmi", "gewicht", "größe",
 
-        # Familie
-        "vater", "mutter", "geschwister",  "cousine", "bruder", "familienmitglied"
-    }
-    manual_stopwords = {
-        "-", ":", ".", ",", "berichtete", "telefon", "tel", "/", "–", "(", ")", "„", "“",
-        "eine", "ein", "der", "die", "das", "am", "an", "im", "für", "mit", "von",
-        "es", "da", "und", "auch", "nicht", "bekannt", "zuvor", "wurde", "ist", "war", "sich",
-        "durch", "bei", "zu", "als", "in", "auf", "unter", "nach", "vor", "mehr", "weniger"
-    }
-    MIN_TOKEN_FREQ = 3 
-    whitelist = entity_token_set.union(manual_whitelist)
-    stop_words = set()
-    review_false_positives = []
+#         # Familie
+#         "vater", "mutter", "geschwister",  "cousine", "bruder", "familienmitglied"
+#     }
+#     manual_stopwords = {
+#         "-", ":", ".", ",", "berichtete", "telefon", "tel", "/", "–", "(", ")", "„", "“",
+#         "eine", "ein", "der", "die", "das", "am", "an", "im", "für", "mit", "von",
+#         "es", "da", "und", "auch", "nicht", "bekannt", "zuvor", "wurde", "ist", "war", "sich",
+#         "durch", "bei", "zu", "als", "in", "auf", "unter", "nach", "vor", "mehr", "weniger"
+#     }
+#     MIN_TOKEN_FREQ = 3 
+#     whitelist = entity_token_set.union(manual_whitelist)
+#     stop_words = set()
+#     review_false_positives = []
 
-    for token, total_count in token_counts.items():
-        if total_count == 0:
-            continue
+#     for token, total_count in token_counts.items():
+#         if total_count == 0:
+#             continue
 
-        o_ratio = token_non_entity_counts[token] / total_count
-        if  any(substr in token for substr in substring_whitelist):
-            continue
-        elif token in manual_stopwords:
-            stop_words.add(token)
-        elif token in whitelist:
-            continue
-        elif is_numeric_or_code(token):
-            continue  # Zahlen und Codes nie stoppen
-        elif  total_count >= MIN_TOKEN_FREQ and o_ratio >= threshold:
-            stop_words.add(token)
-            if re.match(r"[a-zäöüß]+", token):  # keine reinen Zahlen/Punktuation
-                review_false_positives.append((token, o_ratio))
+#         o_ratio = token_non_entity_counts[token] / total_count
+#         if  any(substr in token for substr in substring_whitelist):
+#             continue
+#         elif token in manual_stopwords:
+#             stop_words.add(token)
+#         elif token in whitelist:
+#             continue
+#         elif is_numeric_or_code(token):
+#             continue  # Zahlen und Codes nie stoppen
+#         elif  total_count >= MIN_TOKEN_FREQ and o_ratio >= threshold:
+#             stop_words.add(token)
+#             if re.match(r"[a-zäöüß]+", token):  # keine reinen Zahlen/Punktuation
+#                 review_false_positives.append((token, o_ratio))
 
-    # Logging
-    if review_false_positives:
-        print("\n⚠️  Potenziell falsch gestoppte relevante Tokens:")
-        for token, ratio in sorted(review_false_positives, key=lambda x: -x[1]):
-            print(f"[Stopword] {token} → {ratio:.2f}")
+#     # Logging
+#     if review_false_positives:
+#         print("\n⚠️  Potenziell falsch gestoppte relevante Tokens:")
+#         for token, ratio in sorted(review_false_positives, key=lambda x: -x[1]):
+#             print(f"[Stopword] {token} → {ratio:.2f}")
 
-    return stop_words
+#     return stop_words
 
-def __clean_ner_tags(oldtokens, ner_tags, stop_words):
-    #clean_tags = ner_tags.copy()
-    tokens, clean_tags = __merge_date_tokens(oldtokens, ner_tags)
-    n = len(tokens)
+# def __clean_ner_tags(oldtokens, ner_tags, stop_words):
+#     #clean_tags = ner_tags.copy()
+#     tokens, clean_tags = __merge_date_tokens(oldtokens, ner_tags)
+#     n = len(tokens)
 
-    for i in range(n):
-        label_id = clean_tags[i]
-        label = ID2LABEL[label_id]
-        token = normalize_token(tokens[i])  # <- normalize hier auch
+#     for i in range(n):
+#         label_id = clean_tags[i]
+#         label = ID2LABEL[label_id]
+#         token = normalize_token(tokens[i])  # <- normalize hier auch
        
-        if token in stop_words:
-            clean_tags[i] = LABEL2ID["O"]
-            continue
+#         if token in stop_words:
+#             clean_tags[i] = LABEL2ID["O"]
+#             continue
 
-        # I-Tag ohne voriges B- oder I- → B machen
-        if label.startswith("I-"):
-            entity = label[2:]
-            if i == 0 or not ID2LABEL[clean_tags[i - 1]].endswith(entity):
-                clean_tags[i] = LABEL2ID.get("B-" + entity, label_id)
+#         # I-Tag ohne voriges B- oder I- → B machen
+#         if label.startswith("I-"):
+#             entity = label[2:]
+#             if i == 0 or not ID2LABEL[clean_tags[i - 1]].endswith(entity):
+#                 clean_tags[i] = LABEL2ID.get("B-" + entity, label_id)
 
-        # Zwei B- direkt nacheinander mit gleicher Entität → zweites wird I-
-        if label.startswith("B-") and i > 0:
-            entity = label[2:]
-            prev_label = ID2LABEL[clean_tags[i - 1]]
-            if prev_label.startswith(("B-", "I-")) and prev_label.endswith(entity):
-                clean_tags[i] = LABEL2ID.get("I-" + entity, label_id)
-    return tokens,clean_tags
+#         # Zwei B- direkt nacheinander mit gleicher Entität → zweites wird I-
+#         if label.startswith("B-") and i > 0:
+#             entity = label[2:]
+#             prev_label = ID2LABEL[clean_tags[i - 1]]
+#             if prev_label.startswith(("B-", "I-")) and prev_label.endswith(entity):
+#                 clean_tags[i] = LABEL2ID.get("I-" + entity, label_id)
+#     return tokens,clean_tags
 
+# def refresh_and_clean_ner_labels(data, id2label, threshold = 0.95):
 
+#     stopwords = __generate_filtered_stopwords(data, id2label,threshold)
+#     for entry in data:
+#         entry["tokens"],entry["ner_tags"] = __clean_ner_tags(entry["tokens"], entry["ner_tags"], stopwords)
 
-def refresh_and_clean_ner_labels(data, id2label, threshold = 0.95):
-
-    stopwords = __generate_filtered_stopwords(data, id2label,threshold)
-    for entry in data:
-        entry["tokens"],entry["ner_tags"] = __clean_ner_tags(entry["tokens"], entry["ner_tags"], stopwords)
-
-    return data
+#     return data
 
 
 
 
-def main():
-    # Lade Daten
-    data_path = "./data/train.json"
-    output_path = "dein_datensatz_cleaned2.json"
-    with open(data_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    cleardata = refresh_and_clean_ner_labels(data,ID2LABEL, 0.95)
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(cleardata, f, indent=2, ensure_ascii=False)
-    print(f"✔ Bereinigt und gespeichert unter: {output_path}")
+def get_fake_names(count =10):
+    from faker import Faker
+    fake = Faker('de_DE')  # German locale
+    names = []
+    for _ in range(count):
+
+        names.append(fake.name())
+
+    return names
 
 
-# if __name__ == "__main__":
-#     main()
+def get_fake_address(count =10):
+    from faker import Faker
+    fake = Faker('de_DE')  # German locale
+    address = []
+    for _ in range(count):
+        address.append(fake.address())
+    return address
+
+def get_fake_phone(count =10):
+    from faker import Faker
+    fake = Faker('de_DE')  # German locale
+    phone_numbers = []
+    for _ in range(count):
+        phone_numbers.append(fake.phone_number())
+    return phone_numbers
+
+def get_fake_email(count =10):
+    from faker import Faker
+    fake = Faker('de_DE')  # German locale
+    emails = []
+    for _ in range(count):
+        emails.append(fake.email())
+    return emails
+
+
+def get_fake_hospital():
+    cities = ["Berlin", "Hamburg", "München", "Stuttgart", "Frankfurt"]
+    types = ["Klinik", "Krankenhaus", "Medizinisches Zentrum", "Gesundheitszentrum"]
+    saints = ["St. Nikolaus", "St. Elisabeth", "St. Johannes", "St. Marien"]
+    specialties = ["Onkologie", "Herz", "Orthopädie", "Neurologie", "Reha"]
+
+    style = random.choice(["city", "saint", "specialty", "generic"])
+    if style == "city":
+        return f"{random.choice(cities)} {random.choice(types)}"
+    elif style == "saint":
+        return f"{random.choice(saints)} {random.choice(types)}"
+    elif style == "specialty":
+        return f"Zentrum für {random.choice(specialties)}"
+    else:
+        return f"{random.choice(['Zentral', 'Modern', 'Premium'])} {random.choice(types)}"
+
+def get_fake_hospitals(count =10):
+    hospitals = []
+    for _ in range(count):
+        hospitals.append(get_fake_hospital())
+    return hospitals
+
+
+# def main():
+#     # Lade Daten
+#     data_path = "./data/train.json"
+#     output_path = "dein_datensatz_cleaned2.json"
+#     with open(data_path, "r", encoding="utf-8") as f:
+#         data = json.load(f)
+#     cleardata = refresh_and_clean_ner_labels(data,ID2LABEL, 0.95)
+#     with open(output_path, "w", encoding="utf-8") as f:
+#         json.dump(cleardata, f, indent=2, ensure_ascii=False)
+#     print(f"✔ Bereinigt und gespeichert unter: {output_path}")
+
+
+# # if __name__ == "__main__":
+# #     main()
 
 
    

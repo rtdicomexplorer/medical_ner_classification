@@ -10,14 +10,14 @@ import random
 import json
 from scripts.utils import *
 from sklearn.model_selection import train_test_split
-from scripts.config import LABEL2ID, ENTITY_LIST, MORE_VAL_ENTITIES
-from templates import TEMPLATES_LIST, muster_template
+from scripts.config import  ENTITY_LIST,  SINGLE_VAL_ENTITIES
+from templates import TEMPLATES_LIST, freib_template
 from collections import defaultdict
 
 
-entity_values = {                       
+ENTITY_RANDOM_VALUES = {                       
     "ADDRESS": 				hospital_addresses,	
-    "ADDRESS_PATIENT":      patient_addresses,
+    "ADDRESS_PATIENT":      get_fake_address(100),# patient_addresses,
     "ADMISSION_DATE": 		generate_dates(), 	
     "ALCOHOL_CONSUMPTION": 	alcohol_consumptions,	
     "ALLERGY": 				allergies, 
@@ -31,7 +31,7 @@ entity_values = {
     "DOSAGE":              	dosages,	
     "DEPARTMENT":          	departments,	
     "DEVICE":              	devices,	
-    "DIAGNOSIS":           	list(diagnosis_icd10_map.values()),	
+    "DIAGNOSIS":           	list(format_diagnoses(diagnoses)),	
     "DISCHARGE_DATE":		generate_dates(),
     "DOCTOR":              	doctors,	
     "DURATION":            	durations,	
@@ -46,8 +46,8 @@ entity_values = {
     "GEWICHT":             	generate_random_weights(),	
     "GROESSE":             	generate_random_heights(),	
     "HOSPITAL_STAY":		generate_random_hospital_stay(),		
-    "ICD10_CODE":          	list(diagnosis_icd10_map.keys()),	
-    "ICD10_DESC":          	list(diagnosis_icd10_map.values()),	
+    # "ICD10_CODE":          	list(diagnosis_icd10_map.keys()),	
+    # "ICD10_DESC":          	list(diagnosis_icd10_map.values()),	
     "IMMUNIZATION":        	immunizations,	
     "IMPRESSION":          	impressions,	
     "INSURANCE_ID":        	insurance_ids,	
@@ -55,12 +55,12 @@ entity_values = {
     "LIFESTYLE":           	lifestyles,	
     "MEDICATION":          	medications,	
     "OCCUPATION":          	occupations,	
-    "ORG":                 	hospital_names,	
-    "PATIENT":              names,	
+    "ORG":                 	get_fake_hospitals(100),# hospital_names,	
+    "PATIENT":              get_fake_names(100),#names	
     "PHONE":               	hospital_phones,
-    "PATIENT_PHONE":        patient_phones,	
+    "PATIENT_PHONE":        get_fake_phone(100),# patient_phones,	
     "PID":                 	generate_patint_ids(),	
-    "PREV_DIAGNOSIS":      	prev_diagnoses,	
+    "PREV_DIAGNOSIS":      	list(format_prev_diagnoses(diagnoses)),	
     "PROCEDURE":           	procedures,	
     "RISKFACTOR":          	risk_factors,	
     "ROOM_NUMBER":         	room_numbers,	
@@ -80,17 +80,16 @@ def __extract_entities__(text, values):
             ents.append({"ENTITY": label,"START":start, "END":end, "VALUE":value})
     return ents
 
-def __create_sample_more_text():
+def __create_sample_more_text(single_entity_values):
     sample = {}
-    # once Entities - random a value
-    for ent in ENTITY_LIST:
-        if ent in entity_values:
-            sample[ent] = random.choice(entity_values[ent])
     # more time Entities - random value list
-    for ent in MORE_VAL_ENTITIES:
-        if ent in entity_values:
-            sample[ent] = random.sample(entity_values[ent], 
-                                       k=random.randint(1, min(3, len(entity_values[ent]))))
+    for ent in ENTITY_LIST:
+        if ent in ENTITY_RANDOM_VALUES:
+            if ent in single_entity_values:
+                sample[ent] = random.choice(ENTITY_RANDOM_VALUES[ent])
+            else:
+                sample[ent] = random.sample(ENTITY_RANDOM_VALUES[ent], 
+                                       k=random.randint(1, min(3, len(ENTITY_RANDOM_VALUES[ent]))))
     return sample
 
 def __normalize_text(text):
@@ -156,22 +155,27 @@ def __extract_entities_generalized(text, values):
                     break  # gehe zur nächsten Value
     return ents
 
-def __generate_paraphrase_more_text(values):
+def __generate_paraphrase_more_text(values, single_val_entities):
     phrases = []
-
-    # Paraphrase für Mehrfachwerte-Entities (alle Werte)
-    for ent in MORE_VAL_ENTITIES:
-        if ent in values:
-            # values[ent] ist Liste → paraphrasiere alle und füge hinzu
-            for val in values[ent]:
-                paraphrase = paraphrase_entity(ent, val)
-                phrases.append(paraphrase)
-
-    # Paraphrase für Einmal-Entities
+    capitalize_next = False
     for ent in ENTITY_LIST:
-        if ent in values and ent not in MORE_VAL_ENTITIES:
-            paraphrase = paraphrase_entity(ent, values[ent])
-            phrases.append(paraphrase)
+        if ent in values :
+            if ent in single_val_entities: #just once
+                paraphrase = paraphrase_entity(ent, values[ent])
+                if capitalize_next:    
+                    paraphrase = paraphrase[0].upper() + paraphrase[1:]
+                phrases.append(paraphrase)
+                capitalize_next =  paraphrase.strip()[-1] in ['.','!','?']
+            else:
+                 for val in values[ent]: # more
+                    paraphrase = paraphrase_entity(ent, val)
+                    if capitalize_next:    
+                        paraphrase = paraphrase[0].upper() + paraphrase[1:]
+                    phrases.append(paraphrase)
+                    capitalize_next =  paraphrase.strip()[-1] in ['.','!','?']
+
+            
+            
     
     random.shuffle(phrases)
     return " ".join(phrases)
@@ -184,7 +188,7 @@ def __count_entity_placeholders(template):
         counts[match] += 1
     return counts
 
-def __generate_values(entity_values, more_val_entities, placeholder_counts):
+def __generate_values(entity_values, single_val_entities, placeholder_counts):
     values_for_template = {}
 
     for entity, count in placeholder_counts.items():
@@ -195,14 +199,15 @@ def __generate_values(entity_values, more_val_entities, placeholder_counts):
         if isinstance(val_list, str):
             val_list = [val_list]
 
-        if entity in more_val_entities:
-            # Mehrfach vorkommende Entitäten → zufällige Auswahl, ggf. mit Duplikaten
-            sampled = random.choices(val_list, k=count)
-            values_for_template[entity] = sampled
-        else:
+        if entity in single_val_entities:
             # Nur ein Wert benötigt → denselben zufälligen Wert mehrfach einsetzen
             value = random.choice(val_list)
             values_for_template[entity] = [value] * count
+        else:
+            # Mehrfach vorkommende Entitäten → zufällige Auswahl, ggf. mit Duplikaten
+            sampled = random.choices(val_list, k=count)
+            values_for_template[entity] = sampled
+       
 
     return values_for_template
 
@@ -231,13 +236,13 @@ def __generate_dataset(n_samples,save_reports):
             if random.random() < 0.5:     
                 template = random.choice(TEMPLATES_LIST)
                 placeholder_counts = __count_entity_placeholders(template)
-                values_dict = __generate_values(entity_values, MORE_VAL_ENTITIES, placeholder_counts)
+                values_dict = __generate_values(ENTITY_RANDOM_VALUES, SINGLE_VAL_ENTITIES, placeholder_counts)
                 text =  __fill_template(template, values_dict)
                 entities = __extract_entities_generalized(text, values_dict)   
                 count_template +=1
             else:
-                values = __create_sample_more_text()  
-                text = __generate_paraphrase_more_text(values)             
+                values = __create_sample_more_text(SINGLE_VAL_ENTITIES)  
+                text = __generate_paraphrase_more_text(values,SINGLE_VAL_ENTITIES)             
                 entities = __extract_entities_generalized(text, values)  
                 count_paraphrase += 1
             if save_reports:

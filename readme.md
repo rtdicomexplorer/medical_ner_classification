@@ -253,6 +253,3 @@ For questions or collaboration, please contact [the author](https://github.com/r
 
 
 
-#### to remember
-- git remote add origin REMOTE-URL
-

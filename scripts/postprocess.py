@@ -1,5 +1,5 @@
 
-from scripts.utils import family_members, occupations, family_status, prev_diagnoses, followup_reasons,impressions
+from scripts.utils import family_members, occupations, diagnoses, family_status, followup_reasons,impressions, format_prev_diagnoses
 import re
 import spacy
 from spacy.matcher import PhraseMatcher
@@ -148,7 +148,7 @@ def create_matcher(label, phrase_list):
 matcher_list ={
 "FOLLOWUP_REASON" : create_matcher("FOLLOWUP_REASON", followup_reasons),
 "IMPRESSION" : create_matcher("IMPRESSION", impressions),
-"PREV_DIAGNOSIS" : create_matcher("PREV_DIAGNOSIS", prev_diagnoses),
+"PREV_DIAGNOSIS" : create_matcher("PREV_DIAGNOSIS", list(format_prev_diagnoses(diagnoses))),
 "FAMILYMEMBER" :create_matcher("FAMILYMEMBER", family_members),
 "FAMILY_STATUS" : create_matcher("FAMILY_STATUS", family_status)
 }
