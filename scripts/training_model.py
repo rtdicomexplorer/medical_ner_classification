@@ -6,6 +6,7 @@ import numpy as np
 from sklearn.metrics import precision_recall_fscore_support,classification_report
 import os
 import sys
+import json
 # Add project root to sys.path if needed
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
@@ -25,6 +26,7 @@ import random
 MODEL_NAME = 'deepset/gbert-base'#"emilyalsentzer/Bio_ClinicalBERT" #medgpt/gbert-medical-ner
 DATA_PATH = "./data/synthetic_ner_data.json"
 OUTPUT_DIR = "./models/gbert-base"
+# LOGS_DIR = './logs'
 DATA_FILES = {
     "train": "./data/train.json",
     "validation": "./data/val.json",
@@ -123,8 +125,9 @@ def main(print_examples= False):
         num_train_epochs=3,
         weight_decay=0.01,
         save_strategy="epoch",
-        logging_dir="./logs",
+        # logging_dir=LOGS_DIR,
         logging_steps=10,
+        report_to="none",  # to save history
         load_best_model_at_end=True,
         metric_for_best_model="f1",
         save_total_limit=2,
@@ -144,11 +147,19 @@ def main(print_examples= False):
         compute_metrics=__compute_metrics,
     )
     trainer.train()
+
     print("\nEvaluating on test dataset...")
     test_metrics = trainer.evaluate(eval_dataset=tokenized_datasets["test"])
     print(f"Test metrics: {test_metrics}")
     trainer.save_model(OUTPUT_DIR)
     print(f"\nModel saved {OUTPUT_DIR}")
+
+    print("\nGet and save train history...")
+    history = trainer.state.log_history
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    log_file = os.path.join(OUTPUT_DIR,'training_history.json')
+    with open(log_file, "w") as f:
+        json.dump(history, f, indent=2)
 
     if print_examples: 
         # === Generate predictions on test set ===

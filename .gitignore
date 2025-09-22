@@ -15,3 +15,4 @@ entities
 latex/*
 !latex/main.tex
 frontend/test*
+logs

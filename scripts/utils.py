@@ -10,6 +10,14 @@ import pytesseract
 import platform
 from pathlib import Path
 
+def remove_folder(folder_path):
+    import shutil
+    try:
+        shutil.rmtree(folder_path)
+        print(f"Deleted folder: {folder_path}")
+    except Exception as e:
+        print(f"Error deleting folder: {e}")
+
 def init_tesseract():
     system = platform.system()
 
