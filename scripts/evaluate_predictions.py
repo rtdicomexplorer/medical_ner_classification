@@ -278,17 +278,63 @@ def plot_confusion_heatmap_entities(expected_file, prediction_file, id2label):
     plt.show()
 
 
-def plot_confusion_heatmap_entities_multiple(all_expected, all_predicted, id2label):
+def plot_confusion_heatmap_entities_multiple(file_all_expected, file_all_predicted, id2label):
     """
     all_expected / all_predicted: list of JSONs like {"tokens": [...], "ner_tags": [...]}
     id2label: dictionary mapping tag ids to tag names (e.g., 0: "O", 1: "B-ORG", etc.)
     """
     # --- Collect all true and predicted labels ---
+    def plot_confusion_heatmap_chunks(true_labels, pred_labels, chunk_size=12):
+        # Collapse B- and I-
+        def simplify(l):
+            return l.split("-", 1)[-1] if l != "O" else "O"
+        true_labels = [simplify(l) for l in true_labels]
+        pred_labels = [simplify(l) for l in pred_labels]
+
+        labels = sorted(list(set(true_labels) | set(pred_labels)))
+        cm = confusion_matrix(true_labels, pred_labels, labels=labels, normalize='true')
+
+        # Plot in chunks
+        for i in range(0, len(labels), chunk_size):
+            sub_labels = labels[i:i+chunk_size]
+            sub_cm = cm[i:i+chunk_size, i:i+chunk_size]
+
+            plt.figure(figsize=(10, 8))
+            sns.heatmap(sub_cm, annot=True, fmt=".2f",
+                        xticklabels=sub_labels, yticklabels=sub_labels,
+                        cmap="YlGnBu", cbar_kws={'label': 'Proportion'})
+            plt.title(f"NER Confusion Matrix (Entities {i+1}–{i+len(sub_labels)})")
+            plt.xticks(rotation=45, ha='right')
+            plt.yticks(rotation=0)
+            plt.tight_layout()
+            plt.show()
+
+    def simplify_label(label):
+        if label == "O":
+            return "O"
+        # remove B- or I-
+        return label.split("-", 1)[-1]
+
+    with open(file_all_expected) as f:
+        all_expected = json.load(f)
+
+    with open(file_all_predicted) as f:
+        all_predicted = json.load(f)
+
+
+
     true_labels, pred_labels = [], []
     for exp, pred in zip(all_expected, all_predicted):
         for t, p in zip(exp["ner_tags"], pred["ner_tags"]):
             true_labels.append(id2label[t])
             pred_labels.append(id2label[p])
+    true_labels = [simplify_label(l) for l in true_labels]
+    pred_labels = [simplify_label(l) for l in pred_labels]    
+
+
+    plot_confusion_heatmap_chunks(true_labels, pred_labels, chunk_size=20)
+    return
+
 
     # --- Filter out 'O' labels ---
     filtered_true = [t for t, p in zip(true_labels, pred_labels) if t != "O"]
@@ -313,6 +359,64 @@ def plot_confusion_heatmap_entities_multiple(all_expected, all_predicted, id2lab
     plt.show()
 
 
+def plot_top_n_confusion_bars(file_all_expected, file_all_predicted, id2label, top_n=20):
+    """
+    all_expected / all_predicted: list of JSONs like {"tokens": [...], "ner_tags": [...]}
+    id2label: dictionary mapping tag ids to tag names (e.g., 0: "O", 1: "B-ORG", etc.)
+    top_n: number of most frequent misclassifications to display
+    """
+    from collections import Counter
+    import matplotlib.patches as mpatches
+      
+    with open(file_all_expected) as f:
+        all_expected = json.load(f)
+
+    with open(file_all_predicted) as f:
+        all_predicted = json.load(f)
+    true_labels, pred_labels = [], []
+
+    for exp, pred in zip(all_expected, all_predicted):
+        for t, p in zip(exp["ner_tags"], pred["ner_tags"]):
+            # Map ids to labels
+            true_labels.append(id2label[t])
+            pred_labels.append(id2label[p])
+
+    # Filter out O
+    filtered = [(t, p) for t, p in zip(true_labels, pred_labels) if t != "O"]
+
+    # Merge B-/I- prefixes
+    filtered = [(t.split('-')[-1], p.split('-')[-1]) for t, p in filtered]
+
+    # Count occurrences
+    counter = Counter(filtered)
+    top_items = counter.most_common(top_n)
+
+    labels = [f"{t} - {p}" for t, p in top_items]
+    counts = [c for _, c in top_items]
+  # Assign colors
+    colors = []
+    for t, p in [item[0] for item in top_items]:
+        if t == p:
+            colors.append('green')      # correct
+        elif p == 'O':
+            colors.append('yellow')     # missed entity
+        else:
+            colors.append('red')        # wrong label
+    # Plot
+    plt.figure(figsize=(12,6))
+    plt.bar(labels, counts, color=colors)
+    plt.xticks(rotation=45, ha='right')
+    plt.ylabel("Count")
+    plt.title(f"Top {top_n} Confusions (B/I merged, O excluded)")
+
+
+        # Add legend
+    green_patch = mpatches.Patch(color='green', label='Correct')
+    yellow_patch = mpatches.Patch(color='yellow', label='Missed (Pred=O)')
+    red_patch = mpatches.Patch(color='red', label='Wrong Label')
+    plt.legend(handles=[green_patch, yellow_patch, red_patch], loc='upper right')
+    plt.tight_layout()
+    plt.show()
 
 #step 3 train loss
 
@@ -444,8 +548,8 @@ def plot_train_eval_metrics(history_file):
     # Evaluation metrics
     ax2 = ax1.twinx()
     ax2.plot(eval_epochs, eval_loss, color='purple', marker='d', label='Eval Loss')
-    ax2.plot(eval_epochs, eval_precision, color='green', marker='x', label='Eval Precision')
-    ax2.plot(eval_epochs, eval_recall, color='red', marker='s', label='Eval Recall')
+    # ax2.plot(eval_epochs, eval_precision, color='green', marker='x', label='Eval Precision')
+    # ax2.plot(eval_epochs, eval_recall, color='red', marker='s', label='Eval Recall')
     ax2.plot(eval_epochs, eval_f1, color='orange', marker='^', label='Eval F1')
 
     ax2.set_ylabel("Evaluation Metrics", color='black')
@@ -465,11 +569,14 @@ if __name__ == "__main__":
 
     expected_file = "./expected/report.json"
     pred_file = "./predictions/report.json"
-    history_file = './models2/gbert-base/training_history.json'
+    history_file = './models/gbert-base/training_history.json'
     #calculate_entity_score_for_ner_data_predicted(expected_file=expected_file, predicted_file=pred_file)
     # plot_confusion_heatmap_entities(
     # expected_file=expected_file,
     # prediction_file=pred_file, id2label=ID2LABEL
     # )
     #plot_train_loss_for_epoch(history_file)
-    plot_train_eval_metrics(history_file)
+    #plot_train_eval_metrics(history_file)
+
+    #plot_confusion_heatmap_entities_multiple(file_all_expected='./data/all_data.json', file_all_predicted='./output/ner_predictions.json', id2label=ID2LABEL)
+    plot_top_n_confusion_bars(file_all_expected='./data/all_data.json', file_all_predicted='./output/ner_predictions.json', id2label=ID2LABEL)

@@ -9,14 +9,25 @@ from typing import List, Tuple, Dict
 import pytesseract
 import platform
 from pathlib import Path
+import numpy as np
+import os
+
+def np_encoder(obj):
+    if isinstance(obj, (np.integer,)):
+        return int(obj)
+    if isinstance(obj, (np.floating,)):
+        return float(obj)
+    if isinstance(obj, (np.ndarray,)):
+        return obj.tolist()
+    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
 def remove_folder(folder_path):
     import shutil
     try:
-        shutil.rmtree(folder_path)
-        print(f"Deleted folder: {folder_path}")
+        if os.path.exists(folder_path):
+            shutil.rmtree(folder_path)
     except Exception as e:
-        print(f"Error deleting folder: {e}")
+        print(f"Error by deleting {folder_path}: {e}")
 
 def init_tesseract():
     system = platform.system()
@@ -28,23 +39,21 @@ def init_tesseract():
             pytesseract.pytesseract.tesseract_cmd = str(tesseract_path)
             print("✅ Tesseract unter Windows initialisiert.")
         else:
-            raise FileNotFoundError(f"❌ Tesseract wurde unter folgendem Pfad nicht gefunden: {tesseract_path}")
+            raise FileNotFoundError(f"❌ Tesseract was not found: {tesseract_path}")
     
     elif system == "Linux":
-        print("✅ Linux erkannt – kein spezieller Pfad nötig, sofern Tesseract installiert ist.")
         # Optional: prüfen, ob Tesseract installiert ist
         from shutil import which
         if which("tesseract") is None:
-            raise EnvironmentError("❌ Tesseract ist nicht installiert. Bitte installiere es mit: sudo apt install tesseract-ocr")
+            raise EnvironmentError("❌ Tesseract is not installed. Please do that: sudo apt install tesseract-ocr")
 
     elif system == "Darwin":  # macOS
-        print("✅ macOS erkannt – kein spezieller Pfad nötig, sofern Tesseract installiert ist.")
         from shutil import which
         if which("tesseract") is None:
-            raise EnvironmentError("❌ Tesseract ist nicht installiert. Bitte installiere es mit: brew install tesseract")
+            raise EnvironmentError("❌ Tesseract is not installed. Please do that: brew install tesseract")
     
     else:
-        raise EnvironmentError(f"❌ Unbekanntes Betriebssystem: {system}")
+        raise EnvironmentError(f"❌ OS unjknown: {system}")
 
 
 def format_diagnoses(diagnosis_icd10_map):
