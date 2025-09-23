@@ -63,7 +63,7 @@ muster_template =(
 "                         Internistische Abteilung                                        "
 "                                                                                         "
 "        {ORG}                                                                            "
-"        {ADDRESSE}                              ID: {PID}                                "
+"        {ADDRESS}                              ID: {PID}                                "
 "                                                Krbl.-Nr.: {INSURANCE_ID}                "
 "                                                {DEPARTMENT} {PHONE}                     "
 "                                                       {DATE}                                      "

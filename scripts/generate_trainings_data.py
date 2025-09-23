@@ -11,7 +11,7 @@ import json
 from scripts.utils import *
 from sklearn.model_selection import train_test_split
 from scripts.config import  ENTITY_LIST,  SINGLE_VAL_ENTITIES
-from templates import TEMPLATES_LIST, freib_template
+from templates import TEMPLATES_LIST, freib_template, muster_template
 from collections import defaultdict
 
 
@@ -132,14 +132,34 @@ def __extract_entities_generalized(text, values):
             # 2. Überprüfe jeden Suchbegriff
             found = False
             for term in search_terms:
-                term_norm = __normalize_text(term)
-                matches = list(re.finditer(re.escape(term_norm), text_norm))
+                #term_norm = __normalize_text(term)
+                #matches_norm = list(re.finditer(re.escape(term_norm), text_norm))           
+                # for match in matches_norm:
+                #     # Finde tatsächliche Position im Originaltext (unsicher bei Normalisierung!)
+                #     span_start = text.lower().find(term_norm, match.start())
+                #     if span_start == -1:
+                #         continue
+                #     span_end = span_start + len(term_norm)
+                    
+                #     if (span_start, span_end) not in used_spans:
+                #         ents.append({
+                #             "entity_group": label,
+                #             "start": span_start,
+                #             "end": span_end,
+                #             "word": val_str
+                #         })
+                #         used_spans.add((span_start, span_end))
+                #         found = True
+                #         break
+                
+                matches = list(re.finditer(re.escape(term), text))
+                
                 for match in matches:
-                    # Finde tatsächliche Position im Originaltext (unsicher bei Normalisierung!)
-                    span_start = text.lower().find(term_norm, match.start())
+                    # Finde tatsächliche Position im Originaltext, die Normalisierung funktioniert nicht mit '\n'
+                    span_start = match.start() 
                     if span_start == -1:
                         continue
-                    span_end = span_start + len(term_norm)
+                    span_end = match.end()
                     
                     if (span_start, span_end) not in used_spans:
                         ents.append({
@@ -151,8 +171,9 @@ def __extract_entities_generalized(text, values):
                         used_spans.add((span_start, span_end))
                         found = True
                         break
+                
                 if found:
-                    break  # gehe zur nächsten Value
+                    break 
     return ents
 
 def __generate_paraphrase_more_text(values, single_val_entities):
@@ -246,12 +267,12 @@ def __generate_dataset(n_samples,save_reports):
                 entities = __extract_entities_generalized(text, values)  
                 count_paraphrase += 1
             if save_reports:
-                filename = f"./txt_reports/report_{i+1}.txt"
+                filename = f"./txt_reports/report_{i+1:06}.txt"
                 os.makedirs(os.path.dirname(filename), exist_ok=True)
                 with open(filename, "w", encoding="utf-8") as f:
                     f.write(text)
 
-                entity_filename = f"./entities/entity_{i+1}.json"
+                entity_filename = f"./entities/entity_{i+1:06}.json"
                 os.makedirs(os.path.dirname(entity_filename), exist_ok=True)
                 with open(entity_filename, 'w',encoding="utf-8") as f:
                     json.dump(entities, f,ensure_ascii=False, indent=4) 

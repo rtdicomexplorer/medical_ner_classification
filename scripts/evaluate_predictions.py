@@ -14,117 +14,12 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 from scripts.config import LABEL_LIST, ID2LABEL
 
-
-#step 1 entity score
-def calculate_entity_score_for_ner_data_predicted(expected_file,predicted_file):
-    # Load JSON files
-    with open(expected_file) as f:
-        expected_file = json.load(f)
-    with open(predicted_file) as f:
-        predicted = json.load(f)
-    # Extract true and predicted labels
-    true_labels, pred_labels = [], []
-    for exp, pred in zip(expected_file, predicted):
-        # align by token
-        for t, p in zip(exp["ner_tags"], pred["ner_tags"]):
-            true_labels.append(t)
-            pred_labels.append(p)
-
-    # Compute per-class metrics
-    labels = sorted(set(true_labels) | set(pred_labels))
-    #sklearn.metrics.precision_recall_fscore_support to compute per-label precision/recall/f1. 
-    # (https://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_recall_fscore_support.html)
-    #The precision is the ratio tp / (tp + fp) where tp is the number of true positives and fp the number of false positives. 
-    #The precision is intuitively the ability of the classifier not to label a negative sample as positive.
-    
-    #The recall is the ratio tp / (tp + fn) where tp is the number of true positives and fn the number of false negatives. 
-    #The recall is intuitively the ability of the classifier to find all the positive samples.
-    #The F-beta score can be interpreted as a weighted harmonic mean of the precision and recall, 
-    # where an F-beta score reaches its best value at 1 and worst score at 0.
-
-    # zero_division=0 sets metric=0 when denominator is zero (avoids exceptions).
-    prec, rec, f1, _ = precision_recall_fscore_support(true_labels, pred_labels, labels=labels, zero_division=0)
-
-    # Collect results
-    results = {ID2LABEL[label]: {"precision": p, "recall": r, "f1": f}
-            for label, p, r, f in zip(labels, prec, rec, f1)}
-
-
-    entity_metrics = defaultdict(lambda: {"precision": [], "recall": [], "f1": []})
-
-    for label, metrics in results.items():
-        if label == "O":  # skip non-entities
-            continue
-        entity = label.split("-")[-1]  # e.g. "ORG" from "B-ORG"
-        for m in ["precision", "recall", "f1"]:
-            entity_metrics[entity][m].append(metrics[m])
-
-    # Average over B-/I-
-    entity_scores = {}
-    for ent, metrics in entity_metrics.items():
-        entity_scores[ent] = {
-            m: (sum(values) / len(values)) if values else 0.0
-            for m, values in metrics.items()
-        }
-    print(entity_scores)
-    plot_entity_scores_bars_comparison(entity_scores=entity_scores)
-
-
-
-def evaluate_multiple_ner(expected_list, predicted_list, id2label):
-    """
-    Evaluate multiple NER JSONs in BIO format.
-    expected_list: list of expected JSON objects (tokens + ner_tags)
-    predicted_list: list of predicted JSON objects (tokens + ner_tags)
-    id2label: mapping from tag ids to string labels
-    """
-    true_labels, pred_labels = [], []
-
-    # Aggregate labels across all documents
-    for exp, pred in zip(expected_list, predicted_list):
-        for t, p in zip(exp["ner_tags"], pred["ner_tags"]):
-            true_labels.append(t)
-            pred_labels.append(p)
-
-    # Compute per-class metrics
-    labels = sorted(set(true_labels) | set(pred_labels))
-    prec, rec, f1, _ = precision_recall_fscore_support(
-        true_labels, pred_labels, labels=labels, zero_division=0
-    )
-
-    # Convert to readable entity-level metrics
-    results = {id2label[label]: {"precision": p, "recall": r, "f1": f}
-               for label, p, r, f in zip(labels, prec, rec, f1)}
-
-    # Aggregate B-/I- metrics to entities
-    entity_metrics = defaultdict(lambda: {"precision": [], "recall": [], "f1": []})
-    for label, metrics in results.items():
-        if label == "O":
-            continue
-        entity = label.split("-")[-1]  # e.g., "ORG" from "B-ORG"
-        for m in ["precision", "recall", "f1"]:
-            entity_metrics[entity][m].append(metrics[m])
-
-    # Average over B-/I- prefixes
-    entity_scores = {}
-    for ent, metrics in entity_metrics.items():
-        entity_scores[ent] = {m: (sum(vals)/len(vals) if vals else 0.0)
-                               for m, vals in metrics.items()}
-
-    print("=== Entity Scores ===")
-    for ent, scores in entity_scores.items():
-        print(f"{ent}: {scores}")
-
-    return true_labels, pred_labels, entity_scores
-
-
-
-def plot_entity_scores_bars_comparison(entity_scores, show_values=False):
+def __plot_entity_scores_bars_comparison(entity_scores, show_values=False):
     from matplotlib.patches import Patch
     """
     Draw two stacked bar plots:
-      - top: plain Precision / Recall / F1 grouped bars + metric legend
-      - bottom: same grouped bars but colored by performance band, with a separate color legend
+    - top: plain Precision / Recall / F1 grouped bars + metric legend
+    - bottom: same grouped bars but colored by performance band, with a separate color legend
     entity_scores: dict {entity: {"precision":..., "recall":..., "f1":...}}
 
     General interpretation rules:
@@ -212,7 +107,126 @@ def plot_entity_scores_bars_comparison(entity_scores, show_values=False):
     plt.tight_layout()
     plt.show()
 
-#step2 confusion map
+#step 1 entity score
+def calculate_entity_score_for_ner_data_predicted(expected_file,predicted_file):
+    
+
+    # Load JSON files
+    with open(expected_file) as f:
+        expected_file = json.load(f)
+    with open(predicted_file) as f:
+        predicted = json.load(f)
+    # Extract true and predicted labels
+    true_labels, pred_labels = [], []
+    for exp, pred in zip(expected_file, predicted):
+        # align by token
+        for t, p in zip(exp["ner_tags"], pred["ner_tags"]):
+            true_labels.append(t)
+            pred_labels.append(p)
+
+    # Compute per-class metrics
+    labels = sorted(set(true_labels) | set(pred_labels))
+    #sklearn.metrics.precision_recall_fscore_support to compute per-label precision/recall/f1. 
+    # (https://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_recall_fscore_support.html)
+    #The precision is the ratio tp / (tp + fp) where tp is the number of true positives and fp the number of false positives. 
+    #The precision is intuitively the ability of the classifier not to label a negative sample as positive.
+    
+    #The recall is the ratio tp / (tp + fn) where tp is the number of true positives and fn the number of false negatives. 
+    #The recall is intuitively the ability of the classifier to find all the positive samples.
+    #The F-beta score can be interpreted as a weighted harmonic mean of the precision and recall, 
+    # where an F-beta score reaches its best value at 1 and worst score at 0.
+
+    # zero_division=0 sets metric=0 when denominator is zero (avoids exceptions).
+    prec, rec, f1, _ = precision_recall_fscore_support(true_labels, pred_labels, labels=labels, zero_division=0)
+
+    # Collect results
+    results = {ID2LABEL[label]: {"precision": p, "recall": r, "f1": f}
+            for label, p, r, f in zip(labels, prec, rec, f1)}
+
+    entity_metrics = defaultdict(lambda: {"precision": [], "recall": [], "f1": []})
+
+    for label, metrics in results.items():
+        if label == "O":  # skip non-entities
+            continue
+        entity = label.split("-")[-1]  # e.g. "ORG" from "B-ORG"
+        for m in ["precision", "recall", "f1"]:
+            entity_metrics[entity][m].append(metrics[m])
+
+    # Average over B-/I-
+    entity_scores = {}
+    for ent, metrics in entity_metrics.items():
+        entity_scores[ent] = {
+            m: (sum(values) / len(values)) if values else 0.0
+            for m, values in metrics.items()
+        }
+    print(entity_scores)
+    __plot_entity_scores_bars_comparison(entity_scores=entity_scores)
+
+def calculate_entity_score_for_ner_data_predicted2(expected_file, predicted_file):
+    from seqeval.metrics import precision_score, recall_score, f1_score, classification_report
+    import json
+    # Load JSON files
+    with open(expected_file) as f:
+        expected_data = json.load(f)
+    with open(predicted_file) as f:
+        predicted_data = json.load(f)
+
+    # Check number of sentences
+    if len(expected_data) != len(predicted_data):
+        raise ValueError(f"Number of sentences mismatch: {len(expected_data)} vs {len(predicted_data)}")
+
+    # Convert numeric tags to string labels and check token alignment
+    true_labels, pred_labels = [], []
+    for i, (exp, pred) in enumerate(zip(expected_data, predicted_data)):
+        if len(exp["ner_tags"]) != len(pred["ner_tags"]):
+            raise ValueError(f"Sentence {i} token length mismatch: {len(exp['ner_tags'])} vs {len(pred['ner_tags'])}")
+        true_labels.append([ID2LABEL[t] for t in exp["ner_tags"]])
+        pred_labels.append([ID2LABEL[p] for p in pred["ner_tags"]])
+
+    # Identify all entity types
+    all_entities = set()
+    for sent in true_labels:
+        for label in sent:
+            if label != "O":
+                all_entities.add(label.split("-")[-1])
+
+    # Compute per-entity metrics
+    entity_scores = {}
+    for ent in all_entities:
+        # Mask other entities as "O"
+        true_masked = [[l if l.endswith(ent) else "O" for l in sent] for sent in true_labels]
+        pred_masked = [[l if l.endswith(ent) else "O" for l in sent] for sent in pred_labels]
+
+        # Compute precision, recall, F1
+        entity_prec = precision_score(true_masked, pred_masked)
+        entity_rec = recall_score(true_masked, pred_masked)
+        entity_f1 = f1_score(true_masked, pred_masked)
+
+        entity_scores[ent] = {
+            "precision": entity_prec,
+            "recall": entity_rec,
+            "f1": entity_f1
+        }
+
+    # Compute overall micro-averaged metrics across all entities
+    overall_prec = precision_score(true_labels, pred_labels)
+    overall_rec = recall_score(true_labels, pred_labels)
+    overall_f1 = f1_score(true_labels, pred_labels)
+
+    entity_scores["OVERALL"] = {
+        "precision": overall_prec,
+        "recall": overall_rec,
+        "f1": overall_f1
+    }
+
+    # Print results
+    print("Entity-level scores:", entity_scores)
+
+    # Plotting (if you have your function)
+    __plot_entity_scores_bars_comparison(entity_scores=entity_scores)
+
+
+#step2 confusion map  to be checked
 
 def plot_confusion_heatmap_entities(expected_file, prediction_file, id2label):
     """
@@ -418,104 +432,60 @@ def plot_top_n_confusion_bars(file_all_expected, file_all_predicted, id2label, t
     plt.tight_layout()
     plt.show()
 
-#step 3 train loss
 
-def plot_train_loss_for_epoch(history_file):
+
+#step 3 evaluation model trainingtrain loss
+
+
+def plot_final_training_summary(history_file):
     """
-1. Training Loss (usually a downward curve)
-    Y-axis: Loss value (lower is better).
-    X-axis: Epochs.
+    Model Training & Evaluation Metrics
 
-    Interpretation:
+    1. Training Loss (train_loss) Measures how well the model is fitting the training data. Lower is better.
+    - Definition: Error on the training dataset.
+    - Y-axis: Loss value (lower is better).
+    - X-axis: Epochs.
+    - Interpretation:
+        * If loss decreases steadily → the model is learning.
+        * If loss plateaus → model has reached its capacity for this setup.
+        * If loss increases → possible instability (learning rate too high) 
+            or severe overfitting.
 
-    If loss decreases steadily, the model is learning and fitting the data.
-    If loss plateaus, the model may have reached its learning capacity for this setup.
-    If loss increases, the learning rate may be too high or the model is overfitting/unstable.
+    2. Evaluation Loss (eval_loss)
+    - Definition: Error on the validation dataset (unseen data).
+    - Y-axis: Loss value (lower is better).
+    - Interpretation:
+        * Decreasing eval_loss → the model generalizes better.
+        * Plateauing eval_loss → model may not improve further.
+        * Increasing eval_loss while train_loss decreases → overfitting risk.
 
-2. Evaluation F1 (usually an upward curve)
-    Y-axis: F1-score (0–1, higher is better).
-    X-axis: Epochs.
+    3. Evaluation F1 (eval_f1). Higher is better.
+    - Definition: Harmonic mean of precision & recall on validation data.
+    - Y-axis: Score from 0–1 (higher is better).
+    - Interpretation:
+        * Increasing F1 → better entity recognition.
+        * Plateauing F1 → more epochs unlikely to help.
+        * Decreasing F1 while train_loss decreases → overfitting.
 
-    Interpretation:
+    4. Comparing the curves
+    - Ideal case: 
+        train_loss ↓, eval_loss ↓, eval_f1 ↑
+    - Signs of overfitting:
+        train_loss ↓, eval_loss ↑, eval_f1 ↓
+    - Good generalization:
+        small gap between train_loss and eval_loss + steadily increasing eval_f1.
+    - Early stopping:
+        if eval_f1 stops improving or starts dropping, training should stop.
 
-    Increasing F1 → the model is improving on the validation set.
-    Plateauing F1 → the model may have learned as much as it can; additional epochs may not help.
-    Decreasing F1 while loss decreases → overfitting (the model fits training data but generalizes poorly).
-
-3. Comparing curves
-
-    Ideally, training loss decreases while evaluation F1 increases.
-    A gap between training loss and evaluation F1:
-    Small gap → good generalization.
-    Large gap → potential overfitting.
-4. Practical example
-    
-    Suppose after 3 epochs:
-    Train loss: 0.8 → 0.4 → 0.3
-    Eval F1: 0.55 → 0.65 → 0.66
-    Interpretation: the model is learning well, and F1 is improving. If F1 stopped increasing while loss decreased, you might stop training or adjust parameters.
-
+    5. Practical example
+    Epoch 1 → train_loss=0.8, eval_loss=0.9, eval_f1=0.55
+    Epoch 2 → train_loss=0.4, eval_loss=0.6, eval_f1=0.65
+    Epoch 3 → train_loss=0.3, eval_loss=0.58, eval_f1=0.66
+    Interpretation: the model is learning, eval_loss is stable, and F1 is improving.
+    Training could stop if F1 does not improve further.
     """
 
 
-    with open(history_file) as f:
-        history = json.load(f)
-    # Extract loss and F1 per epoch
-    train_epochs = [log['epoch'] for log in history if 'loss' in log and 'eval_loss' not in log]
-    train_loss = [log['loss'] for log in history if 'loss' in log and 'eval_loss' not in log]
-
-    eval_epochs = [log['epoch'] for log in history if 'eval_f1' in log]
-    eval_f1 = [log['eval_f1'] for log in history if 'eval_f1' in log]
-
-    plt.figure(figsize=(8,5))
-    plt.plot(train_epochs, train_loss, label="Train Loss", color='blue', marker='o')
-    plt.plot(eval_epochs, eval_f1, label="Eval F1", color='orange', marker='x')
-    plt.xlabel("Epoch")
-    plt.ylabel("Metric")
-    plt.title("Training Loss & Evaluation F1 per Epoch")
-    plt.legend()
-    plt.grid(True)
-    plt.show()
-
-
-def plot_train_loss_as_table(history_file):
-
-    with open(history_file) as f:
-        history = json.load(f)
-
-    # Extract per-step training loss
-    train_loss = [log["loss"] for log in history if "loss" in log and "eval_loss" not in log]
-    train_epoch = [log["epoch"] for log in history if "loss" in log and "eval_loss" not in log]
-
-    # Extract per-epoch eval metrics
-    eval_f1 = [h["eval_f1"] for h in history if "eval_f1" in h]
-    eval_epoch = [h["epoch"] for h in history if "eval_f1" in h]
-    eval_precision = [h["eval_precision"] for h in history if "eval_f1" in h]
-    eval_recall = [h["eval_recall"] for h in history if "eval_f1" in h]
-
-    # Plot
-    fig, ax = plt.subplots(figsize=(10,5))
-    ax.plot(train_epoch, train_loss, marker='o', label="Train Loss")
-    ax.plot(eval_epoch, eval_f1, marker='x', label="Eval F1")
-    ax.set_xlabel("Epoch")
-    ax.set_ylabel("Metric")
-    ax.set_title("Training Metrics per Epoch")
-    ax.grid(True)
-    ax.legend()
-
-    # Add table at the bottom
-    cell_text = []
-    for e, loss, f1, p, r in zip(eval_epoch, train_loss[:len(eval_epoch)], eval_f1, eval_precision, eval_recall):
-        cell_text.append([f"{e:.2f}", f"{loss:.4f}", f"{p:.3f}", f"{r:.3f}", f"{f1:.3f}"])
-
-    columns = ["Epoch", "Train Loss", "Precision", "Recall", "F1"]
-    plt.table(cellText=cell_text, colLabels=columns, cellLoc="center", loc="bottom", bbox=[0, -0.35, 1, 0.25])
-
-    plt.subplots_adjust(bottom=0.3)  # make space for table
-    plt.show()
-
-
-def plot_train_eval_metrics(history_file):
     with open(history_file) as f:
         history = json.load(f)
 
@@ -527,32 +497,27 @@ def plot_train_eval_metrics(history_file):
     eval_by_epoch = defaultdict(dict)
     for log in history:
         if 'eval_f1' in log:
-            epoch = log['epoch']
-            eval_by_epoch[epoch] = log  # overwrites → keeps last per epoch
+            eval_by_epoch[log['epoch']] = log  # keep last per epoch
 
     eval_epochs = sorted(eval_by_epoch.keys())
     eval_loss = [eval_by_epoch[e]['eval_loss'] for e in eval_epochs]
-    eval_precision = [eval_by_epoch[e]['eval_precision'] for e in eval_epochs]
-    eval_recall = [eval_by_epoch[e]['eval_recall'] for e in eval_epochs]
     eval_f1 = [eval_by_epoch[e]['eval_f1'] for e in eval_epochs]
 
     # --- Plot ---
     fig, ax1 = plt.subplots(figsize=(10,6))
 
-    # Training loss
-    ax1.plot(train_epochs, train_loss, 'b-o', label='Train Loss')
+    # Train loss
+    ax1.plot(train_epochs, train_loss, marker='o', color='blue', label='Train Loss')
     ax1.set_xlabel("Epoch")
     ax1.set_ylabel("Train Loss", color='blue')
     ax1.tick_params(axis='y', labelcolor='blue')
 
-    # Evaluation metrics
+    # Eval metrics
     ax2 = ax1.twinx()
-    ax2.plot(eval_epochs, eval_loss, color='purple', marker='d', label='Eval Loss')
-    # ax2.plot(eval_epochs, eval_precision, color='green', marker='x', label='Eval Precision')
-    # ax2.plot(eval_epochs, eval_recall, color='red', marker='s', label='Eval Recall')
-    ax2.plot(eval_epochs, eval_f1, color='orange', marker='^', label='Eval F1')
+    ax2.plot(eval_epochs, eval_loss, marker='d', color='purple', label='Eval Loss')
+    ax2.plot(eval_epochs, eval_f1, marker='^', color='orange', label='Eval F1')
 
-    ax2.set_ylabel("Evaluation Metrics", color='black')
+    ax2.set_ylabel("Eval Metrics", color='black')
     ax2.tick_params(axis='y', labelcolor='black')
 
     # Legend
@@ -560,9 +525,21 @@ def plot_train_eval_metrics(history_file):
     lines_2, labels_2 = ax2.get_legend_handles_labels()
     ax2.legend(lines_1 + lines_2, labels_1 + labels_2, loc='center right')
 
-    plt.title("Training Loss & Evaluation Metrics per Epoch")
+    plt.title("Training Summary: Loss & F1 per Epoch")
     plt.grid(True)
+
+    # --- Table with values ---
+    cell_text = []
+    for e, tl, el, f1 in zip(eval_epochs, train_loss[:len(eval_epochs)], eval_loss, eval_f1):
+        cell_text.append([f"{e:.0f}", f"{tl:.4f}", f"{el:.4f}", f"{f1:.3f}"])
+
+    columns = ["Epoch", "Train Loss", "Eval Loss", "Eval F1"]
+    plt.table(cellText=cell_text, colLabels=columns, cellLoc="center", 
+              loc="bottom", bbox=[0, -0.35, 1, 0.25])
+
+    plt.subplots_adjust(bottom=0.3)  # space for table
     plt.show()
+
 
 
 if __name__ == "__main__":
@@ -575,8 +552,22 @@ if __name__ == "__main__":
     # expected_file=expected_file,
     # prediction_file=pred_file, id2label=ID2LABEL
     # )
-    #plot_train_loss_for_epoch(history_file)
-    #plot_train_eval_metrics(history_file)
+    # plot_train_loss_for_epoch(history_file)
+    # plot_train_eval_metrics(history_file)
+    # plot_train_loss_as_table(history_file)
+
+
+
+
+
+    # evaluate model
+    plot_final_training_summary(history_file)
+
+    #evaluate prediction entity_score
+
+    calculate_entity_score_for_ner_data_predicted2(expected_file='./data/all_data.json', predicted_file='./output/ner_predictions.json', )
+
+
 
     #plot_confusion_heatmap_entities_multiple(file_all_expected='./data/all_data.json', file_all_predicted='./output/ner_predictions.json', id2label=ID2LABEL)
-    plot_top_n_confusion_bars(file_all_expected='./data/all_data.json', file_all_predicted='./output/ner_predictions.json', id2label=ID2LABEL)
+    #plot_top_n_confusion_bars(file_all_expected='./data/all_data.json', file_all_predicted='./output/ner_predictions.json', id2label=ID2LABEL, top_n=40)
