@@ -6,12 +6,14 @@ from flask import Flask, request, jsonify, send_from_directory,send_file
 from scripts.predictions_ner import ner_model
 from scripts.text_extractor import extract_text_from_image, extract_text
 from werkzeug.utils import secure_filename
-from scripts.utils import validate_ner_sample_smart, generate_ner_data
+from scripts.utils import validate_ner_sample_smart, generate_ner_data, remove_folder
 from pdf2image import convert_from_path
 # Use absolute path for frontend directory
 FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../frontend"))
 
 TEMP_FOLDER = 'tmp'
+
+remove_folder(TEMP_FOLDER)
 from flask_cors import CORS
 
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
@@ -118,8 +120,9 @@ def upload_image_file():
             image_path = os.path.join(TEMP_FOLDER, f"{uploaded_file.filename}_page{i+1}.jpg")
             img.save(image_path)
             image_urls.append(f"/uploads/{os.path.basename(image_path)}")
-
-    os.remove(temp_path)
+            os.remove(temp_path)
+    elif ext in ['.jpg', '.jpeg', '.bmp','.png']:
+        image_urls.append(f"/uploads/{uploaded_file.filename}")
 
     return jsonify({
         "image_urls": image_urls,

@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import torch
+from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 # Add project root to sys.path if needed
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -10,7 +11,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from scripts.text_extractor import extract_text 
-from scripts.utils import generate_ner_data, init_tesseract, replace_entities_with_labels
+from scripts.utils import generate_ner_data, init_tesseract, replace_entities_with_labels, np_encoder
 
 from scripts.postprocess import postprocess_entities  # Your custom postprocessing
 from scripts.ner_to_fhir import map_ner_to_fhir    # Your mapping from NER to FHIR
@@ -296,6 +297,38 @@ def main(file_path,post_process_predictions, save_as_template):
 
     print(f"All result files have been saved in {OUTPUT_DIR}")
 
+
+def main_multiple(folder_path):
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    os.makedirs(PREDICTIONS_DIR, exist_ok=True)
+
+    files = [f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))]
+    print(f"step0 - Reading files from {folder_path}. Found {len(files)} files.")
+    ner_dataset = [] 
+    prediction_dataset=[]
+    for file_name in tqdm(files, desc="Processing files"):
+        full_path = os.path.join(folder_path, file_name)
+        text = extract_text(full_path)
+        predictions = __execute_predictions(text)
+        prediction_dataset.append(predictions)
+        ner_data = generate_ner_data(text, predictions)
+        ner_dataset.append(ner_data)
+        
+    #saving the predictions as ner data in bio format
+    output_ner_file = os.path.join(OUTPUT_DIR,f"ner_predictions.json")
+    with open(output_ner_file, "w", encoding="utf-8") as f:
+        json.dump(ner_dataset, f, indent=2, ensure_ascii=False)
+    print(f"✅ Ner data as bio format saved {output_ner_file}")
+    
+    output_prediction_file = os.path.join(PREDICTIONS_DIR,f"entities_predictions.json")
+    with open(output_prediction_file, "w", encoding="utf-8") as f:
+        json.dump(prediction_dataset, f, indent=2, ensure_ascii=False, default=np_encoder)
+
+    print(f"✅ Entities predictef saved {output_prediction_file}")
+    
+
+
 if __name__ == "__main__":
     import sys
     file_path = './documents/artz_brief.txt'
@@ -313,4 +346,6 @@ if __name__ == "__main__":
     if len(sys.argv) == 4:
         save_as_template = sys.argv[3].lower() == 'true'
  
-    main(file_path=file_path, post_process_predictions=post_process_predictions,save_as_template=save_as_template)
+    #main(file_path=file_path, post_process_predictions=post_process_predictions,save_as_template=save_as_template)
+
+    main_multiple(folder_path='txt_reports')
