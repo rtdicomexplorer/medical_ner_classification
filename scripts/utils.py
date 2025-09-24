@@ -1219,7 +1219,7 @@ findings =[ "Infiltrat in der rechten Lunge"  ,
             "Albuminurie"               , 
             "Hautausschlag an den Extremitäten"   , 
             "Geringe Beweglichkeit im rechten Kniegelenk"]
-allergies = ["Penicillin", "Pollen", "Nüsse","Hausstaubmilben","Tierhaar", "Soia"]
+allergies = ["Penicillin", "Pollen", "Nüsse","Hausstaubmilben","Tierhaar", "Soia", "keine Bekannt"]
 immunizations = ["Masern-Impfung", "Grippeimpfung", "Covid 19"]
 devices = ["Herzschrittmacher", "Insulinpumpe","Schlafmaske", "Blutdruckgerät", "Kateter","PEG-Sonde"]
 family_histories = ["Mutter mit Diabetes", "Vater mit Bluthochdruck","Herzinfarkte beim Vater", "Krebs bei der Mutter",
