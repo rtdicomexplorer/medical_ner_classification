@@ -9,8 +9,10 @@ if PROJECT_ROOT not in sys.path:
 import random
 import json
 from scripts.utils import *
+from scripts.paraphrases import *
+from scripts.definitions import *
 from sklearn.model_selection import train_test_split
-from scripts.config import  ENTITY_LIST,  SINGLE_VAL_ENTITIES
+from scripts.config import  ENTITY_LIST,  SINGLE_VAL_ENTITIES, ENTITY_LIST_ORDERED
 from templates import TEMPLATES_LIST, freib_template, muster_template
 from collections import defaultdict
 
@@ -37,7 +39,7 @@ ENTITY_RANDOM_VALUES = {
     "DURATION":            	durations,	
     "FAMILY_STATUS":       	family_status,	
     "FAMILYMEMBER":        	family_members,	
-    "FAMHIST":             	family_histories,	
+    "FAMHIST":             	family_history,	
     "FINDING":             	findings,	
     "FOLLOWUP_REASON":     	followup_reasons,	
     "FOLLOWUP_REQ":        	["CT-Thorax", "Blutbild", "EKG"],	
@@ -50,7 +52,7 @@ ENTITY_RANDOM_VALUES = {
     # "ICD10_DESC":          	list(diagnosis_icd10_map.values()),	
     "IMMUNIZATION":        	immunizations,	
     "IMPRESSION":          	impressions,	
-    "INSURANCE_ID":        	insurance_ids,	
+    "INSURANCE_ID":        	generate_insurance_ids(),	
     "LAB_RESULT":          	lab_results,	
     "LIFESTYLE":           	lifestyles,	
     "MEDICATION":          	medications,	
@@ -59,11 +61,11 @@ ENTITY_RANDOM_VALUES = {
     "PATIENT":              get_fake_names(100),#names	
     "PHONE":               	hospital_phones,
     "PATIENT_PHONE":        get_fake_phone(100),# patient_phones,	
-    "PID":                 	generate_patint_ids(),	
+    "PID":                 	generate_patient_ids(),	
     "PREV_DIAGNOSIS":      	list(format_prev_diagnoses(diagnoses)),	
     "PROCEDURE":           	procedures,	
     "RISKFACTOR":          	risk_factors,	
-    "ROOM_NUMBER":         	room_numbers,	
+    "ROOM_NUMBER":         	generate_room_number(),	
     "ROUTE":               	routes,	
     "SMOKING_STATUS" :     	smoking_status,  	
     "STAY_REASON":         	stay_reasons,	
@@ -83,7 +85,7 @@ def __extract_entities__(text, values):
 def __create_sample_more_text(single_entity_values):
     sample = {}
     # more time Entities - random value list
-    for ent in ENTITY_LIST:
+    for ent in ENTITY_LIST_ORDERED:# the order must be realistic....
         if ent in ENTITY_RANDOM_VALUES:
             if ent in single_entity_values:
                 sample[ent] = random.choice(ENTITY_RANDOM_VALUES[ent])
@@ -179,27 +181,46 @@ def __extract_entities_generalized(text, values):
 def __generate_paraphrase_more_text(values, single_val_entities):
     phrases = []
     capitalize_next = False
-    for ent in ENTITY_LIST:
-        if ent in values :
-            if ent in single_val_entities: #just once
-                paraphrase = paraphrase_entity(ent, values[ent])
+    for ent,valu in values.items():
+        if ent in single_val_entities: #just once
+            paraphrase = paraphrase_entity(ent, values[ent])
+            if capitalize_next:    
+                paraphrase = paraphrase[0].upper() + paraphrase[1:]
+            phrases.append(paraphrase)
+            capitalize_next =  paraphrase.strip()[-1] in ['.','!','?']
+        else:
+            paraphrases =[]
+            for val in valu: # more
+                paraphrase = paraphrase_entity(ent, val)
                 if capitalize_next:    
                     paraphrase = paraphrase[0].upper() + paraphrase[1:]
-                phrases.append(paraphrase)
+                paraphrases.append(paraphrase)
+                
                 capitalize_next =  paraphrase.strip()[-1] in ['.','!','?']
-            else:
-                 for val in values[ent]: # more
-                    paraphrase = paraphrase_entity(ent, val)
-                    if capitalize_next:    
-                        paraphrase = paraphrase[0].upper() + paraphrase[1:]
-                    phrases.append(paraphrase)
-                    capitalize_next =  paraphrase.strip()[-1] in ['.','!','?']
+
+            phrases.append(random.choice(paraphrases))
+
+    # for ent in ENTITY_LIST:
+    #     if ent in values :
+    #         if ent in single_val_entities: #just once
+    #             paraphrase = paraphrase_entity(ent, values[ent])
+    #             if capitalize_next:    
+    #                 paraphrase = paraphrase[0].upper() + paraphrase[1:]
+    #             phrases.append(paraphrase)
+    #             capitalize_next =  paraphrase.strip()[-1] in ['.','!','?']
+    #         else:
+    #              for val in values[ent]: # more
+    #                 paraphrase = paraphrase_entity(ent, val)
+    #                 if capitalize_next:    
+    #                     paraphrase = paraphrase[0].upper() + paraphrase[1:]
+    #                 phrases.append(paraphrase)
+    #                 capitalize_next =  paraphrase.strip()[-1] in ['.','!','?']
 
             
             
     
-    random.shuffle(phrases)
-    return " ".join(phrases)
+    #random.shuffle(phrases)
+    return "\n".join(phrases)
 
 def __count_entity_placeholders(template):
    
@@ -254,7 +275,7 @@ def __generate_dataset(n_samples,save_reports):
     count_paraphrase = 0
     for i in range(n_samples):
         try:
-            if random.random() < 0.5:     
+            if random.random() < 0.00000000000001:     
                 template = random.choice(TEMPLATES_LIST)
                 placeholder_counts = __count_entity_placeholders(template)
                 values_dict = __generate_values(ENTITY_RANDOM_VALUES, SINGLE_VAL_ENTITIES, placeholder_counts)

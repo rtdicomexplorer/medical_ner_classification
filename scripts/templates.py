@@ -530,4 +530,4 @@ TEMPLATES_LIST =[complete_template ,reha_gutachten_template,pflegeueberleitung_t
                  notfall_template,attest_template,hkp_template,aufnahmebogen_template,opfreigabe_template,pflegedoku_template,
                  therapieplan_template,rezept_template,impfpass_template,einwilligung_template,ueberweisung_template,patho_template,
                  radiologie_template,laborbericht_template,anamnesebogen_template,entlassungsbericht_template, operationsbericht_template,
-                 befundbericht_template,arztbrief_template,arztbrief_template2, muster_template, freib_template]
+                 befundbericht_template,arztbrief_template,arztbrief_template2, muster_template, freib_template,freib_not_aunahme]

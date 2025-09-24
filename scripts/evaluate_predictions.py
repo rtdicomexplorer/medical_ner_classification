@@ -220,7 +220,7 @@ def calculate_entity_score_for_ner_data_predicted2(expected_file, predicted_file
     }
 
     # Print results
-    print("Entity-level scores:", entity_scores)
+#    print("Entity-level scores:", entity_scores)
 
     # Plotting (if you have your function)
     __plot_entity_scores_bars_comparison(entity_scores=entity_scores)
@@ -569,5 +569,5 @@ if __name__ == "__main__":
 
 
 
-    #plot_confusion_heatmap_entities_multiple(file_all_expected='./data/all_data.json', file_all_predicted='./output/ner_predictions.json', id2label=ID2LABEL)
-    #plot_top_n_confusion_bars(file_all_expected='./data/all_data.json', file_all_predicted='./output/ner_predictions.json', id2label=ID2LABEL, top_n=40)
+    plot_confusion_heatmap_entities_multiple(file_all_expected='./data/all_data.json', file_all_predicted='./output/ner_predictions.json', id2label=ID2LABEL)
+    plot_top_n_confusion_bars(file_all_expected='./data/all_data.json', file_all_predicted='./output/ner_predictions.json', id2label=ID2LABEL, top_n=40)

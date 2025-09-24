@@ -57,11 +57,82 @@ ENTITY_LIST =[
     "VITALSIGNS",
 ]
 
-# #these entties could appear more times 
-# MORE_VAL_ENTITIES = {
-#     "ANAMNESE","ALLERGY", "SYMPTOM", "MEDICATION", "VITALSIGNS", "TREATMENT", "FAMILYMEMBER", "FAMHIST", "ICD10_CODE","ICD10_DESC","DATE",
-#     "PREV_DIAGNOSIS", "IMPRESSION", "LAB_RESULT", "LIFESTYLE", "RISKFAKTOR", "IMMUNIZATION", "DIAGNOSIS", "BODY_PART","STAY_REASON","FINDING"
-# }
+ENTITY_LIST_ORDERED =[ 
+        # 1. Document metadata
+    "DOCUMENT_TYPE",
+    "ORG",
+    "ADDRESS",
+    "DEPARTMENT",
+    "PHONE",
+    "ADMISSION_DATE",
+
+    # 2. Patient identifiers and demographics
+    "PATIENT",
+    "PID",
+    "BIRTHDATE",
+    "GENDER",
+    "FAMILY_STATUS",
+    "OCCUPATION",
+    "ADDRESS_PATIENT",
+    "PHONE_PATIENT",
+
+    
+    "GEWICHT",
+    "GROESSE",
+    "BLOOD_TYPE",
+    "ALLERGY"
+
+    # 4. Family history, risk, lifestyle
+    "FAMHIST",
+    "FAMILYMEMBER",
+    "RISKFACTOR",
+    "LIFESTYLE",
+    "SMOKING_STATUS",
+    "ALCOHOL_CONSUMPTION",
+
+    # 5. Clinical history and current complaints
+    "ANAMNESE",
+    "PREV_DIAGNOSIS",
+    "STAY_REASON",
+    "SYMPTOM",
+    "FINDING",
+    "IMPRESSION",
+    "DIAGNOSIS",
+    "ICD10_CODE",
+    "ICD10_DESC",
+    "COURSE",
+
+    # 6. Clinical data
+    "VITALSIGNS",
+    "LAB_RESULT",
+    "MEDICATION",
+    "DOSAGE",
+    "FREQUENCY",
+    "DURATION",
+    "ROUTE",
+    "IMMUNIZATION",
+    "TREATMENT",
+    "PROCEDURE",
+    "DEVICE",
+    "BODY_PART",
+
+    # 3. Administrative info
+
+    "DISCHARGE_DATE",
+    "HOSPITAL_STAY",
+    "ROOM_NUMBER",
+    "INSURANCE_ID",
+
+    # 7. Follow-up
+    "FOLLOWUP_REASON",
+    "FOLLOWUP_REQ",
+
+    # 8. Misc
+    "DOCTOR",
+    "DATE",
+
+]
+
 
 #should appear just once in the template
 SINGLE_VAL_ENTITIES = {
