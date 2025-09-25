@@ -243,10 +243,12 @@ def __fill_template(template, values_dict):
     return filled
 
 def __generate_dataset(n_samples,save_reports):
+    from tqdm import tqdm
     dataset = []
     count_template = 0
     count_paraphrase = 0
-    for i in range(n_samples):
+    for i in tqdm(range(n_samples), desc="Generating syntetic data"):
+    #for i in range(n_samples):
         try:
             if random.random() < 0.5:     
                 template = random.choice(TEMPLATES_LIST)
