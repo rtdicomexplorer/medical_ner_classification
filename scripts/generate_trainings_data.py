@@ -85,7 +85,7 @@ def __extract_entities__(text, values):
 def __create_sample_more_text(single_entity_values):
     sample = {}
     # more time Entities - random value list
-    for ent in ENTITY_LIST_ORDERED:# the order must be realistic....
+    for ent in ENTITY_LIST:# the order must be realistic....
         if ent in ENTITY_RANDOM_VALUES:
             if ent in single_entity_values:
                 sample[ent] = random.choice(ENTITY_RANDOM_VALUES[ent])
@@ -115,7 +115,6 @@ def __extract_entities_generalized(text, values):
 
     ents = []
     used_spans = set()
-    text_norm = __normalize_text(text)
 
     for label, value in values.items():
         value_list = value if isinstance(value, list) else [value]
@@ -134,25 +133,6 @@ def __extract_entities_generalized(text, values):
             # 2. Überprüfe jeden Suchbegriff
             found = False
             for term in search_terms:
-                #term_norm = __normalize_text(term)
-                #matches_norm = list(re.finditer(re.escape(term_norm), text_norm))           
-                # for match in matches_norm:
-                #     # Finde tatsächliche Position im Originaltext (unsicher bei Normalisierung!)
-                #     span_start = text.lower().find(term_norm, match.start())
-                #     if span_start == -1:
-                #         continue
-                #     span_end = span_start + len(term_norm)
-                    
-                #     if (span_start, span_end) not in used_spans:
-                #         ents.append({
-                #             "entity_group": label,
-                #             "start": span_start,
-                #             "end": span_end,
-                #             "word": val_str
-                #         })
-                #         used_spans.add((span_start, span_end))
-                #         found = True
-                #         break
                 
                 matches = list(re.finditer(re.escape(term), text))
                 
@@ -179,14 +159,21 @@ def __extract_entities_generalized(text, values):
     return ents
 
 def __generate_paraphrase_more_text(values, single_val_entities):
-    phrases = []
+    
+    header_list = ['DOCUMENT_TYPE', 'ORG', 'ADDRESS', 'DEPARTMENT' ]#they stay always on top
+    phrases_body = []
+    phrases_header = []
     capitalize_next = False
     for ent,valu in values.items():
         if ent in single_val_entities: #just once
             paraphrase = paraphrase_entity(ent, values[ent])
             if capitalize_next:    
                 paraphrase = paraphrase[0].upper() + paraphrase[1:]
-            phrases.append(paraphrase)
+
+            if ent in header_list:
+                phrases_header.append(paraphrase)
+            else:
+                phrases_body.append(paraphrase)
             capitalize_next =  paraphrase.strip()[-1] in ['.','!','?']
         else:
             paraphrases =[]
@@ -198,29 +185,15 @@ def __generate_paraphrase_more_text(values, single_val_entities):
                 
                 capitalize_next =  paraphrase.strip()[-1] in ['.','!','?']
 
-            phrases.append(random.choice(paraphrases))
-
-    # for ent in ENTITY_LIST:
-    #     if ent in values :
-    #         if ent in single_val_entities: #just once
-    #             paraphrase = paraphrase_entity(ent, values[ent])
-    #             if capitalize_next:    
-    #                 paraphrase = paraphrase[0].upper() + paraphrase[1:]
-    #             phrases.append(paraphrase)
-    #             capitalize_next =  paraphrase.strip()[-1] in ['.','!','?']
-    #         else:
-    #              for val in values[ent]: # more
-    #                 paraphrase = paraphrase_entity(ent, val)
-    #                 if capitalize_next:    
-    #                     paraphrase = paraphrase[0].upper() + paraphrase[1:]
-    #                 phrases.append(paraphrase)
-    #                 capitalize_next =  paraphrase.strip()[-1] in ['.','!','?']
-
-            
-            
+            paraphrase = random.choice(paraphrases)
+            if ent in header_list:
+                phrases_header.append(paraphrase)
+            else:
+                phrases_body.append(paraphrase)       
     
-    #random.shuffle(phrases)
-    return "\n".join(phrases)
+    random.shuffle(phrases_body)
+
+    return "\n".join(phrases_header+phrases_body)
 
 def __count_entity_placeholders(template):
    
