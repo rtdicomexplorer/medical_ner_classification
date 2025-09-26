@@ -14,5 +14,6 @@ tmp/
 entities
 latex/*
 !latex/main.tex
+!latex/*png
 frontend/test*
 logs

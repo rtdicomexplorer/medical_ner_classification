@@ -1,12 +1,15 @@
 import json
 import os
 import sys
-from sklearn.metrics import precision_recall_fscore_support
-from collections import defaultdict
+from sklearn.metrics import precision_recall_fscore_support,confusion_matrix
+from collections import defaultdict,Counter
 import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
+import matplotlib.patches as mpatches
 import numpy as np
 import seaborn as sns
-from sklearn.metrics import confusion_matrix
+from seqeval.metrics import precision_score, recall_score, f1_score, classification_report
+
  
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
@@ -14,8 +17,10 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 from scripts.config import LABEL_LIST, ID2LABEL
 
-def __plot_entity_scores_bars_comparison(entity_scores, show_values=False):
-    from matplotlib.patches import Patch
+#step 1 entity score
+
+def __plot_entity_scores_bars_comparison_ner_data(entity_scores, show_values=False):
+
     """
     Draw two stacked bar plots:
     - top: plain Precision / Recall / F1 grouped bars + metric legend
@@ -32,10 +37,12 @@ def __plot_entity_scores_bars_comparison(entity_scores, show_values=False):
     For sensitive entities (e.g., patient IDs, phone numbers), high precision might be more important → fewer false positives.
     For clinical findings (symptoms, diagnoses), higher recall could be critical → you don’t want to miss them.
     """
+
     entities = list(entity_scores.keys())
     precision = [entity_scores[e]["precision"] for e in entities]
     recall = [entity_scores[e]["recall"] for e in entities]
     f1 = [entity_scores[e]["f1"] for e in entities]
+    support_counts = [entity_scores[e]["support"] for e in entities]
 
     x = np.arange(len(entities))
     width = 0.25
@@ -44,26 +51,31 @@ def __plot_entity_scores_bars_comparison(entity_scores, show_values=False):
         colors = []
         for v in values:
             if v >= 0.7:
-                colors.append("green")   # good
+                colors.append("green")
             elif v >= 0.4:
-                colors.append("orange")  # moderate
+                colors.append("orange")
             else:
-                colors.append("red")     # weak
+                colors.append("red")
         return colors
 
-    fig, axes = plt.subplots(2, 1, figsize=(16, 10), sharex=True)
+    fig, axes = plt.subplots(2, 1, figsize=(14, 8), sharex=True)  # smaller height
 
-    # --- Subplot 1: Plain chart with metric legend ---
+    # --- Subplot 1: Plain chart ---
     rects1 = axes[0].bar(x - width, precision, width, label="Precision", color="C0")
     rects2 = axes[0].bar(x, recall, width, label="Recall", color="C1")
     rects3 = axes[0].bar(x + width, f1, width, label="F1", color="C2")
 
     axes[0].set_ylabel("Score")
     axes[0].set_title("Per-Entity NER Evaluation (Plain)")
-    axes[0].set_ylim(0, 1.05)
+    axes[0].set_ylim(0, 1.15)  # more space on top
     axes[0].legend(loc="upper right")
 
-    # --- Subplot 2: Color-coded chart with color legend ---
+    # Add support counts above middle bar only (recall)
+    for i, sup in enumerate(support_counts):
+        axes[0].text(x[i], recall[i] + 0.05, f"{sup}",
+                     ha="center", va="bottom", fontsize=8)
+
+    # --- Subplot 2: Color-coded chart ---
     cols_p = colorize(precision)
     cols_r = colorize(recall)
     cols_f = colorize(f1)
@@ -74,11 +86,16 @@ def __plot_entity_scores_bars_comparison(entity_scores, show_values=False):
 
     axes[1].set_ylabel("Score")
     axes[1].set_title("Per-Entity NER Evaluation (Colored by Performance)")
-    axes[1].set_ylim(0, 1.05)
+    axes[1].set_ylim(0, 1.15)  # more space
     axes[1].set_xticks(x)
     axes[1].set_xticklabels(entities, rotation=45, ha="right")
 
-    # Color legend explaining green/orange/red
+    # Add support counts above recall bar only
+    for i, sup in enumerate(support_counts):
+        axes[1].text(x[i], recall[i] + 0.05, f"{sup}",
+                     ha="center", va="bottom", fontsize=8)
+
+    # Legend for performance bands
     color_handles = [
         Patch(facecolor="green", label="Good (≥ 0.7)"),
         Patch(facecolor="orange", label="Moderate (0.4–0.7)"),
@@ -86,7 +103,7 @@ def __plot_entity_scores_bars_comparison(entity_scores, show_values=False):
     ]
     axes[1].legend(handles=color_handles, title="Performance band", loc="upper right")
 
-    # Optional: numeric labels above bars
+    # Optional numeric labels
     if show_values:
         def autolabel(ax, rects):
             for rect in rects:
@@ -95,11 +112,9 @@ def __plot_entity_scores_bars_comparison(entity_scores, show_values=False):
                             xy=(rect.get_x() + rect.get_width() / 2, height),
                             xytext=(0, 3), textcoords="offset points",
                             ha="center", va="bottom", fontsize=8)
-        # top
         autolabel(axes[0], rects1)
         autolabel(axes[0], rects2)
         autolabel(axes[0], rects3)
-        # bottom
         autolabel(axes[1], rects1b)
         autolabel(axes[1], rects2b)
         autolabel(axes[1], rects3b)
@@ -107,64 +122,9 @@ def __plot_entity_scores_bars_comparison(entity_scores, show_values=False):
     plt.tight_layout()
     plt.show()
 
-#step 1 entity score
-def calculate_entity_score_for_ner_data_predicted(expected_file,predicted_file):
-    
 
-    # Load JSON files
-    with open(expected_file) as f:
-        expected_file = json.load(f)
-    with open(predicted_file) as f:
-        predicted = json.load(f)
-    # Extract true and predicted labels
-    true_labels, pred_labels = [], []
-    for exp, pred in zip(expected_file, predicted):
-        # align by token
-        for t, p in zip(exp["ner_tags"], pred["ner_tags"]):
-            true_labels.append(t)
-            pred_labels.append(p)
+def calculate_entity_score_for_ner_data_predicted(expected_file, predicted_file):
 
-    # Compute per-class metrics
-    labels = sorted(set(true_labels) | set(pred_labels))
-    #sklearn.metrics.precision_recall_fscore_support to compute per-label precision/recall/f1. 
-    # (https://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_recall_fscore_support.html)
-    #The precision is the ratio tp / (tp + fp) where tp is the number of true positives and fp the number of false positives. 
-    #The precision is intuitively the ability of the classifier not to label a negative sample as positive.
-    
-    #The recall is the ratio tp / (tp + fn) where tp is the number of true positives and fn the number of false negatives. 
-    #The recall is intuitively the ability of the classifier to find all the positive samples.
-    #The F-beta score can be interpreted as a weighted harmonic mean of the precision and recall, 
-    # where an F-beta score reaches its best value at 1 and worst score at 0.
-
-    # zero_division=0 sets metric=0 when denominator is zero (avoids exceptions).
-    prec, rec, f1, _ = precision_recall_fscore_support(true_labels, pred_labels, labels=labels, zero_division=0)
-
-    # Collect results
-    results = {ID2LABEL[label]: {"precision": p, "recall": r, "f1": f}
-            for label, p, r, f in zip(labels, prec, rec, f1)}
-
-    entity_metrics = defaultdict(lambda: {"precision": [], "recall": [], "f1": []})
-
-    for label, metrics in results.items():
-        if label == "O":  # skip non-entities
-            continue
-        entity = label.split("-")[-1]  # e.g. "ORG" from "B-ORG"
-        for m in ["precision", "recall", "f1"]:
-            entity_metrics[entity][m].append(metrics[m])
-
-    # Average over B-/I-
-    entity_scores = {}
-    for ent, metrics in entity_metrics.items():
-        entity_scores[ent] = {
-            m: (sum(values) / len(values)) if values else 0.0
-            for m, values in metrics.items()
-        }
-    print(entity_scores)
-    __plot_entity_scores_bars_comparison(entity_scores=entity_scores)
-
-def calculate_entity_score_for_ner_data_predicted2(expected_file, predicted_file):
-    from seqeval.metrics import precision_score, recall_score, f1_score, classification_report
-    import json
     # Load JSON files
     with open(expected_file) as f:
         expected_data = json.load(f)
@@ -185,10 +145,13 @@ def calculate_entity_score_for_ner_data_predicted2(expected_file, predicted_file
 
     # Identify all entity types
     all_entities = set()
+    entity_support = {}  
     for sent in true_labels:
         for label in sent:
             if label != "O":
-                all_entities.add(label.split("-")[-1])
+                ent_type = label.split("-")[-1]
+                all_entities.add(ent_type)
+                entity_support[ent_type] = entity_support.get(ent_type, 0) + 1
 
     # Compute per-entity metrics
     entity_scores = {}
@@ -198,204 +161,138 @@ def calculate_entity_score_for_ner_data_predicted2(expected_file, predicted_file
         pred_masked = [[l if l.endswith(ent) else "O" for l in sent] for sent in pred_labels]
 
         # Compute precision, recall, F1
-        entity_prec = precision_score(true_masked, pred_masked)
+        entity_prec = precision_score(true_masked, pred_masked) if any(l != "O" for sent in pred_masked for l in sent) else 0.0
         entity_rec = recall_score(true_masked, pred_masked)
         entity_f1 = f1_score(true_masked, pred_masked)
 
         entity_scores[ent] = {
             "precision": entity_prec,
             "recall": entity_rec,
-            "f1": entity_f1
+            "f1": entity_f1,
+            "support": entity_support.get(ent, 0)  
         }
 
     # Compute overall micro-averaged metrics across all entities
     overall_prec = precision_score(true_labels, pred_labels)
     overall_rec = recall_score(true_labels, pred_labels)
     overall_f1 = f1_score(true_labels, pred_labels)
-
+    overall_support = sum(entity_support.values())
     entity_scores["OVERALL"] = {
         "precision": overall_prec,
         "recall": overall_rec,
-        "f1": overall_f1
+        "f1": overall_f1,
+        "support": overall_support 
     }
 
-    # Print results
-#    print("Entity-level scores:", entity_scores)
-
-    # Plotting (if you have your function)
-    __plot_entity_scores_bars_comparison(entity_scores=entity_scores)
+    __plot_entity_scores_bars_comparison_ner_data(entity_scores=entity_scores)
 
 
 #step2 confusion map  to be checked
 
-def plot_confusion_heatmap_entities(expected_file, prediction_file, id2label):
+def plot_confusion_heatmap_top_entities_ner_data(file_all_expected, file_all_predicted, id2label, top_n=30, print_error= False):
     """
-    Plot a confusion matrix for NER predictions, excluding 'O', with annotated numbers and a colorbar.
+    Plot confusion heatmap for the top-N most confused entities + show TP/FP/FN counts.
+
+    Args:
+        file_all_expected: path to JSON with gold labels
+        file_all_predicted: path to JSON with predicted labels
+        id2label: dictionary mapping tag ids to tag names
+        top_n: number of most confused entities to display
     """
-    # Load JSON files
-    with open(expected_file) as f:
-        expected = json.load(f)
-    with open(prediction_file) as f:
-        predicted = json.load(f)
-
-    # Extract true and predicted labels, excluding 'O'
-    true_labels, pred_labels = [], []
-    for exp, pred in zip(expected, predicted):
-        for t, p in zip(exp["ner_tags"], pred["ner_tags"]):
-            t_label = id2label[t]
-            p_label = id2label[p]
-            if t_label != "O":  # skip non-entities
-                true_labels.append(t_label)
-                pred_labels.append(p_label)
-
-    # Determine entity labels
-    labels = sorted(set(true_labels) | set(pred_labels))
-
-    
-    #Compute confusion matrix to evaluate the accuracy of a classification.
-    #https://scikit-learn.org/stable/modules/generated/sklearn.metrics.confusion_matrix.html
-
-    #### 1-Diagonal cells
-    #These are the cases where the predicted entity matches the true entity.
-    #Higher values (closer to 1, dark green in our colormap) indicate better performance for that entity type.
-    #Example: If ORG row vs ORG column = 0.8 → 80% of organizations were correctly predicted.
-    
-    #### 2-Off-diagonal cells
-    #These show misclassifications, i.e., the fraction of times a true entity of type X was predicted as type Y.
-    #Higher values (closer to 1, red in our colormap) indicate frequent misclassifications.
-    #Example: If DOCTOR row vs ORG column = 0.2 → 20% of doctor mentions were incorrectly predicted as organization.
-    
-    #### 3-Row-normalization
-    #Each row sums to 1.0 (100% of that true entity type).
-    #This means you can see how errors distribute per true entity, regardless of class frequency.
-    
-    cm = confusion_matrix(true_labels, pred_labels, labels=labels, normalize='true')
-
-    # Plot heatmap
-    plt.figure(figsize=(12, 10))
-    ax = sns.heatmap(
-        cm,
-        annot=True,
-        fmt=".2f",
-        xticklabels=labels,
-        yticklabels=labels,
-        cmap="RdYlGn_r",   # Green = high, Red = low
-        linewidths=0.5,
-        linecolor='gray',
-        cbar=True
-    )
-
-    plt.xlabel("Predicted")
-    plt.ylabel("True")
-    plt.title("NER Confusion Matrix (Entities Only)")
-    plt.tight_layout()
-    plt.show()
-
-
-def plot_confusion_heatmap_entities_multiple(file_all_expected, file_all_predicted, id2label):
-    """
-    all_expected / all_predicted: list of JSONs like {"tokens": [...], "ner_tags": [...]}
-    id2label: dictionary mapping tag ids to tag names (e.g., 0: "O", 1: "B-ORG", etc.)
-    """
-    # --- Collect all true and predicted labels ---
-    def plot_confusion_heatmap_chunks(true_labels, pred_labels, chunk_size=12):
-        # Collapse B- and I-
-        def simplify(l):
-            return l.split("-", 1)[-1] if l != "O" else "O"
-        true_labels = [simplify(l) for l in true_labels]
-        pred_labels = [simplify(l) for l in pred_labels]
-
-        labels = sorted(list(set(true_labels) | set(pred_labels)))
-        cm = confusion_matrix(true_labels, pred_labels, labels=labels, normalize='true')
-
-        # Plot in chunks
-        for i in range(0, len(labels), chunk_size):
-            sub_labels = labels[i:i+chunk_size]
-            sub_cm = cm[i:i+chunk_size, i:i+chunk_size]
-
-            plt.figure(figsize=(10, 8))
-            sns.heatmap(sub_cm, annot=True, fmt=".2f",
-                        xticklabels=sub_labels, yticklabels=sub_labels,
-                        cmap="YlGnBu", cbar_kws={'label': 'Proportion'})
-            plt.title(f"NER Confusion Matrix (Entities {i+1}–{i+len(sub_labels)})")
-            plt.xticks(rotation=45, ha='right')
-            plt.yticks(rotation=0)
-            plt.tight_layout()
-            plt.show()
-
     def simplify_label(label):
-        if label == "O":
-            return "O"
-        # remove B- or I-
-        return label.split("-", 1)[-1]
+        return "O" if label == "O" else label.split("-", 1)[-1]
 
+    # Load data
     with open(file_all_expected) as f:
         all_expected = json.load(f)
-
     with open(file_all_predicted) as f:
         all_predicted = json.load(f)
 
-
-
+    # Collect true and predicted labels
     true_labels, pred_labels = [], []
     for exp, pred in zip(all_expected, all_predicted):
         for t, p in zip(exp["ner_tags"], pred["ner_tags"]):
-            true_labels.append(id2label[t])
-            pred_labels.append(id2label[p])
-    true_labels = [simplify_label(l) for l in true_labels]
-    pred_labels = [simplify_label(l) for l in pred_labels]    
+            true_labels.append(simplify_label(id2label[t]))
+            pred_labels.append(simplify_label(id2label[p]))
 
+    # Build confusion matrix
+    labels = sorted(list(set(true_labels) | set(pred_labels)))
+    cm = confusion_matrix(true_labels, pred_labels, labels=labels)
 
-    plot_confusion_heatmap_chunks(true_labels, pred_labels, chunk_size=20)
-    return
+    # Rank entities by confusion (off-diagonal errors)
+    confusion_scores = {
+        label: (cm[i].sum() - cm[i, i]) + (cm[:, i].sum() - cm[i, i])
+        for i, label in enumerate(labels) if label != "O"
+    }
+    top_entities = sorted(confusion_scores, key=confusion_scores.get, reverse=True)[:top_n]
 
+    # Restrict to top entities (+O if exists)
+    selected_labels = top_entities# + (["O"] if "O" in labels else [])
+    idx = [labels.index(l) for l in selected_labels]
+    sub_cm = cm[np.ix_(idx, idx)]
 
-    # --- Filter out 'O' labels ---
-    filtered_true = [t for t, p in zip(true_labels, pred_labels) if t != "O"]
-    filtered_pred = [p for t, p in zip(true_labels, pred_labels) if t != "O"]
+    # Normalize for heatmap
+    sub_cm_normalized = sub_cm.astype("float") / sub_cm.sum(axis=1, keepdims=True)
+    sub_cm_normalized = np.nan_to_num(sub_cm_normalized)
 
-    # --- Unique entity labels (excluding 'O') ---
-    labels = sorted(list(set(filtered_true) | set(filtered_pred)))
+    # --- Plot ---
+    plt.figure(figsize=(10, 8))
+    ax = sns.heatmap(
+        sub_cm_normalized,
+        annot=True,
+        fmt=".2f",
+        xticklabels=selected_labels,
+        yticklabels=selected_labels,
+        cmap="YlGnBu",            # soft blue for readability
+        cbar_kws={'label': 'Proportion'},
+    )
+   # Draw thicker borders only for non-zero cells
+    for i in range(sub_cm_normalized.shape[0]):
+        for j in range(sub_cm_normalized.shape[1]):
+            if sub_cm_normalized[i, j] > 0.009:
+                ax.add_patch(plt.Rectangle(
+                    (j, i), 1, 1, fill=False, edgecolor="#E93F0C", lw=1.2
+                ))
 
-    # --- Compute confusion matrix ---
-    cm = confusion_matrix(filtered_true, filtered_pred, labels=labels, normalize='true')
-
-    # --- Plot heatmap ---
-    plt.figure(figsize=(12, 10))
-    sns.heatmap(cm, annot=True, fmt=".2f", xticklabels=labels, yticklabels=labels,
-                cmap="YlGnBu", cbar_kws={'label': 'Proportion'})
+    plt.title(f"NER Confusion Matrix – Top {top_n} Confused Entities")
     plt.xlabel("Predicted")
-    plt.ylabel("True")
-    plt.title("NER Confusion Matrix (Normalized, 'O' excluded)")
-    plt.xticks(rotation=45)
+    plt.ylabel("Expected")
+    plt.xticks(rotation=45, ha="right")
     plt.yticks(rotation=0)
     plt.tight_layout()
     plt.show()
 
+    if print_error:
+        # --- TP/FP/FN per entity ---
+        print("\nEntity-level error analysis:")
+        prec, rec, f1, support = precision_recall_fscore_support(
+            true_labels, pred_labels, labels=labels, zero_division=0
+        )
+        for lbl, p, r, f, s in zip(labels, prec, rec, f1, support):
+            tp = int(round(r * s))   # true positives = recall * support
+            fn = s - tp              # false negatives
+            fp = int(round(tp * (1/p - 1))) if p > 0 else 0  # false positives
+            print(f"{lbl:10s} | TP={tp:4d}  FP={fp:4d}  FN={fn:4d}  "
+                f"Prec={p:.2f}  Rec={r:.2f}  F1={f:.2f}")
 
-def plot_top_n_confusion_bars(file_all_expected, file_all_predicted, id2label, top_n=20):
+
+def plot_confusion_bars_top_entities_ner_data(file_all_expected, file_all_predicted, id2label, top_n=30, for_latex=False):
     """
-    all_expected / all_predicted: list of JSONs like {"tokens": [...], "ner_tags": [...]}
-    id2label: dictionary mapping tag ids to tag names (e.g., 0: "O", 1: "B-ORG", etc.)
-    top_n: number of most frequent misclassifications to display
+    Plot top-N confusion pairs and (optionally) generate a LaTeX-ready caption.
     """
-    from collections import Counter
-    import matplotlib.patches as mpatches
-      
+
     with open(file_all_expected) as f:
         all_expected = json.load(f)
-
     with open(file_all_predicted) as f:
         all_predicted = json.load(f)
-    true_labels, pred_labels = [], []
 
+    true_labels, pred_labels = [], []
     for exp, pred in zip(all_expected, all_predicted):
         for t, p in zip(exp["ner_tags"], pred["ner_tags"]):
-            # Map ids to labels
             true_labels.append(id2label[t])
             pred_labels.append(id2label[p])
 
-    # Filter out O
+    # Filter out "O"
     filtered = [(t, p) for t, p in zip(true_labels, pred_labels) if t != "O"]
 
     # Merge B-/I- prefixes
@@ -405,39 +302,64 @@ def plot_top_n_confusion_bars(file_all_expected, file_all_predicted, id2label, t
     counter = Counter(filtered)
     top_items = counter.most_common(top_n)
 
-    labels = [f"{t} - {p}" for t, p in top_items]
+    #labels = [f"{t} → {p}" for t, p in top_items]
     counts = [c for _, c in top_items]
-  # Assign colors
+
+    # Convert to percentages
+    total = sum(counts)
+    counts_percent = [c / total * 100 for c in counts]
+
+    # Assign colors
     colors = []
-    for t, p in [item[0] for item in top_items]:
+    labels = []
+    counts = []
+    for (t, p), c in top_items:
+        counts.append(c)
         if t == p:
-            colors.append('green')      # correct
-        elif p == 'O':
-            colors.append('yellow')     # missed entity
+            colors.append("green")   # correct
+            labels.append(f"{t} ({c})")
+        elif p == "O":
+            colors.append("yellow")  # missed entity
+            labels.append(f"{t} → {p} ({c})")
         else:
-            colors.append('red')        # wrong label
-    # Plot
-    plt.figure(figsize=(12,6))
-    plt.bar(labels, counts, color=colors)
-    plt.xticks(rotation=45, ha='right')
-    plt.ylabel("Count")
+            colors.append("red")     # wrong label
+            labels.append(f"{t} → {p} ({c})")
+
+    # --- Plot ---
+    plt.figure(figsize=(10, 6))
+    bars = plt.barh(labels, counts_percent, color=colors)
+    plt.xlabel("Percentage of errors (%)")
+    plt.ylabel("True → Predicted",fontsize=8)
     plt.title(f"Top {top_n} Confusions (B/I merged, O excluded)")
-
-
-        # Add legend
-    green_patch = mpatches.Patch(color='green', label='Correct')
-    yellow_patch = mpatches.Patch(color='yellow', label='Missed (Pred=O)')
-    red_patch = mpatches.Patch(color='red', label='Wrong Label')
-    plt.legend(handles=[green_patch, yellow_patch, red_patch], loc='upper right')
+    plt.gca().invert_yaxis()
+    for bar, c in zip(bars, counts):
+        plt.text(bar.get_width() + 0.1, bar.get_y() + bar.get_height()/2,
+                 f'{c}', va='center', fontsize=8)
+    # Legend
+    green_patch = mpatches.Patch(color="green", label="Correct")
+    yellow_patch = mpatches.Patch(color="yellow", label="Missed (Pred=O)")
+    red_patch = mpatches.Patch(color="red", label="Wrong Label")
+    plt.legend(handles=[green_patch, yellow_patch, red_patch], loc="lower right")
     plt.tight_layout()
     plt.show()
 
+    # --- LaTeX caption ---
+    if for_latex:
+        caption = (
+            f"Figure X shows the top {top_n} confusion pairs from the NER evaluation. "
+            "Bars represent the relative frequency of errors between reference and predicted entity types. "
+            "Yellow bars indicate missed entities (predicted as `O`), red bars indicate label confusions "
+            "(predicted as another entity type), and green bars indicate correct predictions. "
+            "This analysis highlights common sources of error such as boundary ambiguity and clinically "
+            "relevant misclassifications (e.g., DIAGNOSIS vs SYMPTOM)."
+        )
+        print("\n--- LaTeX-ready caption ---\n")
+        print("\\caption{" + caption + "}")
 
 
 #step 3 evaluation model trainingtrain loss
 
-
-def plot_final_training_summary(history_file):
+def plot_model_training_summary(history_file):
     """
     Model Training & Evaluation Metrics
 
@@ -490,8 +412,17 @@ def plot_final_training_summary(history_file):
         history = json.load(f)
 
     # --- Training loss ---
-    train_epochs = [log['epoch'] for log in history if 'loss' in log and 'eval_loss' not in log]
-    train_loss = [log['loss'] for log in history if 'loss' in log and 'eval_loss' not in log]
+
+    train_by_epoch = defaultdict(list)
+
+    for log in history:
+        if 'loss' in log and 'eval_loss' not in log:  # only training logs
+            train_by_epoch[log['epoch']].append(log['loss'])
+
+    # Take the average (or the last) loss per epoch
+    train_epochs = sorted(train_by_epoch.keys())
+    train_loss = [sum(v)/len(v) for v in train_by_epoch.values()]  # average per epoch
+
 
     # --- Deduplicate evaluation logs (keep last per epoch) ---
     eval_by_epoch = defaultdict(dict)
@@ -538,36 +469,23 @@ def plot_final_training_summary(history_file):
               loc="bottom", bbox=[0, -0.35, 1, 0.25])
 
     plt.subplots_adjust(bottom=0.3)  # space for table
+    
+    #plt.savefig("training_summary.png", dpi=300, bbox_inches="tight")
     plt.show()
-
 
 
 if __name__ == "__main__":
 
-    expected_file = "./expected/report.json"
-    pred_file = "./predictions/report.json"
+    expected_file = './data/all_data.json'
+    pred_file = './output/ner_predictions.json'
     history_file = './models/gbert-base/training_history.json'
+
+    #1 entity score
     #calculate_entity_score_for_ner_data_predicted(expected_file=expected_file, predicted_file=pred_file)
-    # plot_confusion_heatmap_entities(
-    # expected_file=expected_file,
-    # prediction_file=pred_file, id2label=ID2LABEL
-    # )
-    # plot_train_loss_for_epoch(history_file)
-    # plot_train_eval_metrics(history_file)
-    # plot_train_loss_as_table(history_file)
 
+    #2 confusion matrix
+    plot_confusion_heatmap_top_entities_ner_data(file_all_expected = expected_file, file_all_predicted = pred_file, id2label = ID2LABEL, top_n = 30)
+    plot_confusion_bars_top_entities_ner_data(file_all_expected = expected_file, file_all_predicted = pred_file, id2label = ID2LABEL, top_n = None, for_latex=False)
 
-
-
-
-    # evaluate model
-    plot_final_training_summary(history_file)
-
-    #evaluate prediction entity_score
-
-    calculate_entity_score_for_ner_data_predicted2(expected_file='./data/all_data.json', predicted_file='./output/ner_predictions.json', )
-
-
-
-    plot_confusion_heatmap_entities_multiple(file_all_expected='./data/all_data.json', file_all_predicted='./output/ner_predictions.json', id2label=ID2LABEL)
-    plot_top_n_confusion_bars(file_all_expected='./data/all_data.json', file_all_predicted='./output/ner_predictions.json', id2label=ID2LABEL, top_n=40)
+    #3 evaluate model, training_loss
+    plot_model_training_summary(history_file)

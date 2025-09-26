@@ -280,7 +280,7 @@ def main(file_path,post_process_predictions, save_as_template):
 
         
     #saving the predictions as ner data in bio format
-    output_ner_file = os.path.join(OUTPUT_DIR,f"ner_{report_file_name}.json")
+    output_ner_file = os.path.join(PREDICTIONS_DIR,f"ner_{report_file_name}.json")
     with open(output_ner_file, "w", encoding="utf-8") as f:
         json.dump(dataset, f, indent=2, ensure_ascii=False)
     
