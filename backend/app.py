@@ -13,7 +13,7 @@ FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../front
 
 TEMP_FOLDER = 'tmp'
 
-remove_folder(TEMP_FOLDER)
+
 from flask_cors import CORS
 
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
@@ -119,8 +119,9 @@ def upload_image_file():
         for i, img in enumerate(images):
             image_path = os.path.join(TEMP_FOLDER, f"{uploaded_file.filename}_page{i+1}.jpg")
             img.save(image_path)
+            print(f"Saved {image_path}!")
             image_urls.append(f"/uploads/{os.path.basename(image_path)}")
-            os.remove(temp_path)
+        os.remove(temp_path)
     elif ext in ['.jpg', '.jpeg', '.bmp','.png']:
         image_urls.append(f"/uploads/{uploaded_file.filename}")
 
@@ -268,8 +269,7 @@ def uploaded_files(filename):
 
 if __name__ == "__main__":
     
-    import shutil
-    if os.path.exists(TEMP_FOLDER):
-        shutil.rmtree(TEMP_FOLDER)
-
-    app.run(debug=True, port=8000)
+    remove_folder(TEMP_FOLDER)
+    app.run(host='0.0.0.0', port=8000, debug=True)
+   
+    #app.run(debug=True, port=8000)

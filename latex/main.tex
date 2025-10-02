@@ -167,7 +167,7 @@ Future work will extend the validation to annotated real-world datasets for more
 
 \section{Evaluation}
 Evaluation is performed by comparing predictions against reference annotations using precision, recall, and F1-score. A validation script reports detected spans and labels. Current experiments focus on synthetic data and small real-world samples; larger gold-standard datasets are planned.
-Figure~\ref{fig:evaluation} shows precision, recall, and F1-scores for selected entity types (see end of document).
+Figure~\ref{fig:entity-scores-bio-format} shows precision, recall, and F1-scores for selected entity types (see end of document).
 
 \begin{table}[htbp]
 \centering
@@ -193,7 +193,7 @@ High precision and recall are obtained for well-structured entities such as \tex
 while performance on more complex clinical terms (e.g., \texttt{DIAGNOSIS}, \texttt{MEDICATION}) remains more challenging.
 
 Table~\ref{tab:example} illustrates an example of token-level alignment between 
-gold-standard labels and predicted labels. Figure~\ref{fig:evaluation} summarizes 
+gold-standard labels and predicted labels. Figure~\ref{fig:entity-scores-bio-format} summarizes 
 aggregated performance across selected entity types.
 
 These results confirm that the system is suitable for structured entities with 
@@ -207,6 +207,11 @@ This work demonstrates that GBERT-based NER can extract structured information f
     \item Limited availability of annotated German clinical corpora.
     \item Entity boundary ambiguity in free-text notes.
     \item Need for robust evaluation on real-world datasets.
+    \subsection{Interpretation of Evaluation Charts}
+The entity-level bar charts (Figure~\ref{fig:entity-scores-bio-format}) illustrate strengths and weaknesses of the model across semantic categories. High performance on structured entities such as \texttt{DATE} and \texttt{ORG} suggests that regular surface forms are reliably captured. In contrast, entities like \texttt{DIAGNOSIS} and \texttt{MEDICATION} show reduced precision and recall, reflecting the lexical and contextual variability of clinical language. 
+
+{\raggedright The confusion analysis (Figure~\ref{fig:confusion-bars-bio-format}) provides complementary insights by highlighting systematic errors. Frequent misclassifications between clinically related categories (e.g., \texttt{SYMPTOM} vs. \texttt{DIAGNOSIS}) indicate that entity boundary ambiguity contributes to reduced F1-scores. From a clinical NLP perspective, these error patterns are informative: for patient safety, high recall is critical for conditions and medications, whereas for identifiers or dates, high precision is often more important. These trade-offs inform future optimization and deployment strategies.\par}
+
 \end{itemize}
 
 Future work includes:
@@ -276,29 +281,48 @@ HL7 International. (2023). FHIR Standard. \url{https://hl7.org/fhir}.
 
 \begin{figure}[htbp]
     \centering
-    \begin{tikzpicture}
-        \begin{axis}[
-            ybar,
-            bar width=8pt,
-            width=0.9\linewidth,
-            height=6cm,
-            ymin=0, ymax=1.1,
-            ylabel={Score},
-            symbolic x coords={ORG, PER, LOC, DATE, DIAGNOSIS},
-            xtick=data,
-            nodes near coords,
-            nodes near coords align={vertical},
-            legend style={font=\small,at={(0.5,-0.2)},anchor=north,legend columns=-1},
-            ylabel near ticks
-        ]
-        \addplot coordinates {(ORG,0.92) (PER,0.95) (LOC,0.90) (DATE,0.98) (DIAGNOSIS,0.78)};
-        \addplot coordinates {(ORG,0.88) (PER,0.93) (LOC,0.87) (DATE,0.95) (DIAGNOSIS,0.70)};
-        \addplot coordinates {(ORG,0.90) (PER,0.94) (LOC,0.88) (DATE,0.96) (DIAGNOSIS,0.74)};
-        \legend{Precision, Recall, F1}
-        \end{axis}
-    \end{tikzpicture}
-    \caption{Evaluation results (dummy values ). Precision, recall, and F1-score across selected entity types.}
-    \label{fig:evaluation}
+    \includegraphics[width=\linewidth]{entity_scores.png} % replace with your plot filename
+    \caption{Entity-level evaluation scores. Precision, recall, and F1-score are reported for each entity type, with support counts annotated above bars. High-scoring entities (e.g., \texttt{DATE}, \texttt{ORG}) indicate reliable extraction of structured fields, while lower scores for \texttt{DIAGNOSIS} and \texttt{MEDICATION} highlight challenges in capturing clinically nuanced expressions.}
+    \label{fig:entity-scores-bio-format}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{confusion_bars.png} % replace with your plot filename
+       \caption{
+    Confusion for the top-30 most frequently confused named entity types. Each horizontal bar shows the number of occurrences of a \textit{True → Predicted} entity pair.
+    \textbf{Green} bars indicate correctly predicted entities.
+    \textbf{Yellow} bars show missed entities (predicted as \texttt{O}).
+    \textbf{Red} bars represent misclassifications where the predicted label differs from the true label.
+    This analysis highlights common sources of error such as boundary ambiguity and clinically relevant confusions (e.g., \texttt{DIAGNOSIS} vs \texttt{SYMPTOM}).
+    }
+    \label{fig:confusion-bars-bio-format}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{confusion_heat_top30.png} % replace with your figure file
+    \caption{
+    Confusion heatmap for the top-30 most frequently confused named entity types, computed over 100 predicted documents.
+    The rows correspond to the gold-standard (expected) labels, while the columns represent the predicted labels. 
+    Diagonal entries indicate correctly classified entities, whereas off-diagonal entries highlight misclassifications. 
+    Values are normalized per row and shown as proportions, such that each row sums to 1.0. 
+    Darker shades represent higher proportions. 
+    This visualization reveals systematic confusions between semantically related classes (e.g., \texttt{ORG} vs. \texttt{LOC}) and highlights cases where entities are incorrectly assigned to the non-entity class \texttt{O}.
+    }
+    \label{fig:confusion-heatmap-bio-format}
+\end{figure}
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.9\linewidth]{entity_scores_ent.png}
+    \caption{
+        Per-entity performance of the NER model for the top 20 entity types.
+        Each group of vertical bars represents precision (blue), recall (orange), and F1-score (green).
+        Dashed horizontal lines indicate quality thresholds at 0.7 (green, good performance) and 0.4 (orange, moderate performance).
+        Entities above the 0.7 threshold (e.g., \textit{DATE}, \textit{DOCTOR}) demonstrate reliable extraction, while those between 0.4–0.7 suggest moderate performance often due to boundary ambiguity or inconsistent annotation.
+        Entities below 0.4 highlight systematic errors and require further refinement of training data or model architecture.
+    }
+    \label{fig:entity-scores-entities}
 \end{figure}
 
 
