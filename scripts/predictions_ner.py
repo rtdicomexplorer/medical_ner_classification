@@ -236,7 +236,7 @@ def __execute_predictions(text):
 
 
 
-def main(file_path,post_process_predictions, save_as_template):
+def __main(file_path,post_process_predictions, save_as_template):
 
     _, report_file_name = os.path.split(file_path)
     
@@ -316,16 +316,15 @@ def main_multiple(folder_path):
         ner_dataset.append(ner_data)
         
     #saving the predictions as ner data in bio format
-    output_ner_file = os.path.join(OUTPUT_DIR,f"ner_predictions.json")
+    output_ner_file = os.path.join(PREDICTIONS_DIR,f"ner_predictions.json")
     with open(output_ner_file, "w", encoding="utf-8") as f:
         json.dump(ner_dataset, f, indent=2, ensure_ascii=False)
-    print(f"✅ Ner data as bio format saved {output_ner_file}")
     
     output_prediction_file = os.path.join(PREDICTIONS_DIR,f"entities_predictions.json")
     with open(output_prediction_file, "w", encoding="utf-8") as f:
         json.dump(prediction_dataset, f, indent=2, ensure_ascii=False, default=np_encoder)
 
-    print(f"✅ Entities predictef saved {output_prediction_file}")
+    print(f"✅ Predictions saved {output_prediction_file}, {output_ner_file }")
     
 
 

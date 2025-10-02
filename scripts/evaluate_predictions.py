@@ -17,6 +17,207 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 from scripts.config import LABEL_LIST, ID2LABEL
 
+
+
+################### ENTITIES
+
+def evaluate_entities(expected_file, predicted_file, overlap_threshold=0.5):
+    """
+    Evaluate entity-level predictions (from HuggingFace pipeline) against reference entities.
+
+    Args:
+        reference_entities_list: List of lists of reference entities per document.
+            Each entity: {"entity_group": str, "start": int, "end": int, "word": str}
+        predicted_entities_list: List of lists of predicted entities per document.
+        overlap_threshold: Minimum fraction of overlap to count as a match (0-1).
+
+    Returns:
+        entity_scores: dict of per-entity metrics (precision, recall, f1, support)
+        overall_scores: micro-averaged precision, recall, F1 across all entities
+    """
+    def entity_overlap(e1, e2):
+        """Compute overlap ratio between two spans"""
+        start = max(e1['start'], e2['start'])
+        end = min(e1['end'], e2['end'])
+        overlap = max(0, end - start)
+        length = max(e1['end'] - e1['start'], e2['end'] - e2['start'])
+        return overlap / length if length > 0 else 0
+
+    # Load JSON files
+    with open(expected_file) as f:
+        expected_data = json.load(f)
+    with open(predicted_file) as f:
+        predicted_data = json.load(f)
+
+    # Check number of sentences
+    if len(expected_data) != len(predicted_data):
+        raise ValueError(f"Number of sentences mismatch: {len(expected_data)} vs {len(predicted_data)}")
+
+    # Count matches per entity type
+    entity_counts = defaultdict(lambda: {"TP": 0, "FP": 0, "FN": 0})
+
+    for ref_entities, pred_entities in zip(expected_data, predicted_data):
+        matched_pred = set()
+        matched_ref = set()
+        
+        # Try to match each reference entity
+        for i, ref in enumerate(ref_entities):
+            for j, pred in enumerate(pred_entities):
+                if j in matched_pred:
+                    continue
+                if ref['entity_group'] == pred['entity_group']:
+                    if entity_overlap(ref, pred) >= overlap_threshold:
+                        entity_counts[ref['entity_group']]["TP"] += 1
+                        matched_ref.add(i)
+                        matched_pred.add(j)
+                        break
+            else:
+                # Reference entity not matched
+                entity_counts[ref['entity_group']]["FN"] += 1
+
+        # Count unmatched predictions as FP
+        for j, pred in enumerate(pred_entities):
+            if j not in matched_pred:
+                entity_counts[pred['entity_group']]["FP"] += 1
+
+    # Compute metrics per entity
+    entity_scores = {}
+    all_tp, all_fp, all_fn = 0, 0, 0
+    for ent, counts in entity_counts.items():
+        tp = counts["TP"]
+        fp = counts["FP"]
+        fn = counts["FN"]
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+        support = tp + fn
+        entity_scores[ent] = {
+            "precision": precision,
+            "recall": recall,
+            "f1": f1,
+            "support": support
+        }
+        all_tp += tp
+        all_fp += fp
+        all_fn += fn
+
+    # Overall micro-averaged metrics
+    overall_prec = all_tp / (all_tp + all_fp) if (all_tp + all_fp) > 0 else 0.0
+    overall_rec = all_tp / (all_tp + all_fn) if (all_tp + all_fn) > 0 else 0.0
+    overall_f1 = 2 * overall_prec * overall_rec / (overall_prec + overall_rec) if (overall_prec + overall_rec) > 0 else 0.0
+
+    overall_scores = {"precision": overall_prec, "recall": overall_rec, "f1": overall_f1}
+
+    __plot_entities_score(entity_scores=entity_scores, overall_scores=overall_scores)
+
+    #return entity_scores, overall_scores
+
+
+
+def __plot_entities_score(entity_scores, overall_scores,top_n=30, show_values=False):
+  
+    sorted_entities = sorted(
+        ((e, v) for e, v in entity_scores.items() if e != "OVERALL"),
+        key=lambda x: x[1]['f1'], reverse=True
+    )
+    top_entities = sorted_entities[:top_n]
+
+    entities = [e[0] for e in top_entities]
+    precision = [e[1]['precision'] for e in top_entities]
+    recall = [e[1]['recall'] for e in top_entities]
+    f1 = [e[1]['f1'] for e in top_entities]
+
+    x = np.arange(len(entities))
+    width = 0.25
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    # Vertical grouped bars
+    bars_p = ax.bar(x - width, precision, width, color='C0', label='Precision')
+    bars_r = ax.bar(x, recall, width, color='C1', label='Recall')
+    bars_f = ax.bar(x + width, f1, width, color='C2', label='F1')
+
+    # Horizontal reference lines (colored)
+    ax.axhline(0.7, color='green', linestyle='--', linewidth=1.5, label='Good ≥ 0.7')
+    ax.axhline(0.4, color='orange', linestyle='--', linewidth=1.5, label='Moderate ≥ 0.4')
+    ax.axhline(overall_scores['f1'], color='black', linestyle='--',linewidth=2.5, label=f"Overall F1={overall_scores['f1']:.2f}")
+    ax.set_xticks(x)
+    ax.set_xticklabels(entities, rotation=45, ha='right', fontsize=9)
+    ax.set_ylabel("Score", fontsize=11)
+    ax.set_ylim(0, 1.05)
+    ax.set_title(f"Top {top_n} Entities: Precision, Recall, F1", fontsize=13, pad=20)
+
+    # Numeric values
+    if show_values:
+        for bars in [bars_p, bars_r, bars_f]:
+            for rect in bars:
+                height = rect.get_height()
+                ax.text(rect.get_x() + rect.get_width()/2, height + 0.02, f"{height:.2f}", 
+                        ha='center', va='bottom', fontsize=8)
+
+    # Remove duplicate legend entries
+    handles, labels = ax.get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    ax.legend(by_label.values(), by_label.keys(), loc='lower right', fontsize=9)
+
+    plt.tight_layout()
+    plt.show()
+  
+  
+
+def evaluate_entities_map(expected_file, predicted_file, top_n=20):
+    """
+    true_entities / pred_entities: list of dicts with 'entity_group', 'start', 'end'
+    """
+   # Load JSON files
+    with open(expected_file) as f:
+        true_entities = json.load(f)
+    with open(predicted_file) as f:
+        pred_entities = json.load(f)
+
+    flat_true = [e for doc in true_entities for e in doc]
+    flat_pred = [e for doc in pred_entities for e in doc]
+    # 1. Count support per entity type
+    ref_counts = Counter([e["entity_group"] for e in flat_true])
+    pred_counts = Counter([e["entity_group"] for e in flat_pred])
+    
+    # 2. Compute TP / FP / FN per entity type
+    tp_counts = Counter()
+    for ref in flat_true:
+        for pred in flat_pred:
+            if ref["entity_group"] == pred["entity_group"] and \
+               not (pred["end"] <= ref["start"] or pred["start"] >= ref["end"]):
+                tp_counts[ref["entity_group"]] += 1
+                break
+
+    precision = {k: tp_counts[k]/pred_counts[k] if pred_counts[k] else 0 for k in ref_counts}
+    recall    = {k: tp_counts[k]/ref_counts[k] if ref_counts[k] else 0 for k in ref_counts}
+    f1        = {k: 2*precision[k]*recall[k]/(precision[k]+recall[k]+1e-8) for k in ref_counts}
+
+    # 3. Select top N frequent entities
+    top_entities = [k for k,_ in ref_counts.most_common(top_n)]
+
+    # 4. Plot vertical bar chart
+    x = np.arange(len(top_entities))
+    plt.figure(figsize=(12,6))
+    plt.bar(x-0.2, [precision[e] for e in top_entities], width=0.2, label="Precision", color='blue')
+    plt.bar(x,   [recall[e]    for e in top_entities], width=0.2, label="Recall", color='orange')
+    plt.bar(x+0.2, [f1[e]       for e in top_entities], width=0.2, label="F1-score", color='green')
+    plt.axhline(0.7, color='green', linestyle='--', label="Good threshold")
+    plt.axhline(0.4, color='orange', linestyle='--', label="Moderate threshold")
+    plt.xticks(x, top_entities, rotation=45, ha='right')
+    plt.ylabel("Score")
+    plt.title("Entity-level evaluation scores (top 20 entities)")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+
+
+
+
+
+################# NER DATA EVALUATION 
 #step 1 entity score
 
 def __plot_entity_scores_bars_comparison_ner_data(entity_scores, show_values=False):
@@ -477,15 +678,21 @@ def plot_model_training_summary(history_file):
 if __name__ == "__main__":
 
     expected_file = './data/all_data.json'
-    pred_file = './output/ner_predictions.json'
+    pred_file = './predictions/ner_predictions.json'
     history_file = './models/gbert-base/training_history.json'
 
-    #1 entity score
-    #calculate_entity_score_for_ner_data_predicted(expected_file=expected_file, predicted_file=pred_file)
+    # #1 entity score
+    calculate_entity_score_for_ner_data_predicted(expected_file=expected_file, predicted_file=pred_file)
 
-    #2 confusion matrix
+    # #2 confusion matrix
     plot_confusion_heatmap_top_entities_ner_data(file_all_expected = expected_file, file_all_predicted = pred_file, id2label = ID2LABEL, top_n = 30)
     plot_confusion_bars_top_entities_ner_data(file_all_expected = expected_file, file_all_predicted = pred_file, id2label = ID2LABEL, top_n = None, for_latex=False)
 
-    #3 evaluate model, training_loss
+    # #3 evaluate model, training_loss
     plot_model_training_summary(history_file)
+
+
+    expected_file = './data/all_entities.json'
+    pred_file = './predictions/entities_predictions.json'
+    evaluate_entities(expected_file=expected_file,predicted_file=pred_file)
+    evaluate_entities_map(expected_file=expected_file,predicted_file=pred_file)

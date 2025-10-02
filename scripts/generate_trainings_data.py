@@ -146,9 +146,10 @@ def __extract_entities_generalized(text, values):
                     if (span_start, span_end) not in used_spans:
                         ents.append({
                             "entity_group": label,
+                            "word": val_str,
                             "start": span_start,
                             "end": span_end,
-                            "word": val_str
+                            
                         })
                         used_spans.add((span_start, span_end))
                         found = True
@@ -245,6 +246,7 @@ def __fill_template(template, values_dict):
 def __generate_dataset(n_samples,save_reports):
     from tqdm import tqdm
     dataset = []
+    entities_list = []
     count_template = 0
     count_paraphrase = 0
     for i in tqdm(range(n_samples), desc="Generating syntetic data"):
@@ -268,10 +270,11 @@ def __generate_dataset(n_samples,save_reports):
                 with open(filename, "w", encoding="utf-8") as f:
                     f.write(text)
 
-                entity_filename = f"./entities/entity_{i+1:06}.json"
-                os.makedirs(os.path.dirname(entity_filename), exist_ok=True)
-                with open(entity_filename, 'w',encoding="utf-8") as f:
-                    json.dump(entities, f,ensure_ascii=False, indent=4) 
+                entities_list.append(entities)
+                # entity_filename = f"./entities/entity_{i+1:06}.json"
+                # os.makedirs(os.path.dirname(entity_filename), exist_ok=True)
+                # with open(entity_filename, 'w',encoding="utf-8") as f:
+                #     json.dump(entities, f,ensure_ascii=False, indent=4) 
 
             ner_data = generate_ner_data(text, entities)
             dataset.append( ner_data)
@@ -298,20 +301,24 @@ def __generate_dataset(n_samples,save_reports):
     if save_reports:
         with open("./data/all_data.json", "w", encoding="utf-8") as f:
             json.dump(dataset, f, indent=2, ensure_ascii=False)
-        print(f"saved all data  ./data/all_data.json ")
+        with open('./data/all_entities.json', 'w',encoding="utf-8") as f:
+            json.dump(entities_list, f,ensure_ascii=False, indent=4) 
+        print(f"saved all ner data  ./data/all_data.json")
+        print(f"saved all entities ./data/all_entities.json")
         print(f"→ ./txt_reports/ ({n_samples} samples)")
+
 
    
 # Run as script
 if __name__ == "__main__":
     n_samples = 10
-    save_reports = False
+    save_reports = True
     clean_data = False
     if len(sys.argv) > 1:
         n_samples = int(sys.argv[1])
     if len(sys.argv) > 2:
         save_reports = sys.argv[2].lower() == 'true'
     print(f"Starting generation of {n_samples} data!\n Saving reports is {save_reports}!\n !")
-    __generate_dataset(n_samples=n_samples, save_reports=save_reports,)
+    __generate_dataset(n_samples=n_samples, save_reports=save_reports)
 
 
