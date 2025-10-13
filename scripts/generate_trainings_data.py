@@ -12,10 +12,12 @@ from scripts.utils import *
 from scripts.paraphrases import *
 from scripts.definitions import *
 from sklearn.model_selection import train_test_split
-from scripts.config import  ENTITY_LIST,  SINGLE_VAL_ENTITIES, ENTITY_LIST_ORDERED
+from scripts.config import  ENTITY_LIST,  SINGLE_VAL_ENTITIES
 from templates import TEMPLATES_LIST, freib_template, muster_template
 from collections import defaultdict
 
+OUTPUT_NER_PATH = './data'
+OUTPUT_REPORTS_PATH = './txt_reports'
 
 ENTITY_RANDOM_VALUES = {                       
     "ADDRESS": 				hospital_addresses,	
@@ -250,7 +252,6 @@ def __generate_dataset(n_samples,save_reports):
     count_template = 0
     count_paraphrase = 0
     for i in tqdm(range(n_samples), desc="Generating syntetic data"):
-    #for i in range(n_samples):
         try:
             if random.random() < 0.5:     
                 template = random.choice(TEMPLATES_LIST)
@@ -265,16 +266,12 @@ def __generate_dataset(n_samples,save_reports):
                 entities = __extract_entities_generalized(text, values)  
                 count_paraphrase += 1
             if save_reports:
-                filename = f"./txt_reports/report_{i+1:06}.txt"
-                os.makedirs(os.path.dirname(filename), exist_ok=True)
-                with open(filename, "w", encoding="utf-8") as f:
+                filename = f"report_{i+1:06}.txt"
+                filepath = os.path.join(OUTPUT_REPORTS_PATH,filename)
+                os.makedirs(os.path.dirname(filepath), exist_ok=True)
+                with open(filepath, "w", encoding="utf-8") as f:
                     f.write(text)
-
                 entities_list.append(entities)
-                # entity_filename = f"./entities/entity_{i+1:06}.json"
-                # os.makedirs(os.path.dirname(entity_filename), exist_ok=True)
-                # with open(entity_filename, 'w',encoding="utf-8") as f:
-                #     json.dump(entities, f,ensure_ascii=False, indent=4) 
 
             ner_data = generate_ner_data(text, entities)
             dataset.append( ner_data)
@@ -286,28 +283,30 @@ def __generate_dataset(n_samples,save_reports):
     
     print(f"💡 From template {count_template}, 🔁 from paraphrase {count_paraphrase}")
 
-    #saving the json data created
-    os.makedirs("./data", exist_ok=True)   
-    with open("./data/train.json", "w", encoding="utf-8") as f:
+
+    os.makedirs(OUTPUT_NER_PATH, exist_ok=True)   
+    
+    with open(os.path.join(OUTPUT_NER_PATH,"train.json"), "w", encoding="utf-8") as f:
         json.dump(trains, f, indent=2, ensure_ascii=False)
-    with open("./data/val.json", "w", encoding="utf-8") as f:
+    with open(os.path.join(OUTPUT_NER_PATH,"val.json"), "w", encoding="utf-8") as f:
         json.dump(validations, f, indent=2, ensure_ascii=False)
-    with open("./data/test.json", "w", encoding="utf-8") as f:
+    with open(os.path.join(OUTPUT_NER_PATH,"test.json"), "w", encoding="utf-8") as f:
         json.dump(tests, f, indent=2, ensure_ascii=False)
-    print("✅ Synthetic dataset generated:")
-    print(f"→ ./data/train.json ({len(trains)} samples)")
-    print(f"→ ./data/val.json ({len(validations)} samples)")
-    print(f"→ ./data/test.json ({len(tests)} samples)")
+    print(f"✅ Synthetic dataset generated in {OUTPUT_NER_PATH}")
+    print(f"→ {len(trains)} trains, {len(validations)} validations), {len(tests)} tests)")
     if save_reports:
-        with open("./data/all_data.json", "w", encoding="utf-8") as f:
+        os.makedirs(OUTPUT_REPORTS_PATH, exist_ok=True)   
+        with open(os.path.join(OUTPUT_NER_PATH,"all_data.json"), "w", encoding="utf-8") as f:
             json.dump(dataset, f, indent=2, ensure_ascii=False)
-        with open('./data/all_entities.json', 'w',encoding="utf-8") as f:
+        with open(os.path.join(OUTPUT_NER_PATH,"all_entities.json"), 'w',encoding="utf-8") as f:
             json.dump(entities_list, f,ensure_ascii=False, indent=4) 
-        print(f"saved all ner data  ./data/all_data.json")
-        print(f"saved all entities ./data/all_entities.json")
-        print(f"→ ./txt_reports/ ({n_samples} samples)")
+        print(f"📊 saved also all data, all-ner, all-entities")
+        print(f"📄 saved also the reports {OUTPUT_REPORTS_PATH} ({n_samples} samples)")
 
 
+def __remove_existing_data():
+    remove_folder(OUTPUT_NER_PATH)
+    remove_folder(OUTPUT_REPORTS_PATH)
    
 # Run as script
 if __name__ == "__main__":
@@ -319,6 +318,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 2:
         save_reports = sys.argv[2].lower() == 'true'
     print(f"Starting generation of {n_samples} data!\n Saving reports is {save_reports}!\n !")
+    __remove_existing_data()
     __generate_dataset(n_samples=n_samples, save_reports=save_reports)
 
 
