@@ -25,7 +25,7 @@ Involves assigning the identified entities to specific categories or classes bas
 In the realm of traditional machine learning methods for NER, models are trained on data where entities are labeled.  
 
 
-In our prpject we ara using  **Hugging-Face** with **gbert-base** for German language..
+In our project we are using  **Hugging-Face** with **gbert-base** for German language..
 ### GBERT-based NER
 Input: Entire sentence.  
 Output: Label for each token  
