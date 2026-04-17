@@ -57,6 +57,7 @@ ENTITY_LIST =[
     "VITALSIGNS",
 ]
 
+#//not used
 ENTITY_LIST_ORDERED =[ 
         # 1. Document metadata
     "DOCUMENT_TYPE",

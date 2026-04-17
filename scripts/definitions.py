@@ -124,7 +124,7 @@ body_parts = [
     "Gesicht",
     "rechte Hand",
     "linke Hand",
-    "Hufte"
+    "Hüfte"
 ]
 
 
