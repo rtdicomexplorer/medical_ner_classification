@@ -1,7 +1,7 @@
 import os
 import sys
 
-from datajoint import config
+# from datajoint import config
 # Add project root to sys.path if needed
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
