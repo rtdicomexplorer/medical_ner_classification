@@ -703,3 +703,87 @@ document_types = [
 
 family_status = ["verheiratet", "geschieden", "verwitwet", "ledig", "getrennt", "in einer Beziehung", "alleinstehend"]
 
+
+# Gruppierte Daten nach Fachbereich
+MEDICAL_CONTEXTS = {
+    "Kardiologie": {
+        "DIAGNOSIS": ["I25.1 KHK", "I50.0 Herzinsuffizienz", "I48.0 Vorhofflimmern"],
+        "DEVICE": ["EKG", "Herz-Echo", "Koronarangiographie"],
+        "FINDING": ["V.a. Myokardinfarkt", "Stabil unter Medikation"],
+        "DEPARTMENT": ["Herzzentrum", "Kardiologie Station 1"]
+    },
+    "Pneumologie": {
+        "DIAGNOSIS": ["J18.9 Pneumonie", "J44.9 COPD", "J45.9 Asthma bronchiale"],
+        "DEVICE": ["Bronchoskopie", "Thorax-CT", "Sputum"],
+        "FINDING": ["Hinweis auf pulmonale Infektion", "Verschattung links"],
+        "DEPARTMENT": ["Lungenklinik", "Pneumologie"]
+    },
+  "Radiologie": {
+        "DEPARTMENT": ["Radiologie", "Neuroradiologie"],
+        "DEVICE": ["MRT 3 Tesla", "CT Somatom", "Röntgen Thorax"],
+        "MATERIAL": ["Kontrastmittel", "Dünnschicht-CT"], # Falls {MATERIAL} im Template steht
+        "BODY_PART": ["Abdomen", "Neurokranium"],
+        "FINDING": ["keine Raumforderung", "ödematöse Schwellung"],
+        "PROCEDURE": ["CT-Untersuchung", "MRT-Abdomen", "Schädel-CT"]
+    },
+    "Pathologie": {
+            "DEPARTMENT": ["Pathologie", "Institut für Histologie"],
+            "MATERIAL": ["Gewebebiopsie", "Feinnadelaspirat", "Resektat", "Stanzbiopsie"], # Hier MATERIAL statt DEVICE
+            "FINDING": ["Zellatypien", "keine Malignität", "großkernige Zellen"],
+            "DIAGNOSIS": ["C34.9 Bronchialkarzinom", "D05.1 DCIS", "C18.9 Kolon-CA"]
+        },
+    "Onkologie": {
+            "DEPARTMENT": ["Onkologie", "Hämato-Onkologie", "Tumorzentrum"],
+            "DIAGNOSIS": ["C34.9 Bronchialkarzinom", "C18.9 Kolon-CA", "C50.9 Mammakarzinom"],
+            "PREV_DIAGNOSIS": ["Verdacht auf Neoplasie", "unklarer Rundherd"],
+            "SYMPTOM": ["B-Symptomatik", "ungewollter Gewichtsverlust", "persistierender Husten"],
+            "TREATMENT": ["Chemotherapie", "Bestrahlung", "immunonkologische Therapie"],
+            "PROCEDURE": ["Port-Anlage", "Staging-CT", "Tumorkonferenz"],
+            "IMPRESSION": ["Remission unter Therapie", "Progrediente Erkrankung", "Gute Verträglichkeit"]
+        },
+    "Labor": {
+            "DEPARTMENT": ["Zentrallabor", "Klinische Chemie", "Hämatologie-Labor"],
+            "LAB_RESULT": [
+                "Hb 14.2 g/dL", "Leukozyten 7.6 G/pt", "Thrombozyten 250 G/pt", 
+                "Kreatinin 0.9 mg/dL", "CRP <5 mg/L", "Natrium 140 mmol/L", 
+                "Kalium 4.2 mmol/L", "Glukose 95 mg/dL"
+            ],
+            "DIAGNOSIS": ["unauffälliges Blutbild", "Elektrolytstatus normwertig", "kein Hinweis auf Entzündung"],
+            "IMPRESSION": ["Befunde im Normbereich", "Verlaufskontrolle empfohlen"]
+        }
+}
+
+
+MEDICAL_CONTEXTS_RED = {
+    "Kardiologie": {
+        "DEPARTMENT": ["Herzzentrum", "Kardiologie Station 1"],
+        "DIAGNOSIS": ["I25.1 KHK", "I50.0 Herzinsuffizienz", "I48.0 Vorhofflimmern"],
+        "SYMPTOM": ["Brustschmerzen", "Atemnot bei Belastung", "Palpitationen"]
+    },
+    "Pneumologie": {
+        "DEPARTMENT": ["Lungenklinik", "Pneumologie"],
+        "DIAGNOSIS": ["J18.9 Pneumonie", "J44.9 COPD", "J45.9 Asthma bronchiale"],
+        "SYMPTOM": ["Husten", "Dyspnoe", "Thoraxschmerz"]
+    },
+    "Radiologie": {
+        "DEPARTMENT": ["Radiologie", "Neuroradiologie"],
+        "DIAGNOSIS": ["keine Raumforderung", "ödematöse Schwellung", "Spondylarthrose"],
+        "SYMPTOM": ["Schmerz", "Funktionseinschränkung"] # Indikation/Symptom
+    },
+    "Pathologie": {
+        "DEPARTMENT": ["Pathologie", "Institut für Histologie"],
+        "DIAGNOSIS": ["C34.9 Bronchialkarzinom", "D05.1 DCIS", "C18.9 Kolon-CA"],
+        "SYMPTOM": ["Zellatypien", "Inflammation"]
+    },
+    "Onkologie": {
+        "DEPARTMENT": ["Onkologie", "Hämato-Onkologie", "Tumorzentrum"],
+        "DIAGNOSIS": ["C34.9 Bronchialkarzinom", "C18.9 Kolon-CA", "C50.9 Mammakarzinom"],
+        "SYMPTOM": ["B-Symptomatik", "ungewollter Gewichtsverlust", "persistierender Husten"],
+        "MEDICATION": ["Chemotherapie", "Immunonkologische Therapie"]
+    },
+    "Labor": {
+        "DEPARTMENT": ["Zentrallabor", "Klinische Chemie", "Hämatologie-Labor"],
+        "DIAGNOSIS": ["unauffälliges Blutbild", "Elektrolytstatus normwertig"],
+        "SYMPTOM": ["verringerter Appetit", "Müdigkeit"] # Grund für Laboranforderung
+    }
+}

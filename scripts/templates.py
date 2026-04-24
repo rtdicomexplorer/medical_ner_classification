@@ -211,19 +211,16 @@ muster_template =(
 
 arztbrief_template = (
     "Patient: {PATIENT} ({GENDER}), geboren am {BIRTHDATE}, PID: {PID}.\n"
-    "Gewicht: {GEWICHT}. Große : {GROESSE}\n"
-    "Adresse: {ADDRESS_PATIENT}, Telefon: {PHONE_PATIENT}, Familienstand: {FAMILY_STATUS}.\n"
+    "Gewicht: {GEWICHT}. Größe: {GROESSE}\n" 
+    "Adresse: {ADDRESS_PATIENT}, Telefon: {PATIENT_PHONE}, Familienstand: {FAMILY_STATUS}.\n" # PATIENT_PHONE
     "Beruf: {OCCUPATION}, begleitet von: {FAMILYMEMBER}.\n"
     "Vorstellung wegen: {SYMPTOM}.\n"
     "Diagnose: {DIAGNOSIS}.\n"
     "Vorherige Diagnose: {PREV_DIAGNOSIS}.\n"
-    "Familiäre Vorbelastung: {FAMHIST}.\n"
-    "Medikation: {MEDICATION}, {MEDICATION} Behandlung: {TREATMENT}, Prozedur: {PROCEDURE}.\n"
     "Labor: {LAB_RESULT}, Vitalzeichen: {VITALSIGNS}.\n"
-    "Empfehlung: {FOLLOWUP_REQ} bei {FOLLOWUP_REASON}.\n"
+    "Medikation: {MEDICATION}, Behandlung: {TREATMENT}.\n"
     "Untersuchung durch {DOCTOR}, Abteilung: {DEPARTMENT}, Klinik: {ORG}.\n"
-    "Adresse: {ADDRESS}, Tel: {PHONE}.\n"
-    "Impression: {IMPRESSION}, {IMPRESSION}"
+    "Impression: {IMPRESSION}"
 )
 
 arztbrief_template2 = (
@@ -300,8 +297,8 @@ anamnesebogen_template = (
 radiologie_template = (
     "{DOCUMENT_TYPE} – Untersuchung vom {DATE} durchgeführt durch {DOCTOR} in der Abteilung {DEPARTMENT}, {ORG}.\n"
     "Patient: {PATIENT}, {GENDER}, geb. am {BIRTHDATE}, PID: {PID}.\n"
-    "Indikation: {SYMPTOM}, Fragestellung: {FINDING}.\n"
-    "Durchgeführte Bildgebung: {PROCEDURE} mit {DEVICE}.\n"
+    "Indikation: {SYMPTOM}, Fragestellung: {FINDING}.\n" # FINDING passt hier gut
+    "Bildgebung: {PROCEDURE} mit {DEVICE} (Region: {BODY_PART}).\n" # BODY_PART ergänzt
     "Befund: {FINDING}.\n"
     "Impression: {IMPRESSION}.\n"
     "Telefon: {PHONE}, Adresse: {ADDRESS}."
@@ -319,15 +316,15 @@ laborbericht_template = (
 )
 
 patho_template = (
-    "{DOCUMENT_TYPE} – Befunddatum: {DATE}, Pathologieabteilung: {DEPARTMENT}, Klinik: {ORG}.\n"
+    "{DOCUMENT_TYPE} – Befunddatum: {DATE}, Abteilung: {DEPARTMENT}, Klinik: {ORG}.\n"
     "Patient: {PATIENT}, {GENDER}, geb. {BIRTHDATE}, PID: {PID}.\n"
     "Anamnese: {ANAMNESE}.\n"
-    "Material: {PROCEDURE}.\n"
+    "Material: {MATERIAL}.\n" # Geändert von PROCEDURE zu MATERIAL
     "Makroskopie: {FINDING}.\n"
     "Mikroskopie: {DIAGNOSIS}.\n"
     "Zusätzliche Tests: {LAB_RESULT}.\n"
     "Beurteilung: {IMPRESSION}.\n"
-    "Arzt: {DOCTOR}, Tel: {PHONE}, der Abteilung {DEPARTMENT}."
+    "Arzt: {DOCTOR}, Tel: {PHONE}."
 )
 
 ueberweisung_template = (
@@ -531,3 +528,77 @@ TEMPLATES_LIST =[complete_template ,reha_gutachten_template,pflegeueberleitung_t
                  therapieplan_template,rezept_template,impfpass_template,einwilligung_template,ueberweisung_template,patho_template,
                  radiologie_template,laborbericht_template,anamnesebogen_template,entlassungsbericht_template, operationsbericht_template,
                  befundbericht_template,arztbrief_template,arztbrief_template2, muster_template, freib_template,freib_not_aunahme]
+
+
+#reduced labels and template
+
+# 1. Arztbrief (Bleibt wie von dir oben gepostet)
+arztbrief_template_red =(
+    "Patient: {PATIENT} ({GENDER}), geboren am {DATE}, PID: {PID}.\n"
+    "Gewicht: {GEWICHT}. Größe: {GRöESSE}\n" # Tippfehler 'Große' korrigiert
+    "Adresse: {ADDRESS_PATIENT}, Telefon: {PATIENT_PHONE}, Familienstand: {FAMILY_STATUS}.\n" # PATIENT_PHONE
+    "Beruf: {OCCUPATION}, begleitet von: {FAMILYMEMBER}.\n"
+    "Vorstellung wegen: {SYMPTOM}.\n"
+    "Impression: {IMPRESSION}.\n"
+    "Diagnose: {DIAGNOSIS}.\n"
+    "Vorherige Diagnose: {PREV_DIAGNOSIS}.\n"
+    "Medikation: {MEDICATION}, Behandlung: {TREATMENT}.\n"
+    "Untersuchung durch {DOCTOR}, Abteilung: {DEPARTMENT}, Klinik: {ORG}.\n"
+    "Datum: {DATE}."
+)
+
+# 2. Laborbericht
+laborbericht_template_red = (
+    "{DOCUMENT_TYPE} – erstellt am {DATE}.\n"
+    "Patient: {PATIENT} ({GENDER}), PID: {PID}.\n"
+    "Einrichtung: {ORG}, Abteilung: {DEPARTMENT}.\n"
+    "Symptom: {SYMPTOM}.\n"
+    "Diagnose: {DIAGNOSIS}.\n"
+    "Kontakt: {DOCTOR}."
+)
+
+# 3. Pathologiebericht (Wichtig: {MATERIAL} hier drin!)
+patho_template_red = (
+    "{DOCUMENT_TYPE} – Befunddatum: {DATE}, Abteilung: {DEPARTMENT}, Klinik: {ORG}.\n"
+    "Patient: {PATIENT}, {GENDER},({DATE}). PID: {PID}.\n"
+    "Diagnose: {DIAGNOSIS}.\n"
+    "Symptom: {SYMPTOM}.\n"
+    "Arzt: {DOCTOR}."
+)
+
+# 4. Radiologiebefund
+radiologie_template_red = (
+    "{DOCUMENT_TYPE} – Untersuchung vom {DATE} durchgeführt durch {DOCTOR} in der Abteilung {DEPARTMENT}, {ORG}.\n"
+    "Patient: {PATIENT}, {GENDER}, PID: {PID}. Geburtsdatum: {DATE}.\n"
+    "Indikation: {SYMPTOM}.\n"
+    "Befund: {DIAGNOSIS}."
+)
+
+
+
+
+
+
+# Wir organisieren die Templates mit ihrem festen Dokumententyp
+TEMPLATE_CONFIG = {
+    "Kardiologie": {
+        "template": arztbrief_template_red,
+        "doc_type": "Arztbrief"
+    },
+    "Onkologie": {
+        "template": arztbrief_template_red,
+        "doc_type": "Arztbrief"
+    },
+    "Labor": {
+        "template": laborbericht_template_red,
+        "doc_type": "Laborbericht"
+    },
+    "Pathologie": {
+        "template": patho_template_red,
+        "doc_type": "Pathologiebericht"
+    },
+    "Radiologie": {
+        "template": radiologie_template_red,
+        "doc_type": "Radiologiebefund"
+    }
+}

@@ -1,5 +1,7 @@
 import os
 import sys
+
+from datajoint import config
 # Add project root to sys.path if needed
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
@@ -13,7 +15,7 @@ from scripts.paraphrases import *
 from scripts.definitions import *
 from sklearn.model_selection import train_test_split
 from scripts.config import  ENTITY_LIST,  SINGLE_VAL_ENTITIES
-from templates import TEMPLATES_LIST, freib_template, muster_template
+from templates import  TEMPLATE_CONFIG,  TEMPLATES_LIST, freib_template, muster_template
 from collections import defaultdict
 
 OUTPUT_NER_PATH = './data'
@@ -230,20 +232,69 @@ def __generate_values(entity_values, single_val_entities, placeholder_counts):
     return values_for_template
 
 
+
 def __fill_template(template, values_dict):
-    pattern = r"{(\w+)}"
-    output = template
-    counters = defaultdict(int)
+    text = template
+    ents = []
+    
+    # Sortieren nach Länge
+    placeholders = sorted(values_dict.keys(), key=len, reverse=True)
+    
+    for placeholder in placeholders:
+        val_list = values_dict[placeholder]
+        pattern = r"\{" + re.escape(placeholder) + r"\}"
+        
+        # Hole die übergeordnete Gruppe aus dem Mapping (Fallback auf den Namen selbst)
+       #group = mapping.get(placeholder, placeholder)
+        
+        for value in val_list:
+            match = re.search(pattern, text)
+            if match:
+                val_str = str(value)
+                start_idx = match.start()
+                end_idx = start_idx + len(val_str)
+                
+                # Text ersetzen
+                text = text[:start_idx] + val_str + text[match.end():]
+                
+                # HIER: Wir speichern die GRUPPE als Label, nicht den Platzhalter
+                # ents.append({
+                #     "entity_group": group,  # <--- HIER PASSIERT DIE MAGIE
+                #     "word": val_str,
+                #     "start": start_idx,
+                #     "end": end_idx
+                # })
+    
+    #ents.sort(key=lambda x: x["start"])
+    return text
 
-    def replacement(match):
-        entity = match.group(1)
-        val_list = values_dict.get(entity, [""])
-        val = val_list[counters[entity]] if counters[entity] < len(val_list) else val_list[-1]
-        counters[entity] += 1
-        return val
+import random
 
-    filled = re.sub(pattern, replacement, output)
-    return filled
+def __generate_new_values(context_data, global_values, placeholder_counts):
+    values_dict = {}
+    
+    for placeholder, count in placeholder_counts.items():
+        # 1. Quelle bestimmen (Spezifischer Kontext hat Vorrang)
+        if placeholder in context_data:
+            source_list = context_data[placeholder]
+        elif placeholder in global_values:
+            source_list = global_values[placeholder]
+        else:
+            values_dict[placeholder] = [f"MISSING_{placeholder}"] * count
+            continue
+
+        # 2. Werte ziehen (Dubletten vermeiden)
+        if len(source_list) >= count:
+            # Wenn genug Auswahl da ist, nimm 'count' verschiedene Werte
+            generated_vals = random.sample(source_list, count)
+        else:
+            # Fallback: Wenn Liste zu klein, nimm mit Wiederholung
+            generated_vals = [random.choice(source_list) for _ in range(count)]
+        
+        values_dict[placeholder] = generated_vals
+        
+    return values_dict
+
 
 def __generate_dataset(n_samples,save_reports):
     from tqdm import tqdm
@@ -253,10 +304,18 @@ def __generate_dataset(n_samples,save_reports):
     count_paraphrase = 0
     for i in tqdm(range(n_samples), desc="Generating syntetic data"):
         try:
-            if random.random() < 0.5:     
-                template = random.choice(TEMPLATES_LIST)
+            if random.random() < 1:   #no paraphrase  
+                template_type = random.choice(list(TEMPLATE_CONFIG.keys())) # z.B. "Kardio"
+                config = TEMPLATE_CONFIG[template_type]
+
+                template = config["template"]
+                fixed_doc_type = config["doc_type"]
+                context_data = MEDICAL_CONTEXTS_RED.get(template_type, ENTITY_RANDOM_VALUES)
+
                 placeholder_counts = __count_entity_placeholders(template)
-                values_dict = __generate_values(ENTITY_RANDOM_VALUES, SINGLE_VAL_ENTITIES, placeholder_counts)
+                values_dict = __generate_new_values(context_data, ENTITY_RANDOM_VALUES, placeholder_counts)
+                values_dict["DOCUMENT_TYPE"] = [fixed_doc_type] * placeholder_counts.get("DOCUMENT_TYPE", 1)
+
                 text =  __fill_template(template, values_dict)
                 entities = __extract_entities_generalized(text, values_dict)   
                 count_template +=1

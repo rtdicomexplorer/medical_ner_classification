@@ -230,7 +230,7 @@ The project contains also a small flask/app to manage the predictions:
   note={Software available from https://github.com/rtdicomexplorer/medical_ner_classification},
   author={
     Michele Bufano},
-    year={2025},
+    year={2026},
 }
 ```
 
