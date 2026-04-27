@@ -68,10 +68,10 @@ freib_not_aunahme=(
 "                                                                                               "
 "Mit freundlichen Grüßen                                                                        "
 "                                                                                               "
-"{DOKTOR},  {DOKTOR},  {DOKTOR}                                                                 "
+"{DOCTOR},  {DOCTOR},  {DOCTOR}                                                                 "
 "            Ärtzlicher Direktor, Oberarzt, Fachärztin                                          "
 "			                                                                                    "
-"{DOKTOR}"
+"{DOCTOR}"
 "Arzt"
 
 )
@@ -225,7 +225,7 @@ arztbrief_template = (
 
 arztbrief_template2 = (
 "{DOCUMENT_TYPE} vom {DATE}\n"
-"Patientenname : {PATIENT}\n"
+"Patientenname : {PATIENT}  ({GENDER})\n"
 "Geburtsdatum : {BIRTHDATE}\n"
 "Große: {GROESSE}\n"
 "Gewicht: {GEWICHT}\n"
@@ -530,12 +530,18 @@ TEMPLATES_LIST =[complete_template ,reha_gutachten_template,pflegeueberleitung_t
                  befundbericht_template,arztbrief_template,arztbrief_template2, muster_template, freib_template,freib_not_aunahme]
 
 
+
+
+###RDUCED LABELS with defined templates.
+
 #reduced labels and template
 
-# 1. Arztbrief (Bleibt wie von dir oben gepostet)
+# 1. Arztbrief 
 arztbrief_template_red =(
+    "{ORG}\n"
+    "{DEPARTMENT}\n"
     "Patient: {PATIENT} ({GENDER}), geboren am {DATE}, PID: {PID}.\n"
-    "Gewicht: {GEWICHT}. Größe: {GRöESSE}\n" # Tippfehler 'Große' korrigiert
+    "Gewicht: {GEWICHT}. Größe: {GRöESSE}\n" 
     "Adresse: {ADDRESS_PATIENT}, Telefon: {PATIENT_PHONE}, Familienstand: {FAMILY_STATUS}.\n" # PATIENT_PHONE
     "Beruf: {OCCUPATION}, begleitet von: {FAMILYMEMBER}.\n"
     "Vorstellung wegen: {SYMPTOM}.\n"
@@ -543,7 +549,7 @@ arztbrief_template_red =(
     "Diagnose: {DIAGNOSIS}.\n"
     "Vorherige Diagnose: {PREV_DIAGNOSIS}.\n"
     "Medikation: {MEDICATION}, Behandlung: {TREATMENT}.\n"
-    "Untersuchung durch {DOCTOR}, Abteilung: {DEPARTMENT}, Klinik: {ORG}.\n"
+    "Untersuchung durch {DOCTOR}, Abteilung: {DEPARTMENT}.\n"
     "Datum: {DATE}."
 )
 
@@ -557,9 +563,11 @@ laborbericht_template_red = (
     "Kontakt: {DOCTOR}."
 )
 
-# 3. Pathologiebericht (Wichtig: {MATERIAL} hier drin!)
+# 3. Pathologiebericht 
 patho_template_red = (
-    "{DOCUMENT_TYPE} – Befunddatum: {DATE}, Abteilung: {DEPARTMENT}, Klinik: {ORG}.\n"
+    "{DOCUMENT_TYPE}\n" 
+    
+    "Befunddatum: {DATE}, Abteilung: {DEPARTMENT}, Klinik: {ORG}.\n"
     "Patient: {PATIENT}, {GENDER},({DATE}). PID: {PID}.\n"
     "Diagnose: {DIAGNOSIS}.\n"
     "Symptom: {SYMPTOM}.\n"
@@ -568,6 +576,7 @@ patho_template_red = (
 
 # 4. Radiologiebefund
 radiologie_template_red = (
+    "{ORG}\n"
     "{DOCUMENT_TYPE} – Untersuchung vom {DATE} durchgeführt durch {DOCTOR} in der Abteilung {DEPARTMENT}, {ORG}.\n"
     "Patient: {PATIENT}, {GENDER}, PID: {PID}. Geburtsdatum: {DATE}.\n"
     "Indikation: {SYMPTOM}.\n"
@@ -577,28 +586,341 @@ radiologie_template_red = (
 
 
 
+kardiologie_real_template = ("""
+                        {ORG}
+{DEPARTMENT}
+
+Patient: {PATIENT}
+Geburtsdatum: {DATE}
+PIZ: {PID}
+
+Sehr geehrte Kolleginnen und Kollegen,
+
+{PATIENT} ({GENDER}) stellte sich am {DATE} aufgrund von {SYMPTOM} in unserer
+kardiologischen Ambulanz vor.
+
+Diagnosen:
+- {DIAGNOSIS}
+- {DIAGNOSIS}
+
+Aktuelle Medikation:
+- {MEDICATION}
+- {MEDICATION}
+
+Die Untersuchung erfolgte durch {DOCTOR}.
+
+
+Mit freundlichen Grüßen
+
+{DOCTOR}
+""")
+
+onkologie_real_template = ("""
+{ORG}
+{DEPARTMENT}
+
+Entlassbrief
+
+Patient: {PATIENT} ({GENDER})
+PID: {PID}
+Geboren am: {DATE}
+
+Diagnosen:
+{DIAGNOSIS}
+
+Vorstellung aufgrund von:
+{SYMPTOM}
+
+Therapieempfehlung:
+Fortführung von {MEDICATION}
+
+Betreuender Arzt:
+{DOCTOR}
+""")
+
+labor_real_template = ("""
+{ORG}
+Institut für Klinische Chemie
+
+Laborbericht
+
+Patient: {PATIENT}
+PID: {PID}
+Abnahmedatum: {DATE}
+
+Klinische Fragestellung:
+{SYMPTOM}
+
+Verdachtsdiagnose:
+{DIAGNOSIS}
+
+Anfordernder Arzt:
+{DOCTOR}
+
+Abteilung:
+{DEPARTMENT}
+""")
+
+pathologie_real_template = ("""
+                
+                            {ORG}
+
+
+Institut für {DEPARTMENT}
+
+Pathologiebefund
+
+Patient: {PATIENT} geboren am {DATE} ({GENDER})
+PID: {PID}
+Eingangsdatum: {DATE}
+
+Klinische Angaben:
+{SYMPTOM}
+
+Histologischer Befund:
+{DIAGNOSIS}
+
+Anfordernde Abteilung:
+{DEPARTMENT}
+
+Befund freigegeben durch:
+{DOCTOR}
+""")
+
+
+radiologie_real_template = ("""
+{ORG}
+                            
+Abteilung {DEPARTMENT}
+
+Radiologiebefund
+
+Patient: {PATIENT}
+Geburtsdatum: {DATE}
+PID: {PID}
+Geschlecht: {GENDER}
+
+Untersuchung vom {DATE}
+
+Indikation:
+{SYMPTOM}
+
+Befund:
+{DIAGNOSIS}
+
+Befund erstellt durch:
+{DOCTOR}
+""")
+
+
+freib_template_red = ("""
+{ORG}
+
+Abteilung {DEPARTMENT}
+Klinik für {DEPARTMENT}
+
+Ärztlicher Direktor:
+{DOCTOR}
+
+--------------------------------------------------
+
+{PATIENT}
+
+{PATIENT}, * {DATE}, PIZ: {PID}
+
+Sehr geehrte {GENDER} {PATIENT},
+
+wir bedanken uns für die freundliche Zuweisung von {PATIENT},
+die sich am {DATE} in unserer {DEPARTMENT}
+Sprechstunde vorstellte.
+
+--------------------------------------------------
+{DOCUMENT_TYPE}
+--------------------------------------------------
+
+Diagnose:
+
+- {DIAGNOSIS}
+- {DIAGNOSIS}
+- {DIAGNOSIS}
+
+--------------------------------------------------
+Anamnese:
+--------------------------------------------------
+
+{PATIENT} ist eine in unserer Klinik bekannte Patientin mit
+{DIAGNOSIS}.
+
+Für die ausführliche Anamnese verweisen wir auf frühere Arztbriefe.
+
+Die heutige Vorstellung erfolgte aufgrund von:
+
+- {SYMPTOM}
+- {SYMPTOM}
+- {SYMPTOM}
+
+Zusätzlich berichtet {PATIENT} über:
+
+- {SYMPTOM}
+- {SYMPTOM}
+
+Es erfolgt aktuell eine Behandlung mit:
+
+- {MEDICATION}
+- {MEDICATION}
+
+Im Rahmen der Diagnostik zeigte sich erneut
+{DIAGNOSIS}.
+
+--------------------------------------------------
+Verlauf:
+--------------------------------------------------
+
+Bei persistierenden Beschwerden wie {SYMPTOM}
+empfehlen wir eine erneute Vorstellung.
+
+Eine Kontrolle am {DATE} wird empfohlen.
+
+Mit freundlichen Grüßen
+
+{DOCTOR}
+""")
+
+
+muster_template_red = ("""
+{ORG}
+
+ZENTRUM FÜR INNERE MEDIZIN
+Internistische Abteilung
+
+{ORG}
+ID: {PID}
+{DEPARTMENT}
+{DATE}
+
+-------------------------------------------------------
+
+Sehr geehrte Frau Kollegin,
+sehr geehrter Herr Kollege,
+
+wir berichten Ihnen über {PATIENT} ({GENDER}), geboren am {DATE},
+die/der sich am {DATE} in unserer Klinik vorstellte.
+
+-------------------------------------------------------
+{DOCUMENT_TYPE}
+-------------------------------------------------------
+
+Diagnosen:
+
+- {DIAGNOSIS}
+- {DIAGNOSIS}
+- {DIAGNOSIS}
+
+Begleitbeschwerden:
+
+- {SYMPTOM}
+- {SYMPTOM}
+- {SYMPTOM}
+
+-------------------------------------------------------
+Medikation
+-------------------------------------------------------
+
+Aktuelle Medikation:
+
+- {MEDICATION}
+- {MEDICATION}
+- {MEDICATION}
+
+-------------------------------------------------------
+Klinischer Verlauf
+-------------------------------------------------------
+
+{PATIENT} stellte sich aufgrund von
+{SYMPTOM} vor.
+
+Im Verlauf zeigte sich weiterhin
+{DIAGNOSIS}.
+
+Am {DATE} erfolgte eine erneute
+klinische Kontrolle.
+
+Zusätzlich klagte {PATIENT} über:
+
+- {SYMPTOM}
+- {SYMPTOM}
+
+-------------------------------------------------------
+Epikrise
+-------------------------------------------------------
+
+Zusammenfassend zeigt sich bei {PATIENT}
+weiterhin eine {DIAGNOSIS}.
+
+Eine ambulante Wiedervorstellung wird empfohlen.
+
+Mit kollegialen Grüßen
+
+{DOCTOR}
+Chefarzt
+
+{DEPARTMENT}
+{ORG}
+""")
+
+
 
 
 # Wir organisieren die Templates mit ihrem festen Dokumententyp
+
 TEMPLATE_CONFIG = {
     "Kardiologie": {
-        "template": arztbrief_template_red,
+        "templates": [
+            arztbrief_template_red,
+            kardiologie_real_template
+        ],
         "doc_type": "Arztbrief"
     },
+
     "Onkologie": {
-        "template": arztbrief_template_red,
+        "templates": [
+            arztbrief_template_red,
+            onkologie_real_template
+        ],
         "doc_type": "Arztbrief"
     },
+
     "Labor": {
-        "template": laborbericht_template_red,
+        "templates": [
+            laborbericht_template_red,
+            labor_real_template
+        ],
         "doc_type": "Laborbericht"
     },
+
     "Pathologie": {
-        "template": patho_template_red,
+        "templates": [
+            patho_template_red,
+            pathologie_real_template
+        ],
         "doc_type": "Pathologiebericht"
     },
+
     "Radiologie": {
-        "template": radiologie_template_red,
+        "templates": [
+            radiologie_template_red,
+            radiologie_real_template
+        ],
         "doc_type": "Radiologiebefund"
+    },
+
+    "Freiburg": {
+        "templates": [
+            freib_template_red,
+            muster_template_red
+        ],
+        "doc_type": ""
     }
 }
+
+

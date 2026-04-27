@@ -1,6 +1,7 @@
 import os
 import sys
 
+
 # from datajoint import config
 # Add project root to sys.path if needed
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -296,34 +297,95 @@ def __generate_new_values(context_data, global_values, placeholder_counts):
     return values_dict
 
 
+
 def __generate_dataset(n_samples,save_reports):
     from tqdm import tqdm
     dataset = []
     entities_list = []
     count_template = 0
     count_paraphrase = 0
+    count_old_sanitized = 0
+
+
+    sanitized_old_templates = [
+        sanitize_template(t)
+        for t in TEMPLATES_LIST
+    ]
+
+
     for i in tqdm(range(n_samples), desc="Generating syntetic data"):
         try:
-            if random.random() < 1:   #no paraphrase  
-                template_type = random.choice(list(TEMPLATE_CONFIG.keys())) # z.B. "Kardio"
+            # if random.random() < 1:   #no paraphrase  
+            #     template_type = random.choice(list(TEMPLATE_CONFIG.keys())) # z.B. "Kardio"
+            #     config = TEMPLATE_CONFIG[template_type]
+
+            #     template = random.choice(config["templates"])
+
+                
+            #     fixed_doc_type = config["doc_type"]
+            #     context_data = MEDICAL_CONTEXTS_RED.get(template_type, ENTITY_RANDOM_VALUES)
+
+            #     placeholder_counts = __count_entity_placeholders(template)
+            #     values_dict = __generate_new_values(context_data, ENTITY_RANDOM_VALUES, placeholder_counts)
+
+            #     if(fixed_doc_type!=""):#general case
+            #         values_dict["DOCUMENT_TYPE"] = [fixed_doc_type] * placeholder_counts.get("DOCUMENT_TYPE", 1)
+
+            #     text =  __fill_template(template, values_dict)
+            #     entities = __extract_entities_generalized(text, values_dict)   
+            #     count_template +=1
+            # else:
+            #     values = __create_sample_more_text(SINGLE_VAL_ENTITIES)  
+            #     text = __generate_paraphrase_more_text(values,SINGLE_VAL_ENTITIES)             
+            #     entities = __extract_entities_generalized(text, values)  
+            #     count_paraphrase += 1
+
+            USE_NEW_TEMPLATE_PROB = 0.8
+            if random.random() < USE_NEW_TEMPLATE_PROB:
+                # -------- NEW templates --------
+                template_type = random.choice(list(TEMPLATE_CONFIG.keys()))
                 config = TEMPLATE_CONFIG[template_type]
 
-                template = config["template"]
+                template = random.choice(config["templates"])
                 fixed_doc_type = config["doc_type"]
-                context_data = MEDICAL_CONTEXTS_RED.get(template_type, ENTITY_RANDOM_VALUES)
 
-                placeholder_counts = __count_entity_placeholders(template)
-                values_dict = __generate_new_values(context_data, ENTITY_RANDOM_VALUES, placeholder_counts)
-                values_dict["DOCUMENT_TYPE"] = [fixed_doc_type] * placeholder_counts.get("DOCUMENT_TYPE", 1)
-
-                text =  __fill_template(template, values_dict)
-                entities = __extract_entities_generalized(text, values_dict)   
-                count_template +=1
+                context_data = MEDICAL_CONTEXTS_RED.get(
+                    template_type,
+                    ENTITY_RANDOM_VALUES
+                )
+                count_template += 1
             else:
-                values = __create_sample_more_text(SINGLE_VAL_ENTITIES)  
-                text = __generate_paraphrase_more_text(values,SINGLE_VAL_ENTITIES)             
-                entities = __extract_entities_generalized(text, values)  
-                count_paraphrase += 1
+                # -------- OLD sanitized templates --------
+                template = random.choice(sanitized_old_templates)
+
+                fixed_doc_type = ""
+                context_data = ENTITY_RANDOM_VALUES
+                count_old_sanitized += 1
+
+            placeholder_counts = __count_entity_placeholders(template)
+
+            values_dict = __generate_new_values(
+                context_data,
+                ENTITY_RANDOM_VALUES,
+                placeholder_counts
+            )
+
+            # only overwrite DOCUMENT_TYPE if explicitly defined
+            if fixed_doc_type and "DOCUMENT_TYPE" in values_dict:
+                values_dict["DOCUMENT_TYPE"] = [
+                    fixed_doc_type
+                ] * placeholder_counts.get("DOCUMENT_TYPE", 1)
+
+
+            text = __fill_template(template, values_dict)
+
+            entities = __extract_entities_generalized(
+                text,
+                values_dict
+            )
+
+            count_template += 1
+
             if save_reports:
                 filename = f"report_{i+1:06}.txt"
                 filepath = os.path.join(OUTPUT_REPORTS_PATH,filename)
@@ -340,7 +402,7 @@ def __generate_dataset(n_samples,save_reports):
     trains, validations = train_test_split(dataset, test_size=0.1, random_state=42)
     trains, tests = train_test_split(trains, test_size=0.1, random_state=42)
     
-    print(f"💡 From template {count_template}, 🔁 from paraphrase {count_paraphrase}")
+    print(f"💡 From template {count_template}, 🔁 from sanitized {count_old_sanitized}")
 
 
     os.makedirs(OUTPUT_NER_PATH, exist_ok=True)   
@@ -369,7 +431,7 @@ def __remove_existing_data():
    
 # Run as script
 if __name__ == "__main__":
-    n_samples = 10
+    n_samples = 100
     save_reports = True
     clean_data = False
     if len(sys.argv) > 1:

@@ -756,7 +756,7 @@ MEDICAL_CONTEXTS = {
 
 MEDICAL_CONTEXTS_RED = {
     "Kardiologie": {
-        "DEPARTMENT": ["Herzzentrum", "Kardiologie Station 1"],
+        "DEPARTMENT": ["Herzzentrum", "Klinik für Kardiologie und Angiologie"],
         "DIAGNOSIS": ["I25.1 KHK", "I50.0 Herzinsuffizienz", "I48.0 Vorhofflimmern"],
         "SYMPTOM": ["Brustschmerzen", "Atemnot bei Belastung", "Palpitationen"]
     },
@@ -771,12 +771,12 @@ MEDICAL_CONTEXTS_RED = {
         "SYMPTOM": ["Schmerz", "Funktionseinschränkung"] # Indikation/Symptom
     },
     "Pathologie": {
-        "DEPARTMENT": ["Pathologie", "Institut für Histologie"],
+        "DEPARTMENT": ["Pathologie", "Histologie"],
         "DIAGNOSIS": ["C34.9 Bronchialkarzinom", "D05.1 DCIS", "C18.9 Kolon-CA"],
         "SYMPTOM": ["Zellatypien", "Inflammation"]
     },
     "Onkologie": {
-        "DEPARTMENT": ["Onkologie", "Hämato-Onkologie", "Tumorzentrum"],
+        "DEPARTMENT": ["Klinik für Onkologie", "Klinik für Hämato-Onkologie", "Tumorzentrum"],
         "DIAGNOSIS": ["C34.9 Bronchialkarzinom", "C18.9 Kolon-CA", "C50.9 Mammakarzinom"],
         "SYMPTOM": ["B-Symptomatik", "ungewollter Gewichtsverlust", "persistierender Husten"],
         "MEDICATION": ["Chemotherapie", "Immunonkologische Therapie"]

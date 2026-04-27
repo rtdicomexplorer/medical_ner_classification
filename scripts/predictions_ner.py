@@ -16,7 +16,7 @@ from scripts.utils import generate_ner_data, init_tesseract, replace_entities_wi
 from scripts.postprocess import postprocess_entities  # Your custom postprocessing
 from scripts.ner_to_fhir import map_ner_to_fhir    # Your mapping from NER to FHIR
 from scripts.config import ID2LABEL,LABEL2ID
-MODEL_PATH = "./models/gbert-base"
+MODEL_PATH = "./models/gbert-base-v2"
 OUTPUT_DIR = "output"
 PREDICTIONS_DIR ="predictions"
 class NERModel:

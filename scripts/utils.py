@@ -16,7 +16,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
-from scripts.config import LABEL2ID, ID2LABEL
+from scripts.config import LABEL2ID, ID2LABEL, REDUCED_ENTITIES
 from scripts.definitions import *
 def np_encoder(obj):
     if isinstance(obj, (np.integer,)):
@@ -348,6 +348,35 @@ def generate_patient_record():
         "Befunde": __get_random_elements(findings, 1, 3)
     }
     return record
+
+def sanitize_template(template):
+
+
+    FALLBACK_VALUES = {
+        "ADDRESS": "Musterstraße 12, Berlin",
+        "PHONE": "030-123456",
+        "TREATMENT": "konservative Therapie",
+        "PROCEDURE": "klinische Untersuchung",
+        "ROOM_NUMBER": "Zimmer 204",
+        "INSURANCE_ID": "AOK-12345",
+        "BODY_PART": "Thorax",
+        "LAB_RESULT": "12.5 mg/dl",
+        "FAMILY_STATUS": "verheiratet",
+        "OCCUPATION": "Angestellter",
+    }
+
+    placeholders = re.findall(r"{(.*?)}", template)
+
+    for ph in placeholders:
+        if ph not in REDUCED_ENTITIES:
+            replacement = FALLBACK_VALUES.get(
+                ph,
+                f"UNKNOWN_{ph}"
+            )
+            template = template.replace(f"{{{ph}}}", replacement)
+
+    return template
+
 
 
 # def main():
